@@ -32,6 +32,17 @@
 - Calismayan kodu "gecici" diye commit'leme.
 - Diger ajanin "AKTIF AJAN" olarak isaretli oldugu sirada ayni dosyalara
   paralel buyuk degisiklik yapma; once devral.
+- Secret, sifre, API key, token, OAuth client secret, service role key veya
+  demo sifresi dahil hicbir kimlik bilgisini koda, test datasina, README'ye,
+  migration'a, script'e veya log ciktisina yazma. Placeholder kullanacaksan
+  `example`, `placeholder`, `REPLACE_ME` gibi gercek secret'a benzemeyen deger
+  kullan. Gercek degerler yalnizca `.env.local`, Vercel/Supabase/Google paneli
+  gibi secret store'larda durur.
+- Commit veya push oncesi secret taramasi yap: `.githooks/pre-commit` hook'u
+  aktif olmali ve `npm run verify:fast` gecmeli. Supheli cikti varsa commit
+  etme; kullaniciya bildir.
+- Scriptler secret'i stdout'a yazamaz. Demo login uretiyorsa sifreyi env'den
+  okur ve sadece "hazir" durumunu yazar.
 
 ### Komutlar
 - Hizli kontrol: npm run verify:fast

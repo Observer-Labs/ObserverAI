@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -eu
+
+patterns='ObserverDemo|SignalDemo|GOCSPX-|ghp_|gho_|github_pat_|shpat_|xox[baprs]-|sk-[A-Za-z0-9]|SUPABASE_SERVICE_KEY[[:space:]]*=|TEAM_PASSWORD[[:space:]]*=|PASSWORD[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']|CLIENT_SECRET[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']|SECRET[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']'
+
+if git diff --cached --unified=0 -- . ':!package-lock.json' ':!.githooks/pre-commit' | grep -E "$patterns" >/dev/null; then
+  echo "Secret-like content found in staged changes. Commit blocked." >&2
+  echo "Move real values to .env.local or a provider secret store, then stage again." >&2
+  git diff --cached --unified=0 -- . ':!package-lock.json' ':!.githooks/pre-commit' | grep -nE "$patterns" >&2 || true
+  exit 1
+fi

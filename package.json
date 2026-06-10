@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
+    "hooks:install": "git config core.hooksPath .githooks",
     "verify:fast": "npm run typecheck && npm run lint",
     "verify": "npm run typecheck && npm run lint && npm run build",
     "test": "vitest run --passWithNoTests",
