@@ -14,6 +14,11 @@
 4. Yeni clone veya hook ayari belirsizse `git config core.hooksPath` kontrol et;
    cikti `.githooks` degilse `npm run hooks:install` calistir. Secret tarama
    hook'u aktif olmadan commit/push yapma.
+5. GitHub'da baska collaborator aktifse calismaya baslamadan `git fetch origin`,
+   `git status`, `git branch --show-current` ve son commitleri kontrol et.
+   Kullanici acikca "main'e pushla" demedikce `main` uzerinde yeni is yapma;
+   `feature/...`, `fix/...`, `chore/...` veya `ui/...` branch'i ac, isi oraya
+   commit/push et ve PR akisi kullan. PR/push oncesi `npm run verify` calistir.
 
 ### Debug dongusu (sormadan uygula)
 1. Degisiklik yap.
