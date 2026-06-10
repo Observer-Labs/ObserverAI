@@ -248,6 +248,12 @@ export interface WhatsAppConfig {
   webhook_verified: boolean;
   recipient_numbers: string[];
   critical_only: boolean;
+  consent_requested_at?: string;
+  opted_in?: boolean;
+  opted_in_at?: string;
+  verified?: boolean;
+  verified_at?: string;
+  last_inbound_at?: string;
 }
 
 export interface DistributionConfig {

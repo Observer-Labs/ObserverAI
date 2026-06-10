@@ -1,66 +1,130 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { parseInboundWhatsApp } from "@/lib/whatsapp";
+import {
+  isWhatsAppConsentReply,
+  normalizeWhatsAppNumber,
+  parseInboundWhatsApp,
+  verifyMetaSignature,
+  verifyMetaWebhookToken,
+} from "@/lib/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import twilio from "twilio";
 
-// Twilio webhook verification (GET challenge)
+type WorkspaceWithWhatsApp = {
+  id: string;
+  whatsapp_config?: {
+    recipient_numbers?: string[];
+    [key: string]: unknown;
+  } | null;
+  distribution_config?: {
+    whatsapp?: {
+      recipient_numbers?: string[];
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  } | null;
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
-  return new NextResponse(challenge ?? "ok", { status: 200 });
+
+  if (mode === "subscribe" && verifyMetaWebhookToken(token)) {
+    return new NextResponse(challenge ?? "", { status: 200 });
+  }
+
+  return new NextResponse("Invalid verify token", { status: 403 });
+}
+
+async function findWorkspaceForSender(sender: string, explicitWorkspaceId: string | null) {
+  const supabase = getSupabaseAdmin();
+
+  if (explicitWorkspaceId) {
+    const { data } = await supabase
+      .from("workspaces")
+      .select("id, whatsapp_config, distribution_config")
+      .eq("id", explicitWorkspaceId)
+      .single();
+    return (data as WorkspaceWithWhatsApp | null) ?? null;
+  }
+
+  const { data } = await supabase
+    .from("workspaces")
+    .select("id, whatsapp_config, distribution_config")
+    .limit(1000);
+
+  const normalizedSender = normalizeWhatsAppNumber(sender);
+  return ((data as WorkspaceWithWhatsApp[] | null) ?? []).find((workspace) => {
+    const whatsappNumbers = workspace.whatsapp_config?.recipient_numbers ?? [];
+    const distributionNumbers = workspace.distribution_config?.whatsapp?.recipient_numbers ?? [];
+    return [...whatsappNumbers, ...distributionNumbers]
+      .map(normalizeWhatsAppNumber)
+      .includes(normalizedSender);
+  }) ?? null;
+}
+
+async function markWhatsAppOptIn(workspace: WorkspaceWithWhatsApp, sender: string, inboundAt: string) {
+  const supabase = getSupabaseAdmin();
+  const numbers = Array.from(
+    new Set([...(workspace.whatsapp_config?.recipient_numbers ?? []), normalizeWhatsAppNumber(sender)]),
+  );
+
+  await supabase
+    .from("workspaces")
+    .update({
+      whatsapp_config: {
+        ...(workspace.whatsapp_config ?? {}),
+        enabled: true,
+        webhook_verified: true,
+        recipient_numbers: numbers,
+        opted_in: true,
+        opted_in_at: inboundAt,
+        verified: true,
+        verified_at: inboundAt,
+        last_inbound_at: inboundAt,
+      },
+      distribution_config: {
+        ...(workspace.distribution_config ?? {}),
+        whatsapp: {
+          ...(workspace.distribution_config?.whatsapp ?? {}),
+          enabled: true,
+          recipient_numbers: numbers,
+        },
+      },
+    })
+    .eq("id", workspace.id);
 }
 
 export async function POST(req: NextRequest) {
-  // Workspace ID must be in query string, user sets it in Twilio webhook URL
-  // e.g. https://observerai.app/api/webhooks/whatsapp?workspaceId=<id>
-  const workspaceId = req.nextUrl.searchParams.get("workspaceId");
-  if (!workspaceId) {
-    return new NextResponse("Missing workspaceId", { status: 400 });
+  const rawBody = await req.text();
+  if (!verifyMetaSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
+    return new NextResponse("Invalid signature", { status: 403 });
   }
 
-  // Parse form-encoded Twilio webhook payload (must happen before any other await)
-  const text = await req.text();
-  const params = Object.fromEntries(new URLSearchParams(text));
+  const payload = JSON.parse(rawBody) as Parameters<typeof parseInboundWhatsApp>[0];
+  const messages = parseInboundWhatsApp(payload);
+  const explicitWorkspaceId = req.nextUrl.searchParams.get("workspaceId");
+  const supabase = getSupabaseAdmin();
 
-  // Verify Twilio signature (skip in dev if token not set)
-  const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-  if (twilioAuthToken) {
-    const sig = req.headers.get("x-twilio-signature") ?? "";
-    const url = `${process.env.NEXTAUTH_URL}/api/webhooks/whatsapp?workspaceId=${workspaceId}`;
-    const isValid = twilio.validateRequest(twilioAuthToken, sig, url, params);
-    if (!isValid) {
-      return new NextResponse("Invalid signature", { status: 403 });
+  for (const message of messages) {
+    const workspace = await findWorkspaceForSender(message.sender, explicitWorkspaceId);
+    if (!workspace) continue;
+
+    await supabase.from("signals").insert({
+      workspace_id: workspace.id,
+      source: "whatsapp",
+      channel: "whatsapp",
+      sender: message.sender,
+      content: message.content,
+      timestamp: message.timestamp,
+      reviewed: false,
+    });
+
+    if (isWhatsAppConsentReply(message.content)) {
+      await markWhatsAppOptIn(workspace, message.sender, message.timestamp);
     }
   }
 
-  // Validate workspace exists
-  const supabase = getSupabaseAdmin();
-  const { data: ws } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("id", workspaceId)
-    .single();
-
-  if (!ws) {
-    return new NextResponse("Invalid workspaceId", { status: 404 });
-  }
-
-  const signal = parseInboundWhatsApp(params);
-
-  await supabase.from("signals").insert({
-    workspace_id: workspaceId,
-    source: "whatsapp",
-    channel: "whatsapp",
-    sender: signal.sender,
-    content: signal.content,
-    timestamp: signal.timestamp,
-    reviewed: false,
-  });
-
-  // Respond with empty TwiML (Twilio expects XML 200)
-  return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`, {
-    status: 200,
-    headers: { "Content-Type": "text/xml" },
-  });
+  return NextResponse.json({ received: true, processed: messages.length });
 }

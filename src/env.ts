@@ -60,11 +60,13 @@ const ENV_GROUPS = {
     },
   },
   whatsapp: {
-    label: "WhatsApp via Twilio",
+    label: "WhatsApp via Meta Cloud API",
     required: {
-      TWILIO_ACCOUNT_SID: envValue,
-      TWILIO_AUTH_TOKEN: envValue,
-      TWILIO_WHATSAPP_NUMBER: envValue,
+      META_WHATSAPP_ACCESS_TOKEN: envValue,
+      META_WHATSAPP_PHONE_NUMBER_ID: envValue,
+      META_WHATSAPP_BUSINESS_ACCOUNT_ID: envValue,
+      META_WHATSAPP_VERIFY_TOKEN: envValue,
+      META_APP_SECRET: envValue,
     },
   },
   polar: {

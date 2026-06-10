@@ -49,6 +49,12 @@ export default function OnboardingWhatsAppPage() {
           },
         }),
       });
+      const consentResponse = await fetch("/api/whatsapp/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: fullNumber, locale: "tr" }),
+      });
+      if (!consentResponse.ok) throw new Error("WhatsApp consent request failed");
       setSaved(true);
       setTimeout(() => router.push("/onboarding/connect"), 800);
     } catch {

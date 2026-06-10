@@ -32,7 +32,14 @@ export async function PATCH(req: NextRequest) {
   const { updates } = await req.json();
 
   // Allowlist updatable fields to prevent overwriting user_id or id
-  const allowed = ["slack_monitored_channels", "distribution_config", "integrations_config", "output_config", "name"];
+  const allowed = [
+    "slack_monitored_channels",
+    "whatsapp_config",
+    "distribution_config",
+    "integrations_config",
+    "output_config",
+    "name",
+  ];
   const safeUpdates = Object.fromEntries(
     Object.entries(updates ?? {}).filter(([k]) => allowed.includes(k))
   );
