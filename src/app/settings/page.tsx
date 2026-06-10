@@ -202,25 +202,33 @@ export default function SettingsPage() {
   const billingPlans = [
     {
       name: "Starter",
-      price: "$29.99",
-      description: "1-5 locations, 2 active signal sources",
-      features: ["Up to 5 locations", "2 active sources", "Email alerts"],
+      price: "$79",
+      description: "1 lokasyon · Tek kafe veya mağaza",
+      features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
       cta: "Choose Starter",
       href: "/api/billing/checkout",
     },
     {
-      name: "Pro",
-      price: "$49.99",
-      description: "Up to 10 locations, all available sources",
-      features: ["Up to 10 locations", "All available sources", "Email and WhatsApp alerts"],
-      cta: "Choose Pro",
+      name: "Growth",
+      price: "$149",
+      description: "2-5 lokasyon · Küçük zincirler",
+      features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
+      cta: "Choose Growth",
+      href: "/api/billing/checkout",
+    },
+    {
+      name: "Scale",
+      price: "$299",
+      description: "6-20 lokasyon · Bölgesel markalar",
+      features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
+      cta: "Choose Scale",
       href: "/api/billing/checkout",
     },
     {
       name: "Enterprise",
-      price: "Let's Talk",
-      description: "Unlimited locations and custom rollout support",
-      features: ["Unlimited locations", "All available sources", "Dedicated support"],
+      price: "Özel",
+      description: "20+ lokasyon · Franchise'lar & gruplar",
+      features: ["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"],
       cta: "Contact Sales",
       href: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
     },
@@ -456,7 +464,7 @@ export default function SettingsPage() {
                             <div style={{ color: "var(--foreground)", fontWeight: 800, fontSize: option.name === "Enterprise" ? "1.2rem" : "1.55rem", letterSpacing: "-0.03em", marginBottom: 6 }}>
                               {option.price}
                             </div>
-                            {option.name !== "Enterprise" && <div style={{ color: "var(--muted)", fontSize: "0.72rem", marginTop: -4, marginBottom: 10 }}>/ month</div>}
+                            {option.name !== "Enterprise" && <div style={{ color: "var(--muted)", fontSize: "0.72rem", marginTop: -4, marginBottom: 10 }}>/ ay</div>}
                             <div style={{ color: "var(--muted)", fontSize: "0.76rem", lineHeight: 1.45, marginBottom: 12 }}>{option.description}</div>
                             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", display: "flex", flexDirection: "column", gap: 7 }}>
                               {option.features.map((feature) => (
@@ -466,7 +474,7 @@ export default function SettingsPage() {
                                 </li>
                               ))}
                             </ul>
-                            <a href={option.href} className={option.name === "Pro" ? "btn-primary" : undefined} style={{
+                            <a href={option.href} className={option.name === "Growth" ? "btn-primary" : undefined} style={{
                               display: "block",
                               textDecoration: "none",
                               fontSize: "0.76rem",
@@ -474,9 +482,9 @@ export default function SettingsPage() {
                               padding: "9px 12px",
                               textAlign: "center",
                               borderRadius: 8,
-                              border: option.name === "Pro" ? "none" : "1px solid var(--border)",
-                              background: option.name === "Pro" ? undefined : "var(--muted-surface)",
-                              color: option.name === "Pro" ? undefined : "var(--foreground)",
+                              border: option.name === "Growth" ? "none" : "1px solid var(--border)",
+                              background: option.name === "Growth" ? undefined : "var(--muted-surface)",
+                              color: option.name === "Growth" ? undefined : "var(--foreground)",
                             }}>
                               {option.cta}
                             </a>

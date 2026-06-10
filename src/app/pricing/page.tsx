@@ -10,7 +10,7 @@ export default async function PricingPage() {
   const plans = [
     {
       name: t('starterName'),
-      price: "$29.99",
+      price: "$79",
       suffix: t('perMonth'),
       description: t('starterDesc'),
       audience: t('starterAudience'),
@@ -18,33 +18,44 @@ export default async function PricingPage() {
         t('feature_starter_1'),
         t('feature_starter_2'),
         t('feature_starter_3'),
-        t('feature_starter_4'),
-        t('feature_starter_5'),
       ],
       cta: t('starterCta'),
       href: "/signup",
       featured: false,
     },
     {
-      name: t('proName'),
-      price: "$49.99",
+      name: t('growthName'),
+      price: "$149",
       suffix: t('perMonth'),
-      description: t('proDesc'),
-      audience: t('proAudience'),
+      description: t('growthDesc'),
+      audience: t('growthAudience'),
       features: [
-        t('feature_pro_1'),
-        t('feature_pro_2'),
-        t('feature_pro_3'),
-        t('feature_pro_4'),
-        t('feature_pro_5'),
+        t('feature_growth_1'),
+        t('feature_growth_2'),
+        t('feature_growth_3'),
       ],
-      cta: t('proCta'),
+      cta: t('growthCta'),
       href: "/signup",
       featured: true,
     },
     {
+      name: t('scaleName'),
+      price: "$299",
+      suffix: t('perMonth'),
+      description: t('scaleDesc'),
+      audience: t('scaleAudience'),
+      features: [
+        t('feature_scale_1'),
+        t('feature_scale_2'),
+        t('feature_scale_3'),
+      ],
+      cta: t('scaleCta'),
+      href: "/signup",
+      featured: false,
+    },
+    {
       name: t('enterpriseName'),
-      price: "Konuşalım",
+      price: "Özel",
       suffix: "",
       description: t('enterpriseDesc'),
       audience: t('enterpriseAudience'),
@@ -52,8 +63,6 @@ export default async function PricingPage() {
         t('feature_enterprise_1'),
         t('feature_enterprise_2'),
         t('feature_enterprise_3'),
-        t('feature_enterprise_4'),
-        t('feature_enterprise_5'),
       ],
       cta: t('enterpriseCta'),
       href: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
@@ -115,6 +124,7 @@ export default async function PricingPage() {
                 <div style={{ color: plan.featured ? "var(--background)" : "var(--foreground)", fontSize: plan.name === t('enterpriseName') ? "2rem" : "2.8rem", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1 }}>
                   {plan.price}
                 </div>
+                {plan.name === t('enterpriseName') && <div style={{ color: plan.featured ? "rgba(255,255,255,0.7)" : "var(--muted)", fontSize: "0.85rem", marginTop: 6 }}>~$500+{t('perMonth')}</div>}
                 {plan.suffix && <div style={{ color: plan.featured ? "rgba(255,255,255,0.7)" : "var(--muted)", fontSize: "0.85rem", marginTop: 6 }}>{plan.suffix}</div>}
                 <p style={{ color: plan.featured ? "rgba(255,255,255,0.76)" : "var(--muted)", fontSize: "0.86rem", margin: "16px 0 0", lineHeight: 1.55 }}>
                   {plan.description}
