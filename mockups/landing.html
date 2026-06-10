@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif}
+body{width:1600px;height:1000px;background:#fff;color:#0c1322;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:22px 56px;border-bottom:1px solid #e6e9ef}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-style:italic;font-size:1.25rem}
+.dot{width:24px;height:24px;border-radius:50%;border:1.4px solid #0c1322;position:relative}
+.dot::after{content:"";position:absolute;inset:7px;border-radius:50%;background:#0c1322}
+.navr{display:flex;gap:6px;align-items:center}
+.navr a{color:#64748b;font-size:.95rem;padding:9px 16px;text-decoration:none}
+.btn{background:#1f2734;color:#fafbfc;font-weight:600;padding:11px 22px;border-radius:9px;font-size:.95rem}
+.wrap{display:grid;grid-template-columns:1fr .82fr;gap:70px;align-items:center;padding:90px 56px}
+.flow{display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#64748b;margin-bottom:30px}
+.flow b{color:#0c1322;font-weight:700}
+.wadot{width:7px;height:7px;border-radius:50%;background:#00a884;display:inline-block;margin-right:6px}
+h1{font-size:4.4rem;font-weight:800;line-height:1.04;letter-spacing:-.04em;margin-bottom:26px}
+h1 .m{color:#64748b}
+.sub{font-size:1.25rem;color:#64748b;line-height:1.65;max-width:540px;margin-bottom:40px}
+.ctas{display:flex;gap:14px;align-items:center;margin-bottom:20px}
+.cta1{background:#1f2734;color:#fafbfc;font-weight:600;font-size:1.1rem;padding:16px 32px;border-radius:11px}
+.cta2{border:1px solid #e6e9ef;color:#0c1322;font-size:1.05rem;padding:16px 28px;border-radius:11px}
+.fine{color:#64748b;font-size:.9rem}
+/* phone */
+.phone{width:360px;margin:0 auto;background:#0a0a0a;border-radius:42px;border:11px solid #18181b;overflow:hidden;box-shadow:0 40px 100px rgba(16,24,40,.22)}
+.wh{background:#1f2c34;padding:30px 18px 14px;display:flex;align-items:center;gap:12px}
+.av{width:42px;height:42px;border-radius:50%;background:#202c33;border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;color:#e9edef;font-weight:800}
+.wh .n{color:#e9edef;font-weight:600;font-size:1.02rem}.wh .s{color:#8696a0;font-size:.78rem}
+.wb{background:#0b141a;padding:18px 14px 22px;display:flex;flex-direction:column;gap:10px;min-height:470px}
+.in{background:#202c33;border-radius:5px 14px 14px 14px;padding:13px 15px;max-width:92%}
+.urg{color:#f0857d;font-weight:800;font-size:.92rem;margin-bottom:6px}
+.in .t{color:#e9edef;font-size:.92rem;line-height:1.5;margin-bottom:8px}
+.imp{color:#9fd9bf;font-size:.85rem;margin-bottom:9px}
+.rep{color:#8696a0;font-size:.8rem;border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+.rep b{color:#53bdeb}
+.ts{color:#667781;font-size:.66rem;text-align:right;margin-top:5px}
+.out{background:#005c4b;border-radius:14px 5px 14px 14px;padding:9px 15px;align-self:flex-end;max-width:55%}
+.out .t{color:#e9edef;font-weight:600;font-size:.95rem}.out .ts{color:#9fd9bf}
+.done{background:rgba(0,168,132,.18);border:1px solid rgba(0,168,132,.3);border-radius:11px;padding:9px 13px;max-width:82%}
+.done .t{color:#7fe0c0;font-size:.85rem;font-weight:600}
+</style></head><body>
+<div class="nav"><div class="logo"><span class="dot"></span>Signal</div>
+<div class="navr"><a>Pricing</a><a>Sign in</a><span class="btn">Start free</span></div></div>
+<div class="wrap">
+ <div>
+  <div class="flow"><span>Reviews · Getir · POS</span><span style="opacity:.45">→</span><b>Signal</b><span style="opacity:.45">→</span><span style="color:#00a884;font-weight:700"><span class="wadot"></span>WhatsApp</span></div>
+  <h1>What your customers<br>really think, <span class="m">on your WhatsApp.</span></h1>
+  <p class="sub">You can't read every Google review, Getir comment and POS report. Signal does, every day, and texts you the one thing worth fixing. No dashboards, no apps, no tech.</p>
+  <div class="ctas"><span class="cta1">Try for free →</span><span class="cta2">See a live example</span></div>
+  <p class="fine">No credit card · Built for cafés, restaurants and shops</p>
+ </div>
+ <div class="phone">
+  <div class="wh"><div class="av">S</div><div style="flex:1"><div class="n">Signal</div><div class="s">business account · online</div></div><div style="color:#8696a0;font-size:1.1rem">⋮</div></div>
+  <div class="wb">
+   <div class="in"><div class="urg">🔴 Urgent</div><div class="t"><b>Wait times spiking at Kadıköy</b><br>14 customers complained this week, 2× vs last week.</div><div class="imp">💰 Weekend revenue at risk</div><div class="rep">Reply: <b>1</b> details · <b>2</b> on it · <b>3</b> skip</div><div class="ts">09:24</div></div>
+   <div class="out"><div class="t">1</div><div class="ts">09:24 ✓✓</div></div>
+   <div class="in"><div class="t">📊 <b>9 Google reviews · 5 Getir orders</b> mention waits over 15 min, mostly Fri to Sun, 7 to 9pm.<br><br>✅ <b>Suggested:</b> add one person to the weekend evening shift.</div><div class="ts">09:24</div></div>
+   <div class="out"><div class="t">2 ✓</div><div class="ts">09:25 ✓✓</div></div>
+   <div class="done"><div class="t">✅ Marked as handled. Logged.</div></div>
+  </div>
+ </div>
+</div>
+</body></html>

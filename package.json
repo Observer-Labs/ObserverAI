@@ -1,0 +1,52 @@
+{
+  "name": "observer-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "verify:fast": "npm run typecheck && npm run lint",
+    "verify": "npm run typecheck && npm run lint && npm run build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@google-analytics/data": "^5.2.2",
+    "@polar-sh/nextjs": "^0.9.4",
+    "@shopify/shopify-api": "^13.0.0",
+    "@slack/web-api": "^7.14.1",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "@types/nodemailer": "^7.0.11",
+    "@vercel/analytics": "^2.0.1",
+    "googleapis": "^171.4.0",
+    "next": "16.1.6",
+    "next-intl": "^4.13.0",
+    "nodemailer": "^8.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "twilio": "^5.12.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "jsdom": "^27.0.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif}
+body{width:1240px;height:1550px;background:linear-gradient(160deg,#f3f5f9,#e9eef6);position:relative;overflow:hidden}
+.card{position:absolute;width:560px;background:#fff;border-radius:20px;padding:28px 30px;box-shadow:0 24px 60px rgba(16,24,40,.13);border:1px solid #eef1f6}
+.src{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.nm{font-weight:700;font-size:1.1rem;color:#0c1322}
+.tm{margin-left:auto;color:#94a3b8;font-size:.85rem}
+.stars{color:#f59e0b;font-size:1.25rem;letter-spacing:2px;margin-bottom:10px}
+.txt{color:#475569;font-size:1.08rem;line-height:1.55}
+.c1{top:150px;left:90px;transform:rotate(-4deg)}
+.c2{top:560px;left:320px;transform:rotate(3deg)}
+.c3{top:1000px;left:120px;transform:rotate(-2.5deg)}
+.tag{position:absolute;top:48px;left:90px;font-weight:800;font-size:1.15rem;color:#94a3b8;letter-spacing:.02em}
+.pos .bar{display:flex;align-items:flex-end;gap:8px;height:60px;margin-top:6px}
+.pos .b{width:34px;background:#cbd5e1;border-radius:4px}
+.pos .b.red{background:#f0857d}
+</style></head><body>
+<div class="tag">Scattered across 5 apps. Nobody reads it in time.</div>
+
+<div class="card c1">
+ <div class="src"><div class="ic" style="background:#e8f0fe">⭐</div><div class="nm">Google review</div><div class="tm">11:42pm</div></div>
+ <div class="stars">★ ☆ ☆ ☆ ☆</div>
+ <div class="txt">"Waited 18 minutes on Saturday morning and my order was forgotten. Weekend service is a mess."</div>
+</div>
+
+<div class="card c2">
+ <div class="src"><div class="ic" style="background:#ffe8ee">🍽️</div><div class="nm">Yemeksepeti</div><div class="tm">21:55</div></div>
+ <div class="stars">★ ★ ☆ ☆ ☆</div>
+ <div class="txt">"Yemek soğuk geldi, 70 dakika sürdü. Üçüncü kez geç geliyor."</div>
+</div>
+
+<div class="card c3 pos">
+ <div class="src"><div class="ic" style="background:#e6f6ef">🧾</div><div class="nm">POS · Kadıköy</div><div class="tm">this week</div></div>
+ <div class="txt">Saturday morning sales <b style="color:#dc2626">down 18%</b> vs last month.</div>
+ <div class="bar"><div class="b" style="height:80%"></div><div class="b" style="height:65%"></div><div class="b" style="height:90%"></div><div class="b red" style="height:48%"></div></div>
+</div>
+</body></html>

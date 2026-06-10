@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "observer-ai",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "vibemarket",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3001"],
+      "port": 3001,
+      "cwd": "../playground/vibemarket"
+    },
+    {
+      "name": "qsr-intelligence",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3002"],
+      "port": 3002,
+      "cwd": "../Documents/qsr-intelligence"
+    },
+    {
+      "name": "deck",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/macintosh/Downloads", "-p", "4000", "--no-clipboard"],
+      "port": 4000
+    }
+  ]
+}

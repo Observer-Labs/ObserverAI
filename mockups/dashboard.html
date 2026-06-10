@@ -1,0 +1,105 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif}
+body{width:1600px;height:1000px;background:#fff;color:#0c1322;display:flex;overflow:hidden}
+/* sidebar */
+.sb{width:240px;background:#f7f8fb;border-right:1px solid #e6e9ef;padding:20px 14px;display:flex;flex-direction:column;flex-shrink:0}
+.lg{display:flex;align-items:center;gap:9px;font-weight:700;font-style:italic;font-size:1.05rem;padding:6px 8px 20px}
+.ldot{width:26px;height:26px;border-radius:50%;border:1.4px solid #0c1322;position:relative}
+.ldot::after{content:"";position:absolute;inset:8px;border-radius:50%;background:#0c1322}
+.nav{display:flex;flex-direction:column;gap:3px}
+.it{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;font-size:.9rem;font-weight:500;color:#0c1322}
+.it.act{background:rgba(12,19,34,.06);font-weight:600}
+.it .ic{width:16px;height:16px;border-radius:4px;background:#cbd3df}
+.it.act .ic{background:#0c1322}
+.it .bd{margin-left:auto;font-size:.7rem;font-weight:700;font-family:'JetBrains Mono';background:rgba(12,19,34,.07);color:#64748b;padding:1px 8px;border-radius:99px}
+.sbot{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+.plan{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px;border:1px solid rgba(34,197,94,.28);background:rgba(34,197,94,.1);color:#16a34a;font-family:'JetBrains Mono';font-size:.72rem;font-weight:700}
+.usr{display:flex;align-items:center;gap:9px;padding:10px;border-radius:12px;background:#fff;border:1px solid #e6e9ef}
+.uav{width:32px;height:32px;border-radius:50%;background:#1f2734;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem}
+.uav2{color:#0c1322;font-weight:600;font-size:.8rem}.uav3{color:#64748b;font-size:.7rem}
+/* main */
+.main{flex:1;padding:34px 38px;overflow:hidden}
+.hd h2{font-size:1.3rem;font-weight:700;letter-spacing:-.02em}
+.hd p{color:#64748b;font-size:.86rem;margin-top:4px}
+.hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.rf{border:1px solid #e6e9ef;border-radius:9px;padding:8px 16px;font-size:.82rem;font-weight:600;color:#64748b}
+.grid{display:grid;grid-template-columns:1fr 420px;gap:18px;align-items:start}
+.cards{display:flex;flex-direction:column;gap:11px}
+.card{background:#fff;border:1px solid #e6e9ef;border-radius:14px;padding:16px 18px 15px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.card.u::before{background:#dc2626}.card.s::before{background:#d97706}.card.w::before{background:#0284c7}.card.l::before{background:#e6e9ef}
+.card.sel{border-color:rgba(12,19,34,.22);background:#f7f8fb;box-shadow:0 2px 10px rgba(16,24,40,.06)}
+.ct{font-weight:700;font-size:.97rem;line-height:1.4;margin-bottom:10px}
+.meta{display:flex;align-items:center;gap:10px}
+.pill{font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:5px}
+.pu{background:rgba(220,38,38,.1);color:#dc2626;border:1px solid rgba(220,38,38,.2)}
+.ps{background:rgba(217,119,6,.12);color:#b45309;border:1px solid rgba(217,119,6,.25)}
+.pw{background:rgba(2,132,199,.12);color:#0369a1;border:1px solid rgba(2,132,199,.25)}
+.pl{background:#f4f6f9;color:#64748b;border:1px solid #e6e9ef}
+.mn{font-size:.78rem;color:#64748b}.mn b{color:#0c1322}
+.src{margin-left:auto;font-size:.72rem;color:#94a3b8}
+/* brief */
+.brief{background:#fff;border:1px solid #e6e9ef;border-radius:14px;overflow:hidden}
+.bt{padding:18px 18px 4px}
+.bt .p{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:5px;background:rgba(220,38,38,.1);color:#dc2626;border:1px solid rgba(220,38,38,.2);display:inline-block;margin-bottom:12px}
+.bt h4{font-size:1.08rem;font-weight:700;line-height:1.4;margin-bottom:8px}
+.bt .cap{font-size:.78rem;color:#64748b}
+.sec{border-top:1px solid #e6e9ef;padding:14px 18px}
+.sl{font-size:.7rem;font-weight:700;color:#475569;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.sl::before{content:"";width:2px;height:12px;border-radius:1px;background:#94a3b8}
+.sl.g::before{background:#16a34a}.sl.a::before{background:#d97706}.sl.w::before{background:#00a884}
+.sx{font-size:.85rem;color:#475569;line-height:1.6}
+.cost{background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.2);border-radius:8px;padding:11px 13px;font-weight:700;color:#0c1322;font-size:.9rem}
+.btns{display:flex;gap:8px;margin-bottom:10px}
+.ba{flex:1;background:#1f2734;color:#fff;border-radius:8px;padding:9px;text-align:center;font-weight:700;font-size:.82rem}
+.bd2{flex:1;border:1px solid #e6e9ef;color:#0c1322;border-radius:8px;padding:9px;text-align:center;font-weight:600;font-size:.82rem}
+.full{border:1px solid #e6e9ef;border-radius:8px;padding:8px;text-align:center;color:#1f2734;font-weight:600;font-size:.78rem}
+/* wa preview in brief */
+.wap{background:#0c1419;border:1px solid rgba(37,211,102,.18);border-radius:12px;padding:12px}
+.wapl{font-size:.6rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono';margin-bottom:9px}
+.wapb{background:#1f2c34;border-radius:5px 10px 10px 10px;padding:10px 12px}
+.wapb .u{color:#f0857d;font-weight:800;font-size:.74rem;margin-bottom:5px}
+.wapb .t{color:#e9edef;font-size:.78rem;font-weight:600;line-height:1.5;margin-bottom:6px}
+.wapb .i{color:#9fd9bf;font-size:.72rem;margin-bottom:8px}
+.wapb .r{color:#8696a0;font-size:.68rem;border-top:1px solid rgba(255,255,255,.08);padding-top:7px}
+.wapb .r b{color:#16a34a}
+</style></head><body>
+<div class="sb">
+ <div class="lg"><span class="ldot"></span>Signal</div>
+ <div class="nav">
+  <div class="it act"><span class="ic"></span><span style="flex:1">Signals</span><span class="bd">4</span></div>
+  <div class="it"><span class="ic"></span><span style="flex:1">Sources</span><span class="bd">3</span></div>
+  <div class="it"><span class="ic"></span><span style="flex:1">Alerts</span></div>
+  <div class="it"><span class="ic"></span><span style="flex:1">History</span></div>
+ </div>
+ <div class="sbot">
+  <div class="plan"><b>PRO</b><span style="opacity:.65">· active</span></div>
+  <div class="usr"><div class="uav">AY</div><div><div class="uav2">Kronotrop Coffee</div><div class="uav3">Settings</div></div></div>
+ </div>
+</div>
+<div class="main">
+ <div class="hd"><div><h2>What needs your attention</h2><p>4 issues found across your customer channels · updated 2m ago</p></div><span class="rf">↻ Refresh</span></div>
+ <div class="grid">
+  <div class="cards">
+   <div class="card u sel"><div class="ct">Slow weekend service at your Kadıköy branch</div><div class="meta"><span class="pill pu">Urgent</span><span class="mn"><b>14</b> customers mentioned this</span><span class="src">Google Reviews · Getir</span></div></div>
+   <div class="card s"><div class="ct">Cold food on late-night delivery orders</div><div class="meta"><span class="pill ps">Soon</span><span class="mn"><b>11</b> customers mentioned this</span><span class="src">Yemeksepeti · Getir</span></div></div>
+   <div class="card w"><div class="ct">Wrong and missing items on busy days</div><div class="meta"><span class="pill pw">When you can</span><span class="mn"><b>6</b> customers mentioned this</span><span class="src">Yemeksepeti · Google</span></div></div>
+   <div class="card l"><div class="ct">Afternoon music a little too loud</div><div class="meta"><span class="pill pl">Low priority</span><span class="mn"><b>3</b> customers mentioned this</span><span class="src">Google Reviews</span></div></div>
+  </div>
+  <div class="brief">
+   <div class="bt"><span class="p">Urgent</span><h4>Slow weekend service at your Kadıköy branch</h4><div class="cap">14 customers mentioned this · from Google Reviews, Getir</div></div>
+   <div class="sec"><div class="sl">What's happening</div><div class="sx">Saturday and Sunday morning queues are hitting 18 minutes. 14 customers complained this week, about double last week.</div></div>
+   <div class="sec"><div class="sl a">What it's costing you</div><div class="cost">💰 Weekend morning revenue at risk</div></div>
+   <div class="sec"><div class="sl g">What to do</div><div class="sx">Add one more person to the weekend 8 to 11am shift, and pre-stock cups and lids before the rush.</div></div>
+   <div class="sec"><div class="sl">Your decision</div><div class="btns"><span class="ba">✓ Looks important</span><span class="bd2">✕ Dismiss</span></div><div class="full">↗ See full details</div></div>
+   <div class="sec"><div class="sl w">Sent to your phone</div>
+    <div class="wap"><div class="wapl">💬 WhatsApp · what your team gets</div>
+     <div class="wapb"><div class="u">🔴 Urgent</div><div class="t">Slow weekend service at your Kadıköy branch</div><div class="i">💰 Weekend morning revenue at risk</div><div class="r">Reply <b>1</b> details · <b>2</b> on it · <b>3</b> skip</div></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+</body></html>
