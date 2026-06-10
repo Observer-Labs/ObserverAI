@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  extractWhatsAppDeliveryStatuses,
   isWhatsAppConsentReply,
   normalizeWhatsAppNumber,
   parseInboundWhatsApp,
@@ -104,8 +105,24 @@ export async function POST(req: NextRequest) {
 
   const payload = JSON.parse(rawBody) as Parameters<typeof parseInboundWhatsApp>[0];
   const messages = parseInboundWhatsApp(payload);
+  const statuses = extractWhatsAppDeliveryStatuses(payload);
   const explicitWorkspaceId = req.nextUrl.searchParams.get("workspaceId");
   const supabase = getSupabaseAdmin();
+
+  for (const status of statuses) {
+    if (status.status === "failed") {
+      console.warn("Meta WhatsApp delivery failed", {
+        id: status.id,
+        recipient_id: status.recipient_id,
+        errors: status.errors?.map((error) => ({
+          code: error.code,
+          title: error.title,
+          message: error.message,
+          details: error.error_data?.details,
+        })),
+      });
+    }
+  }
 
   for (const message of messages) {
     const workspace = await findWorkspaceForSender(message.sender, explicitWorkspaceId);

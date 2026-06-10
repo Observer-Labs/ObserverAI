@@ -70,13 +70,48 @@ async function sendMetaTextMessage(toNumber: string, body: string) {
   return payload;
 }
 
-export async function sendWhatsAppConsentRequest(toNumber: string, locale = "tr") {
-  const body =
-    locale === "tr"
-      ? "ObserverAI WhatsApp bildirimlerini bu numaradan almak için bu mesaja ONAY yazın. Bu onayla işletmenizle ilgili müşteri sinyalleri, özetler ve aksiyon bildirimleri WhatsApp üzerinden gönderilebilir."
-      : "Reply APPROVE to this message to receive ObserverAI WhatsApp notifications on this number. By approving, you agree to receive customer signal, summary, and action notifications on WhatsApp.";
+async function sendMetaTemplateMessage(toNumber: string, templateName: string, languageCode: string) {
+  const env = requireEnvGroup("whatsapp");
+  const recipient = toMetaRecipient(toNumber);
+  if (!recipient) throw new Error("Invalid WhatsApp recipient number");
 
-  return sendMetaTextMessage(toNumber, body);
+  const res = await fetch(`${getGraphBaseUrl()}/${env.META_WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.META_WHATSAPP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: recipient,
+      type: "template",
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+      },
+    }),
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as MetaMessagesResponse & {
+    error?: { message?: string; code?: number };
+  };
+
+  if (!res.ok) {
+    const detail = payload.error?.message ?? `Meta WhatsApp API returned ${res.status}`;
+    throw new Error(detail);
+  }
+
+  return payload;
+}
+
+export async function sendWhatsAppConsentRequest(toNumber: string, locale = "tr") {
+  const templateName = process.env.META_WHATSAPP_CONSENT_TEMPLATE_NAME?.trim() || "hello_world";
+  const languageCode =
+    process.env.META_WHATSAPP_CONSENT_TEMPLATE_LANGUAGE?.trim() ||
+    (templateName === "hello_world" ? "en_US" : locale === "tr" ? "tr" : "en_US");
+
+  return sendMetaTemplateMessage(toNumber, templateName, languageCode);
 }
 
 export async function sendWhatsAppAlert(toNumber: string, cluster: Cluster, locale = "tr") {
@@ -129,10 +164,23 @@ type MetaWebhookPayload = {
           text?: { body?: string };
           type?: string;
         }>;
+        statuses?: Array<{
+          id?: string;
+          status?: string;
+          recipient_id?: string;
+          timestamp?: string;
+          errors?: Array<{ code?: number; title?: string; message?: string; error_data?: { details?: string } }>;
+        }>;
       };
     }>;
   }>;
 };
+
+export function extractWhatsAppDeliveryStatuses(payload: MetaWebhookPayload) {
+  return (payload.entry ?? []).flatMap((entry) =>
+    (entry.changes ?? []).flatMap((change) => change.value?.statuses ?? []),
+  );
+}
 
 export function parseInboundWhatsApp(payload: MetaWebhookPayload): WhatsAppInbound[] {
   const messages: WhatsAppInbound[] = [];
