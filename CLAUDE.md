@@ -11,6 +11,9 @@
    - Girdi senin son biraktigin taze girdinse: dogrudan devam edebilirsin.
 3. Calismaya baslamadan once dosyanin en ustundeki "AKTIF AJAN" satirini
    kendi adinla ve su anki zamanla guncelle (cakismayi onlemek icin).
+4. Yeni clone veya hook ayari belirsizse `git config core.hooksPath` kontrol et;
+   cikti `.githooks` degilse `npm run hooks:install` calistir. Secret tarama
+   hook'u aktif olmadan commit/push yapma.
 
 ### Debug dongusu (sormadan uygula)
 1. Degisiklik yap.
