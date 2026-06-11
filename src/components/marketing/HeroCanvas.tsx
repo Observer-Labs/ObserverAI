@@ -62,9 +62,9 @@ export default function HeroCanvas({ className }: { className?: string }) {
     scene.add(points);
 
     let frame = 0;
-    const clock = new THREE.Clock();
+    const start = performance.now();
     const tick = () => {
-      const t = clock.getElapsedTime();
+      const t = (performance.now() - start) / 1000;
       const pos = geo.getAttribute("position") as THREE.BufferAttribute;
       let j = 0;
       for (let x = 0; x < COLS; x++) {
