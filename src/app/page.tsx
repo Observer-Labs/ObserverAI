@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Logo from "@/components/Logo";
+import SignalFeed from "@/components/marketing/SignalFeed";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,57 +21,6 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const sources = [
   "Google Reviews", "Getir", "Yemeksepeti", "Trendyol", "POS / Payments", "Google Analytics",
 ];
-
-// ── WhatsApp phone mockup (dark, the one dark element) ───────────────────────
-
-function PhoneMockup({ waBusinessLabel, waUrgentLabel, waReplyHint }: { waBusinessLabel: string; waUrgentLabel: string; waReplyHint: string }) {
-  return (
-    <div className="relative mx-auto w-80 max-w-full overflow-hidden rounded-[36px] border-[10px] border-[#18181b] bg-[#0a0a0a] shadow-[0_30px_90px_rgba(16,24,40,0.18),0_0_0_1px_rgba(16,24,40,0.04)]">
-      <div className="absolute left-1/2 top-0 z-[3] h-[22px] w-[120px] -translate-x-1/2 rounded-b-[14px] bg-[#18181b]" />
-      <div className="flex items-center gap-[11px] bg-[#1f2c34] px-4 pb-3 pt-[26px]">
-        <div className="flex size-[38px] items-center justify-center rounded-full border-[1.5px] border-white/15 bg-[#202c33] text-[0.9rem] font-extrabold text-[#e9edef]">S</div>
-        <div className="flex-1">
-          <div className="text-[0.92rem] font-semibold text-[#e9edef]">Observer</div>
-          <div className="text-[0.7rem] text-[#8696a0]">{waBusinessLabel}</div>
-        </div>
-        <div className="text-[1.1rem] text-[#8696a0]">⋮</div>
-      </div>
-      <div className="flex min-h-[420px] flex-col gap-2 bg-[#0b141a] px-3 pb-[18px] pt-4">
-        <div className="max-w-[92%] rounded-[4px_12px_12px_12px] bg-[#202c33] px-[13px] py-[11px]">
-          <div className="mb-[5px] text-[0.8rem] font-extrabold text-[#f0857d]">{waUrgentLabel}</div>
-          <div className="mb-[7px] text-[0.82rem] leading-relaxed text-[#e9edef]">
-            <strong>Wait times spiking at Kadıköy</strong><br />
-            14 customers complained this week, 2× vs last week.
-          </div>
-          <div className="mb-2 text-[0.76rem] text-[#9fd9bf]">💰 Weekend revenue at risk</div>
-          <div
-            className="border-t border-white/[0.07] pt-[7px] text-[0.72rem] text-[#8696a0]"
-            dangerouslySetInnerHTML={{ __html: waReplyHint }}
-          />
-          <div className="mt-1 text-right text-[0.6rem] text-[#667781]">09:24</div>
-        </div>
-        <div className="max-w-[50%] self-end rounded-[12px_4px_12px_12px] bg-[#005c4b] px-[13px] py-2">
-          <div className="text-[0.85rem] font-semibold text-[#e9edef]">1</div>
-          <div className="mt-0.5 text-right text-[0.6rem] text-[#9fd9bf]">09:24 ✓✓</div>
-        </div>
-        <div className="max-w-[92%] rounded-[4px_12px_12px_12px] bg-[#202c33] px-[13px] py-[11px]">
-          <div className="text-[0.8rem] leading-[1.55] text-[#e9edef]">
-            📊 <strong>9 Google reviews · 5 Getir orders</strong> mention waits over 15 min, mostly Fri to Sun, 7 to 9pm.<br /><br />
-            ✅ <strong>Suggested:</strong> add one person to the weekend evening shift.
-          </div>
-          <div className="mt-1 text-right text-[0.6rem] text-[#667781]">09:24</div>
-        </div>
-        <div className="max-w-[55%] self-end rounded-[12px_4px_12px_12px] bg-[#005c4b] px-[13px] py-2">
-          <div className="text-[0.85rem] font-semibold text-[#e9edef]">2 ✓</div>
-          <div className="mt-0.5 text-right text-[0.6rem] text-[#9fd9bf]">09:25 ✓✓</div>
-        </div>
-        <div className="max-w-[80%] rounded-[10px] border border-[#00a884]/30 bg-[#00a884]/[0.18] px-3 py-2">
-          <div className="text-[0.76rem] font-semibold text-[#7fe0c0]">✅ Marked as handled. Logged.</div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -103,8 +53,6 @@ export default function LandingPage() {
     () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       gsap.from("[data-hero] > *", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
-      gsap.from("[data-phone]", { y: 40, opacity: 0, duration: 0.9, delay: 0.25, ease: "power3.out" });
-      gsap.to("[data-phone]", { y: -10, duration: 3.2, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.2 });
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
         gsap.from(el, {
           y: 28, opacity: 0, duration: 0.7, ease: "power2.out",
@@ -124,36 +72,36 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <div className="relative">
         <HeroCanvas className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]" />
-        <div className="relative mx-auto max-w-[1160px] px-5 pb-[90px] pt-20 sm:px-10">
-          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1fr_0.85fr] md:gap-16">
+        <div className="relative mx-auto max-w-[1200px] px-5 pb-20 pt-14 sm:px-10 md:pt-20">
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
             <div data-hero>
               {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
-              <div className="mb-7 flex flex-wrap items-center gap-2.5 font-mono">
+              <div className="mb-8 inline-flex flex-wrap items-center gap-2.5 rounded-full border border-border bg-card px-4 py-2 font-mono shadow-sm">
                 <span className="text-[0.72rem] text-muted-foreground">{t("heroFlow")}</span>
                 <span className="text-muted-foreground/45">→</span>
                 <span className="text-[0.72rem] font-bold">Observer</span>
                 <span className="text-muted-foreground/45">→</span>
                 <span className="inline-flex items-center gap-[5px] text-[0.72rem] font-bold text-[#00a884]">
-                  <span className="size-1.5 rounded-full bg-[#00a884]" />
+                  <span className="size-1.5 animate-pulse rounded-full bg-[#00a884]" />
                   WhatsApp
                 </span>
               </div>
 
-              <h1 className="mb-[22px] text-[clamp(2.6rem,5vw,4rem)] font-extrabold leading-[1.05] tracking-[-0.04em]">
+              <h1 className="mb-6 font-display text-[clamp(3rem,5.8vw,4.8rem)] font-normal leading-[1.02] tracking-[-0.015em]">
                 {t("heroTitle")}<br />
-                <span className="text-muted-foreground">{t("heroTitleAccent")}</span>
+                <span className="italic text-muted-foreground">{t("heroTitleAccent")}</span>
               </h1>
 
-              <p className="mb-9 max-w-[470px] text-[1.05rem] leading-[1.68] text-muted-foreground">
+              <p className="mb-10 max-w-[470px] text-[1.1rem] leading-[1.7] text-muted-foreground">
                 {t("heroSubtitle")}
               </p>
 
               <div className="mb-[18px] flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="rounded-[10px] px-7 text-[0.975rem]">
+                <Button asChild size="lg" className="h-12 rounded-full px-8 text-[0.975rem] shadow-[0_8px_24px_rgba(16,24,40,0.18)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,24,40,0.22)]">
                   <Link href="/signup">{t("tryFree")}</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="rounded-[10px] px-[22px] text-[0.9rem]">
-                  <Link href="/showcase">{t("seeExample")}</Link>
+                <Button asChild size="lg" variant="ghost" className="h-12 rounded-full px-6 text-[0.95rem] text-foreground hover:bg-muted">
+                  <Link href="/showcase">{t("seeExample")} →</Link>
                 </Button>
               </div>
               <p className="text-[0.78rem] text-muted-foreground">
@@ -161,9 +109,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div data-phone>
-              <PhoneMockup waBusinessLabel={t("waBusinessLabel")} waUrgentLabel={t("waUrgentLabel")} waReplyHint={t.raw("waReplyHint")} />
-            </div>
+            <SignalFeed />
           </div>
         </div>
       </div>
@@ -185,8 +131,8 @@ export default function LandingPage() {
       {/* ── Problem ── */}
       <div data-reveal className="mx-auto max-w-[740px] px-5 py-24 sm:px-10">
         <p className="mb-[26px] text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("problemLabel")}</p>
-        <h2 className="mb-[26px] text-[clamp(1.75rem,3.5vw,2.7rem)] font-extrabold leading-[1.15] tracking-[-0.035em]">
-          {t("problemTitle")}<br />{t("problemTitleAccent")}
+        <h2 className="mb-[26px] font-display text-[clamp(2.2rem,4vw,3.2rem)] font-normal leading-[1.08] tracking-[-0.01em]">
+          {t("problemTitle")}<br /><span className="italic text-muted-foreground">{t("problemTitleAccent")}</span>
         </h2>
         <p className="mb-4 max-w-[600px] text-base leading-[1.72] text-muted-foreground">
           {t("problemBody1")}
@@ -197,13 +143,13 @@ export default function LandingPage() {
       </div>
 
       {/* ── How it works ── */}
-      <div className="border-t border-border">
-        <div data-reveal className="mx-auto max-w-[1160px] px-5 py-20 sm:px-10">
-          <p className="mb-10 text-center text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("howItWorksLabel")}</p>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
+      <div className="px-3 sm:px-5">
+        <div data-reveal className="mx-auto max-w-[1320px] rounded-[32px] bg-muted px-5 py-20 sm:px-10 md:py-24">
+          <p className="mb-14 text-center text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("howItWorksLabel")}</p>
+          <div className="mx-auto grid max-w-[1160px] grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
             {steps.map((step) => (
-              <div key={step.n} className="rounded-2xl border border-border bg-card p-[22px] pt-[26px] transition-shadow hover:shadow-md">
-                <div className="mb-3.5 text-[1.8rem]">{step.icon}</div>
+              <div key={step.n} className="rounded-3xl bg-card p-7 shadow-[0_2px_16px_rgba(16,24,40,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-muted text-[1.5rem]">{step.icon}</div>
                 <div className="mb-1.5 font-mono text-[0.6rem] font-bold tracking-[0.1em] text-muted-foreground">{step.n}</div>
                 <div className="mb-[9px] text-base font-bold tracking-[-0.02em]">{step.title}</div>
                 <div className="text-[0.84rem] leading-relaxed text-muted-foreground">{step.body}</div>
@@ -214,38 +160,36 @@ export default function LandingPage() {
       </div>
 
       {/* ── Personas ── */}
-      <div className="border-t border-border bg-muted">
-        <div data-reveal className="mx-auto max-w-[1160px] px-5 py-20 sm:px-10">
-          <div className="mb-12 text-center">
-            <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("builtForLabel")}</p>
-            <h2 className="text-[clamp(1.6rem,3.2vw,2.4rem)] font-extrabold tracking-[-0.03em]">
-              {t("builtForTitle")}
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            {personas.map((p) => (
-              <div key={p.type} className="rounded-[20px] border border-border bg-card p-7 transition-shadow hover:shadow-md">
-                <div className="mb-3.5 text-[2.2rem]">{p.icon}</div>
-                <div className="mb-3.5 text-[0.92rem] font-bold tracking-[-0.01em]">{p.type}</div>
-                <div className="mb-[18px] flex flex-wrap gap-[5px]">
-                  {p.sources.map((s) => (
-                    <Badge key={s} variant="outline" className="rounded-full bg-muted px-[9px] py-[3px] font-mono text-[0.66rem] font-semibold text-muted-foreground">
-                      {s}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="rounded-xl border border-border bg-muted px-4 py-3.5">
-                  <div className="mb-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("exampleAlertLabel")}</div>
-                  <div className="text-[0.82rem] leading-relaxed">{p.gap}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p
-            className="mt-7 text-center text-[0.8rem] text-muted-foreground"
-            dangerouslySetInnerHTML={{ __html: t.raw("comingSoon") }}
-          />
+      <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10">
+        <div className="mb-12 text-center">
+          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("builtForLabel")}</p>
+          <h2 className="font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal tracking-[-0.01em]">
+            {t("builtForTitle")}
+          </h2>
         </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          {personas.map((p) => (
+            <div key={p.type} className="rounded-3xl border border-border bg-card p-7 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]">
+              <div className="mb-3.5 text-[2.2rem]">{p.icon}</div>
+              <div className="mb-3.5 text-[0.92rem] font-bold tracking-[-0.01em]">{p.type}</div>
+              <div className="mb-[18px] flex flex-wrap gap-[5px]">
+                {p.sources.map((s) => (
+                  <Badge key={s} variant="outline" className="rounded-full bg-muted px-[9px] py-[3px] font-mono text-[0.66rem] font-semibold text-muted-foreground">
+                    {s}
+                  </Badge>
+                ))}
+              </div>
+              <div className="rounded-2xl bg-muted px-4 py-3.5">
+                <div className="mb-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("exampleAlertLabel")}</div>
+                <div className="text-[0.82rem] leading-relaxed">{p.gap}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p
+          className="mt-8 text-center text-[0.8rem] text-muted-foreground"
+          dangerouslySetInnerHTML={{ __html: t.raw("comingSoon") }}
+        />
       </div>
 
       {/* ── Proof ── */}
@@ -265,10 +209,10 @@ export default function LandingPage() {
       {/* ── Final CTA ── */}
       <div className="border-t border-border">
         <div data-reveal className="mx-auto max-w-[1160px] px-5 pb-[110px] pt-24 text-center sm:px-10">
-          <h2 className="mx-auto mb-8 max-w-[680px] text-[clamp(2.2rem,4.5vw,3.6rem)] font-extrabold leading-[1.08] tracking-[-0.04em]">
+          <h2 className="mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.6rem,5vw,4.2rem)] font-normal leading-[1.05] tracking-[-0.01em]">
             {t("ctaTitle")}
           </h2>
-          <Button asChild size="lg" className="rounded-[10px] px-[34px] text-base">
+          <Button asChild size="lg" className="h-[52px] rounded-full px-10 text-base shadow-[0_8px_24px_rgba(16,24,40,0.18)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,24,40,0.22)]">
             <Link href="/signup">{t("tryFree")}</Link>
           </Button>
           <p className="mt-[18px] text-[0.78rem] text-muted-foreground">{t("noCard")}</p>

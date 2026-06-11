@@ -10,15 +10,15 @@ export default function SiteHeader() {
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/85 px-5 py-4 backdrop-blur-xl sm:px-10">
       <Logo href="/" size={22} />
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <LocaleSwitcher />
-        <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+        <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground">
           <Link href="/pricing">{tNav("pricing")}</Link>
         </Button>
-        <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+        <Button asChild variant="outline" size="sm" className="rounded-full">
           <Link href="/login">{tNav("signIn")}</Link>
         </Button>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="rounded-full px-4">
           <Link href="/signup">{tNav("startFree")}</Link>
         </Button>
       </div>
