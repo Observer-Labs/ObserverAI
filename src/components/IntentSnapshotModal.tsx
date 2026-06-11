@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Modal } from "./ui/Modal";
-import { SeverityBadge, ConfidenceBar } from "./ui/Badge";
+import { SeverityBadge, ConfidenceBar } from "./ui/SignalBadges";
 import type { Cluster } from "@/lib/types";
 
 interface IntentSnapshotModalProps {

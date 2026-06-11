@@ -1,7 +1,19 @@
 "use client";
 import Link from "next/link";
-import { useTranslations } from 'next-intl';
-import LocaleSwitcher from '@/components/LocaleSwitcher';
+import dynamic from "next/dynamic";
+import { useRef } from "react";
+import { useTranslations } from "next-intl";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import SiteHeader from "@/components/layout/SiteHeader";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const HeroCanvas = dynamic(() => import("@/components/marketing/HeroCanvas"), { ssr: false });
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
@@ -13,52 +25,47 @@ const sources = [
 
 function PhoneMockup({ waBusinessLabel, waUrgentLabel, waReplyHint }: { waBusinessLabel: string; waUrgentLabel: string; waReplyHint: string }) {
   return (
-    <div style={{
-      position: "relative", width: 320, maxWidth: "100%", margin: "0 auto",
-      background: "#0a0a0a", borderRadius: 36, border: "10px solid #18181b",
-      boxShadow: "0 30px 90px rgba(16,24,40,0.18), 0 0 0 1px rgba(16,24,40,0.04)",
-      overflow: "hidden",
-    }}>
-      <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 120, height: 22, background: "#18181b", borderRadius: "0 0 14px 14px", zIndex: 3 }} />
-      <div style={{ background: "#1f2c34", padding: "26px 16px 12px", display: "flex", alignItems: "center", gap: 11 }}>
-        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#202c33", border: "1.5px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: 800, color: "#e9edef" }}>S</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: "#e9edef", fontWeight: 600, fontSize: "0.92rem" }}>Observer</div>
-          <div style={{ color: "#8696a0", fontSize: "0.7rem" }}>{waBusinessLabel}</div>
+    <div className="relative mx-auto w-80 max-w-full overflow-hidden rounded-[36px] border-[10px] border-[#18181b] bg-[#0a0a0a] shadow-[0_30px_90px_rgba(16,24,40,0.18),0_0_0_1px_rgba(16,24,40,0.04)]">
+      <div className="absolute left-1/2 top-0 z-[3] h-[22px] w-[120px] -translate-x-1/2 rounded-b-[14px] bg-[#18181b]" />
+      <div className="flex items-center gap-[11px] bg-[#1f2c34] px-4 pb-3 pt-[26px]">
+        <div className="flex size-[38px] items-center justify-center rounded-full border-[1.5px] border-white/15 bg-[#202c33] text-[0.9rem] font-extrabold text-[#e9edef]">S</div>
+        <div className="flex-1">
+          <div className="text-[0.92rem] font-semibold text-[#e9edef]">Observer</div>
+          <div className="text-[0.7rem] text-[#8696a0]">{waBusinessLabel}</div>
         </div>
-        <div style={{ color: "#8696a0", fontSize: "1.1rem" }}>⋮</div>
+        <div className="text-[1.1rem] text-[#8696a0]">⋮</div>
       </div>
-      <div style={{ background: "#0b141a", padding: "16px 12px 18px", display: "flex", flexDirection: "column", gap: 8, minHeight: 420 }}>
-        <div style={{ background: "#202c33", borderRadius: "4px 12px 12px 12px", padding: "11px 13px", maxWidth: "92%" }}>
-          <div style={{ color: "#f0857d", fontWeight: 800, fontSize: "0.8rem", marginBottom: 5 }}>{waUrgentLabel}</div>
-          <div style={{ color: "#e9edef", fontSize: "0.82rem", lineHeight: 1.5, marginBottom: 7 }}>
+      <div className="flex min-h-[420px] flex-col gap-2 bg-[#0b141a] px-3 pb-[18px] pt-4">
+        <div className="max-w-[92%] rounded-[4px_12px_12px_12px] bg-[#202c33] px-[13px] py-[11px]">
+          <div className="mb-[5px] text-[0.8rem] font-extrabold text-[#f0857d]">{waUrgentLabel}</div>
+          <div className="mb-[7px] text-[0.82rem] leading-relaxed text-[#e9edef]">
             <strong>Wait times spiking at Kadıköy</strong><br />
             14 customers complained this week, 2× vs last week.
           </div>
-          <div style={{ color: "#9fd9bf", fontSize: "0.76rem", marginBottom: 8 }}>💰 Weekend revenue at risk</div>
+          <div className="mb-2 text-[0.76rem] text-[#9fd9bf]">💰 Weekend revenue at risk</div>
           <div
-            style={{ color: "#8696a0", fontSize: "0.72rem", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 7 }}
+            className="border-t border-white/[0.07] pt-[7px] text-[0.72rem] text-[#8696a0]"
             dangerouslySetInnerHTML={{ __html: waReplyHint }}
           />
-          <div style={{ color: "#667781", fontSize: "0.6rem", textAlign: "right", marginTop: 4 }}>09:24</div>
+          <div className="mt-1 text-right text-[0.6rem] text-[#667781]">09:24</div>
         </div>
-        <div style={{ background: "#005c4b", borderRadius: "12px 4px 12px 12px", padding: "8px 13px", alignSelf: "flex-end", maxWidth: "50%" }}>
-          <div style={{ color: "#e9edef", fontSize: "0.85rem", fontWeight: 600 }}>1</div>
-          <div style={{ color: "#9fd9bf", fontSize: "0.6rem", textAlign: "right", marginTop: 2 }}>09:24 ✓✓</div>
+        <div className="max-w-[50%] self-end rounded-[12px_4px_12px_12px] bg-[#005c4b] px-[13px] py-2">
+          <div className="text-[0.85rem] font-semibold text-[#e9edef]">1</div>
+          <div className="mt-0.5 text-right text-[0.6rem] text-[#9fd9bf]">09:24 ✓✓</div>
         </div>
-        <div style={{ background: "#202c33", borderRadius: "4px 12px 12px 12px", padding: "11px 13px", maxWidth: "92%" }}>
-          <div style={{ color: "#e9edef", fontSize: "0.8rem", lineHeight: 1.55 }}>
+        <div className="max-w-[92%] rounded-[4px_12px_12px_12px] bg-[#202c33] px-[13px] py-[11px]">
+          <div className="text-[0.8rem] leading-[1.55] text-[#e9edef]">
             📊 <strong>9 Google reviews · 5 Getir orders</strong> mention waits over 15 min, mostly Fri to Sun, 7 to 9pm.<br /><br />
             ✅ <strong>Suggested:</strong> add one person to the weekend evening shift.
           </div>
-          <div style={{ color: "#667781", fontSize: "0.6rem", textAlign: "right", marginTop: 4 }}>09:24</div>
+          <div className="mt-1 text-right text-[0.6rem] text-[#667781]">09:24</div>
         </div>
-        <div style={{ background: "#005c4b", borderRadius: "12px 4px 12px 12px", padding: "8px 13px", alignSelf: "flex-end", maxWidth: "55%" }}>
-          <div style={{ color: "#e9edef", fontSize: "0.85rem", fontWeight: 600 }}>2 ✓</div>
-          <div style={{ color: "#9fd9bf", fontSize: "0.6rem", textAlign: "right", marginTop: 2 }}>09:25 ✓✓</div>
+        <div className="max-w-[55%] self-end rounded-[12px_4px_12px_12px] bg-[#005c4b] px-[13px] py-2">
+          <div className="text-[0.85rem] font-semibold text-[#e9edef]">2 ✓</div>
+          <div className="mt-0.5 text-right text-[0.6rem] text-[#9fd9bf]">09:25 ✓✓</div>
         </div>
-        <div style={{ background: "rgba(0,168,132,0.18)", borderRadius: 10, padding: "8px 12px", maxWidth: "80%", border: "1px solid rgba(0,168,132,0.3)" }}>
-          <div style={{ color: "#7fe0c0", fontSize: "0.76rem", fontWeight: 600 }}>✅ Marked as handled. Logged.</div>
+        <div className="max-w-[80%] rounded-[10px] border border-[#00a884]/30 bg-[#00a884]/[0.18] px-3 py-2">
+          <div className="text-[0.76rem] font-semibold text-[#7fe0c0]">✅ Marked as handled. Logged.</div>
         </div>
       </div>
     </div>
@@ -68,131 +75,138 @@ function PhoneMockup({ waBusinessLabel, waUrgentLabel, waReplyHint }: { waBusine
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const t = useTranslations('landing');
-  const tNav = useTranslations('nav');
-  const muted = "var(--muted-foreground)";
-  const border = "1px solid var(--border)";
+  const t = useTranslations("landing");
+  const tNav = useTranslations("nav");
+  const root = useRef<HTMLDivElement>(null);
 
   const personas = [
-    { icon: "☕", type: t('persona1Type'), sources: ["Google Reviews", "Getir", "POS"], gap: "Bu hafta 12 kişi Kadıköy şubenizde sabah kuyruğunun çok yavaş olduğunu söyledi. 8-10 arası vardiyaya bir barista ekleyin." },
-    { icon: "🍽️", type: t('persona2Type'), sources: ["Yemeksepeti", "Trendyol", "Google"], gap: "Yemeksepeti'ndeki soğuk yemek şikayetleri bu hafta sonu üçe katlandı, hepsi gece 9'dan sonraki geç teslimatlardan. Kurye teslimat sürecini kontrol edin." },
-    { icon: "🏪", type: t('persona3Type'), sources: ["Google Reviews", "POS", "Analytics"], gap: "Cumartesi müşteri trafiği artıyor ama satışlar sabit. Müşteriler uzun ödeme kuyruklarından bahsediyor. Hafta sonları ikinci kasayı açın." },
+    { icon: "☕", type: t("persona1Type"), sources: ["Google Reviews", "Getir", "POS"], gap: "Bu hafta 12 kişi Kadıköy şubenizde sabah kuyruğunun çok yavaş olduğunu söyledi. 8-10 arası vardiyaya bir barista ekleyin." },
+    { icon: "🍽️", type: t("persona2Type"), sources: ["Yemeksepeti", "Trendyol", "Google"], gap: "Yemeksepeti'ndeki soğuk yemek şikayetleri bu hafta sonu üçe katlandı, hepsi gece 9'dan sonraki geç teslimatlardan. Kurye teslimat sürecini kontrol edin." },
+    { icon: "🏪", type: t("persona3Type"), sources: ["Google Reviews", "POS", "Analytics"], gap: "Cumartesi müşteri trafiği artıyor ama satışlar sabit. Müşteriler uzun ödeme kuyruklarından bahsediyor. Hafta sonları ikinci kasayı açın." },
   ];
 
   const steps = [
-    { n: "01", icon: "🔌", title: t('step1Title'), body: t('step1Body') },
-    { n: "02", icon: "🧠", title: t('step2Title'), body: t('step2Body') },
-    { n: "03", icon: "💬", title: t('step3Title'), body: t('step3Body') },
-    { n: "04", icon: "✅", title: t('step4Title'), body: t('step4Body') },
+    { n: "01", icon: "🔌", title: t("step1Title"), body: t("step1Body") },
+    { n: "02", icon: "🧠", title: t("step2Title"), body: t("step2Body") },
+    { n: "03", icon: "💬", title: t("step3Title"), body: t("step3Body") },
+    { n: "04", icon: "✅", title: t("step4Title"), body: t("step4Body") },
   ];
 
   const proof = [
-    { n: "5dk", label: t('proof1Label') },
-    { n: "0",   label: t('proof2Label') },
-    { n: "1",   label: t('proof3Label') },
-    { n: "7/24",label: t('proof4Label') },
+    { n: "5dk", label: t("proof1Label") },
+    { n: "0", label: t("proof2Label") },
+    { n: "1", label: t("proof3Label") },
+    { n: "7/24", label: t("proof4Label") },
   ];
 
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      gsap.from("[data-hero] > *", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
+      gsap.from("[data-phone]", { y: 40, opacity: 0, duration: 0.9, delay: 0.25, ease: "power3.out" });
+      gsap.to("[data-phone]", { y: -10, duration: 3.2, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.2 });
+      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
+        gsap.from(el, {
+          y: 28, opacity: 0, duration: 0.7, ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 85%" },
+        });
+      });
+    },
+    { scope: root },
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", color: "var(--foreground)" }}>
+    <div ref={root} className="min-h-screen bg-background text-foreground">
 
       {/* ── Nav ── */}
-      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 40px", borderBottom: border, position: "sticky", top: 0, zIndex: 50, background: "color-mix(in oklch, var(--background) 88%, transparent)", backdropFilter: "blur(16px)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="9.5" stroke="currentColor" strokeWidth="1.2" opacity="0.35" />
-            <path d="M3 11C5 7 7.8 5 11 5C14.2 5 17 7 19 11C17 15 14.2 17 11 17C7.8 17 5 15 3 11Z" stroke="currentColor" strokeWidth="1.1" fill="none" opacity="0.5" />
-            <circle cx="11" cy="11" r="2.8" fill="currentColor" />
-          </svg>
-          <span style={{ fontWeight: 700, fontSize: "0.95rem", letterSpacing: "-0.02em", fontStyle: "italic" }}>Observer</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <LocaleSwitcher />
-          <Link href="/pricing" style={{ color: muted, fontSize: "0.875rem", textDecoration: "none", padding: "7px 14px" }}>{tNav('pricing')}</Link>
-          <Link href="/login" style={{ color: muted, fontSize: "0.875rem", textDecoration: "none", padding: "7px 14px" }}>{tNav('signIn')}</Link>
-          <Link href="/signup" style={{ background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none", padding: "8px 18px", borderRadius: 8 }}>{tNav('startFree')}</Link>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* ── Hero ── */}
-      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 40px 90px" }}>
-        <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 0.85fr", gap: 64, alignItems: "center" }}>
-          <div>
-            {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28, flexWrap: "wrap", fontFamily: "'JetBrains Mono', monospace" }}>
-              <span style={{ fontSize: "0.72rem", color: muted }}>{t('heroFlow')}</span>
-              <span style={{ color: muted, opacity: 0.45 }}>→</span>
-              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--foreground)" }}>Observer</span>
-              <span style={{ color: muted, opacity: 0.45 }}>→</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.72rem", fontWeight: 700, color: "#00a884" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00a884" }} />
-                WhatsApp
-              </span>
+      <div className="relative">
+        <HeroCanvas className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]" />
+        <div className="relative mx-auto max-w-[1160px] px-5 pb-[90px] pt-20 sm:px-10">
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1fr_0.85fr] md:gap-16">
+            <div data-hero>
+              {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
+              <div className="mb-7 flex flex-wrap items-center gap-2.5 font-mono">
+                <span className="text-[0.72rem] text-muted-foreground">{t("heroFlow")}</span>
+                <span className="text-muted-foreground/45">→</span>
+                <span className="text-[0.72rem] font-bold">Observer</span>
+                <span className="text-muted-foreground/45">→</span>
+                <span className="inline-flex items-center gap-[5px] text-[0.72rem] font-bold text-[#00a884]">
+                  <span className="size-1.5 rounded-full bg-[#00a884]" />
+                  WhatsApp
+                </span>
+              </div>
+
+              <h1 className="mb-[22px] text-[clamp(2.6rem,5vw,4rem)] font-extrabold leading-[1.05] tracking-[-0.04em]">
+                {t("heroTitle")}<br />
+                <span className="text-muted-foreground">{t("heroTitleAccent")}</span>
+              </h1>
+
+              <p className="mb-9 max-w-[470px] text-[1.05rem] leading-[1.68] text-muted-foreground">
+                {t("heroSubtitle")}
+              </p>
+
+              <div className="mb-[18px] flex flex-wrap items-center gap-3">
+                <Button asChild size="lg" className="rounded-[10px] px-7 text-[0.975rem]">
+                  <Link href="/signup">{t("tryFree")}</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="rounded-[10px] px-[22px] text-[0.9rem]">
+                  <Link href="/showcase">{t("seeExample")}</Link>
+                </Button>
+              </div>
+              <p className="text-[0.78rem] text-muted-foreground">
+                {t("noCard")}
+              </p>
             </div>
 
-            <h1 style={{ fontSize: "clamp(2.6rem, 5vw, 4rem)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.04em", margin: "0 0 22px" }}>
-              {t('heroTitle')}<br />
-              <span style={{ color: muted }}>{t('heroTitleAccent')}</span>
-            </h1>
-
-            <p style={{ fontSize: "1.05rem", color: muted, lineHeight: 1.68, margin: "0 0 36px", maxWidth: 470 }}>
-              {t('heroSubtitle')}
-            </p>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-              <Link href="/signup" style={{ background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "0.975rem", fontWeight: 600, textDecoration: "none", padding: "13px 28px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 7 }}>
-                {t('tryFree')}
-              </Link>
-              <Link href="/showcase" style={{ color: "var(--foreground)", fontSize: "0.9rem", textDecoration: "none", padding: "13px 22px", borderRadius: 10, border: border, background: "var(--background)" }}>
-                {t('seeExample')}
-              </Link>
+            <div data-phone>
+              <PhoneMockup waBusinessLabel={t("waBusinessLabel")} waUrgentLabel={t("waUrgentLabel")} waReplyHint={t.raw("waReplyHint")} />
             </div>
-            <p style={{ color: muted, fontSize: "0.78rem", margin: 0 }}>
-              {t('noCard')}
-            </p>
           </div>
-
-          <div><PhoneMockup waBusinessLabel={t('waBusinessLabel')} waUrgentLabel={t('waUrgentLabel')} waReplyHint={t.raw('waReplyHint')} /></div>
         </div>
       </div>
 
       {/* ── Sources strip ── */}
-      <div style={{ borderTop: border, borderBottom: border, background: "var(--muted-surface)" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "18px 40px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-          <span style={{ fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: muted, flexShrink: 0 }}>{t('watchesLabel')}</span>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className="border-y border-border bg-muted">
+        <div className="mx-auto flex max-w-[1160px] flex-wrap items-center gap-5 px-5 py-[18px] sm:px-10">
+          <span className="shrink-0 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("watchesLabel")}</span>
+          <div className="flex flex-wrap gap-1.5">
             {sources.map((src) => (
-              <span key={src} style={{ padding: "4px 12px", borderRadius: 20, background: "var(--background)", border: border, fontSize: "0.78rem", fontWeight: 500, color: muted }}>{src}</span>
+              <Badge key={src} variant="outline" className="rounded-full bg-background px-3 py-1 text-[0.78rem] font-medium text-muted-foreground">
+                {src}
+              </Badge>
             ))}
           </div>
         </div>
       </div>
 
       {/* ── Problem ── */}
-      <div style={{ maxWidth: 740, margin: "0 auto", padding: "96px 40px" }}>
-        <p style={{ fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: muted, marginBottom: 26 }}>{t('problemLabel')}</p>
-        <h2 style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.7rem)", fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.15, margin: "0 0 26px" }}>
-          {t('problemTitle')}<br />{t('problemTitleAccent')}
+      <div data-reveal className="mx-auto max-w-[740px] px-5 py-24 sm:px-10">
+        <p className="mb-[26px] text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("problemLabel")}</p>
+        <h2 className="mb-[26px] text-[clamp(1.75rem,3.5vw,2.7rem)] font-extrabold leading-[1.15] tracking-[-0.035em]">
+          {t("problemTitle")}<br />{t("problemTitleAccent")}
         </h2>
-        <p style={{ fontSize: "1rem", color: muted, lineHeight: 1.72, margin: "0 0 16px", maxWidth: 600 }}>
-          {t('problemBody1')}
+        <p className="mb-4 max-w-[600px] text-base leading-[1.72] text-muted-foreground">
+          {t("problemBody1")}
         </p>
-        <p style={{ fontSize: "1rem", color: muted, lineHeight: 1.72, margin: 0, maxWidth: 600 }}>
-          {t('problemBody2')}
+        <p className="max-w-[600px] text-base leading-[1.72] text-muted-foreground">
+          {t("problemBody2")}
         </p>
       </div>
 
       {/* ── How it works ── */}
-      <div style={{ borderTop: border }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 40px" }}>
-          <p style={{ fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: muted, marginBottom: 40, textAlign: "center" }}>{t('howItWorksLabel')}</p>
-          <div className="how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+      <div className="border-t border-border">
+        <div data-reveal className="mx-auto max-w-[1160px] px-5 py-20 sm:px-10">
+          <p className="mb-10 text-center text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("howItWorksLabel")}</p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
             {steps.map((step) => (
-              <div key={step.n} style={{ background: "var(--card)", border: border, borderRadius: 16, padding: "26px 22px" }}>
-                <div style={{ fontSize: "1.8rem", marginBottom: 14 }}>{step.icon}</div>
-                <div style={{ fontSize: "0.6rem", fontWeight: 700, color: muted, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em", marginBottom: 6 }}>{step.n}</div>
-                <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 9, letterSpacing: "-0.02em" }}>{step.title}</div>
-                <div style={{ fontSize: "0.84rem", color: muted, lineHeight: 1.6 }}>{step.body}</div>
+              <div key={step.n} className="rounded-2xl border border-border bg-card p-[22px] pt-[26px] transition-shadow hover:shadow-md">
+                <div className="mb-3.5 text-[1.8rem]">{step.icon}</div>
+                <div className="mb-1.5 font-mono text-[0.6rem] font-bold tracking-[0.1em] text-muted-foreground">{step.n}</div>
+                <div className="mb-[9px] text-base font-bold tracking-[-0.02em]">{step.title}</div>
+                <div className="text-[0.84rem] leading-relaxed text-muted-foreground">{step.body}</div>
               </div>
             ))}
           </div>
@@ -200,46 +214,48 @@ export default function LandingPage() {
       </div>
 
       {/* ── Personas ── */}
-      <div style={{ borderTop: border, background: "var(--muted-surface)" }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 40px" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <p style={{ fontSize: "0.64rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: muted, marginBottom: 14 }}>{t('builtForLabel')}</p>
-            <h2 style={{ fontSize: "clamp(1.6rem, 3.2vw, 2.4rem)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
-              {t('builtForTitle')}
+      <div className="border-t border-border bg-muted">
+        <div data-reveal className="mx-auto max-w-[1160px] px-5 py-20 sm:px-10">
+          <div className="mb-12 text-center">
+            <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("builtForLabel")}</p>
+            <h2 className="text-[clamp(1.6rem,3.2vw,2.4rem)] font-extrabold tracking-[-0.03em]">
+              {t("builtForTitle")}
             </h2>
           </div>
-          <div className="persona-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             {personas.map((p) => (
-              <div key={p.type} style={{ background: "var(--card)", border: border, borderRadius: 20, padding: 28 }}>
-                <div style={{ fontSize: "2.2rem", marginBottom: 14 }}>{p.icon}</div>
-                <div style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.92rem", marginBottom: 14, letterSpacing: "-0.01em" }}>{p.type}</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 18 }}>
+              <div key={p.type} className="rounded-[20px] border border-border bg-card p-7 transition-shadow hover:shadow-md">
+                <div className="mb-3.5 text-[2.2rem]">{p.icon}</div>
+                <div className="mb-3.5 text-[0.92rem] font-bold tracking-[-0.01em]">{p.type}</div>
+                <div className="mb-[18px] flex flex-wrap gap-[5px]">
                   {p.sources.map((s) => (
-                    <span key={s} style={{ fontSize: "0.66rem", fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: "var(--muted-surface)", border: border, color: muted, fontFamily: "'JetBrains Mono', monospace" }}>{s}</span>
+                    <Badge key={s} variant="outline" className="rounded-full bg-muted px-[9px] py-[3px] font-mono text-[0.66rem] font-semibold text-muted-foreground">
+                      {s}
+                    </Badge>
                   ))}
                 </div>
-                <div style={{ background: "var(--muted-surface)", border: border, borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 700, color: muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>{t('exampleAlertLabel')}</div>
-                  <div style={{ fontSize: "0.82rem", color: "var(--foreground)", lineHeight: 1.6 }}>{p.gap}</div>
+                <div className="rounded-xl border border-border bg-muted px-4 py-3.5">
+                  <div className="mb-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">{t("exampleAlertLabel")}</div>
+                  <div className="text-[0.82rem] leading-relaxed">{p.gap}</div>
                 </div>
               </div>
             ))}
           </div>
           <p
-            style={{ textAlign: "center", color: muted, fontSize: "0.8rem", marginTop: 28 }}
-            dangerouslySetInnerHTML={{ __html: t.raw('comingSoon') }}
+            className="mt-7 text-center text-[0.8rem] text-muted-foreground"
+            dangerouslySetInnerHTML={{ __html: t.raw("comingSoon") }}
           />
         </div>
       </div>
 
       {/* ── Proof ── */}
-      <div style={{ borderTop: border }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-          <div className="proof-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="border-t border-border">
+        <div data-reveal className="mx-auto max-w-[1160px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             {proof.map((p, i) => (
-              <div key={p.label} style={{ padding: "48px 40px", borderRight: i < 3 ? border : "none" }}>
-                <div style={{ fontSize: "3rem", fontWeight: 800, letterSpacing: "-0.045em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10, lineHeight: 1 }}>{p.n}</div>
-                <div style={{ fontSize: "0.84rem", color: muted, lineHeight: 1.5 }}>{p.label}</div>
+              <div key={p.label} className={`px-5 py-12 sm:px-10 ${i < 3 ? "md:border-r md:border-border" : ""}`}>
+                <div className="mb-2.5 font-mono text-[3rem] font-extrabold leading-none tracking-[-0.045em]">{p.n}</div>
+                <div className="text-[0.84rem] leading-normal text-muted-foreground">{p.label}</div>
               </div>
             ))}
           </div>
@@ -247,43 +263,30 @@ export default function LandingPage() {
       </div>
 
       {/* ── Final CTA ── */}
-      <div style={{ borderTop: border }}>
-        <div style={{ maxWidth: 1160, margin: "0 auto", padding: "96px 40px 110px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "clamp(2.2rem, 4.5vw, 3.6rem)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.08, margin: "0 auto 32px", maxWidth: 680 }}>
-            {t('ctaTitle')}
+      <div className="border-t border-border">
+        <div data-reveal className="mx-auto max-w-[1160px] px-5 pb-[110px] pt-24 text-center sm:px-10">
+          <h2 className="mx-auto mb-8 max-w-[680px] text-[clamp(2.2rem,4.5vw,3.6rem)] font-extrabold leading-[1.08] tracking-[-0.04em]">
+            {t("ctaTitle")}
           </h2>
-          <Link href="/signup" style={{ background: "var(--primary)", color: "var(--primary-foreground)", fontSize: "1rem", fontWeight: 600, textDecoration: "none", padding: "14px 34px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 8 }}>
-            {t('tryFree')}
-          </Link>
-          <p style={{ color: muted, fontSize: "0.78rem", marginTop: 18 }}>{t('noCard')}</p>
+          <Button asChild size="lg" className="rounded-[10px] px-[34px] text-base">
+            <Link href="/signup">{t("tryFree")}</Link>
+          </Button>
+          <p className="mt-[18px] text-[0.78rem] text-muted-foreground">{t("noCard")}</p>
         </div>
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ borderTop: border, padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <span style={{ color: muted, fontSize: "0.82rem", fontStyle: "italic" }}>Observer</span>
-        <div style={{ display: "flex", gap: 20 }}>
-          <Link href="/pricing" style={{ color: muted, fontSize: "0.78rem", textDecoration: "none" }}>{tNav('pricing')}</Link>
-          <Link href="/login" style={{ color: muted, fontSize: "0.78rem", textDecoration: "none" }}>{tNav('signIn')}</Link>
-          <Link href="/signup" style={{ color: muted, fontSize: "0.78rem", textDecoration: "none" }}>{tNav('signUp')}</Link>
-          <Link href="/terms" style={{ color: muted, fontSize: "0.78rem", textDecoration: "none" }}>{t('footerTerms')}</Link>
-          <Link href="/privacy" style={{ color: muted, fontSize: "0.78rem", textDecoration: "none" }}>{t('footerPrivacy')}</Link>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-5 sm:px-10">
+        <Logo size={18} textSize="0.82rem" color="var(--muted-foreground)" gap={7} />
+        <div className="flex gap-5">
+          <Link href="/pricing" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("pricing")}</Link>
+          <Link href="/login" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("signIn")}</Link>
+          <Link href="/signup" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("signUp")}</Link>
+          <Link href="/terms" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{t("footerTerms")}</Link>
+          <Link href="/privacy" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{t("footerPrivacy")}</Link>
         </div>
-        <span style={{ color: muted, fontSize: "0.72rem" }}>{t('footerTagline')}</span>
+        <span className="text-[0.72rem] text-muted-foreground">{t("footerTagline")}</span>
       </div>
-
-      <style>{`
-        @media (max-width: 860px) {
-          .hero-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
-          .how-grid { grid-template-columns: 1fr 1fr !important; }
-          .persona-grid { grid-template-columns: 1fr !important; }
-          .proof-grid { grid-template-columns: 1fr 1fr !important; }
-        }
-        @media (max-width: 520px) {
-          .how-grid { grid-template-columns: 1fr !important; }
-          nav { padding: 16px 20px !important; }
-        }
-      `}</style>
     </div>
   );
 }

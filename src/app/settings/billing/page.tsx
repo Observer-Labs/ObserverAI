@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import type { Workspace } from "@/lib/types";
 
 const TRIAL_LIMIT = 10;
@@ -92,10 +93,7 @@ export default function BillingPage() {
       {/* Top bar */}
       <div style={{ position: "sticky", top: 0, zIndex: 40, background: "rgba(11,12,16,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", gap: 16, height: 64 }}>
-          <Link href="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="brand-dot" />
-            <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9rem" }}>Observer</span>
-          </Link>
+          <Logo href="/dashboard" size={22} textSize="0.9rem" gap={10} />
           <div style={{ width: 1, height: 28, background: "var(--border)" }} />
           <span style={{ color: "var(--muted)", fontSize: "0.875rem" }}>Billing</span>
           <div style={{ flex: 1 }} />

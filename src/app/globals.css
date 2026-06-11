@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DESIGN TOKENS
@@ -621,10 +622,6 @@ html, body {
   border: 1px solid var(--border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-}
-.brand-dot {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--accent); flex-shrink: 0;
 }
 .status-pill {
   display: inline-flex; align-items: center; gap: 5px;

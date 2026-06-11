@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SeverityBadge, ConfidenceBar, SourcePill } from "@/components/ui/Badge";
+import { SeverityBadge, ConfidenceBar, SourcePill } from "@/components/ui/SignalBadges";
 import type { Cluster } from "@/lib/types";
 
 interface OverviewTabProps {

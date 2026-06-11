@@ -2,10 +2,16 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from 'next-intl';
+import { Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 function ResetPasswordContent() {
-  const t = useTranslations('auth');
+  const t = useTranslations("auth");
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -44,108 +50,98 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "60%", height: "40%", background: "radial-gradient(ellipse at top, rgba(249,115,22,0.05) 0%, transparent 70%)" }} />
+    <div className="relative flex min-h-screen items-center justify-center bg-background">
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute left-1/2 top-0 h-2/5 w-3/5 -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.05)_0%,transparent_70%)]" />
       </div>
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 440, padding: "0 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <div className="brand-dot" />
-            <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.1rem" }}>Observer</span>
-          </Link>
+      <div className="relative z-[1] w-full max-w-[440px] px-6">
+        <div className="mb-10 text-center">
+          <Logo href="/" size={26} textSize="1.1rem" gap={10} />
         </div>
 
-        <div className="obs-card" style={{ padding: 36 }}>
-          {done ? (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", marginBottom: 16 }}>✅</div>
-              <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.2rem", margin: "0 0 12px" }}>{t('resetTitle')}</h1>
-              <p style={{ color: "var(--muted)", fontSize: "0.875rem", lineHeight: 1.6, margin: "0 0 24px" }}>
-                {t('resetSuccess')}
-              </p>
-              <Link href="/login" className="btn-primary" style={{ textDecoration: "none", display: "inline-flex", justifyContent: "center", width: "100%" }}>
-                {t('signInBtn')}
-              </Link>
-            </div>
-          ) : (
-            <>
-              <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.25rem", margin: "0 0 6px" }}>{t('resetTitle')}</h1>
-              <p style={{ color: "var(--muted)", fontSize: "0.875rem", margin: "0 0 28px" }}>
-                {t('resetSubtitle')}
-              </p>
+        <Card className="rounded-[14px] py-0">
+          <CardContent className="p-9">
+            {done ? (
+              <div className="text-center">
+                <div className="mb-4 text-[2rem]">✅</div>
+                <h1 className="mb-3 text-[1.2rem] font-bold">{t("resetTitle")}</h1>
+                <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+                  {t("resetSuccess")}
+                </p>
+                <Button asChild className="w-full">
+                  <Link href="/login">{t("signInBtn")}</Link>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h1 className="mb-1.5 text-xl font-bold">{t("resetTitle")}</h1>
+                <p className="mb-7 text-sm text-muted-foreground">
+                  {t("resetSubtitle")}
+                </p>
 
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div>
-                  <label style={{ display: "block", color: "var(--muted)", fontSize: "0.8rem", marginBottom: 6 }}>{t('newPasswordLabel')}</label>
-                  <input
-                    className="obs-input"
-                    type="password"
-                    placeholder={t('newPasswordPlaceholder')}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", color: "var(--muted)", fontSize: "0.8rem", marginBottom: 6 }}>Confirm password</label>
-                  <input
-                    className="obs-input"
-                    type="password"
-                    placeholder="Same password again"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    style={{ width: "100%", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                {error && (
-                  <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(255,92,122,0.1)", border: "1px solid rgba(255,92,122,0.25)", color: "var(--danger)", fontSize: "0.875rem" }}>
-                    {error}
-                    {error.includes("invalid") || error.includes("expired") ? (
-                      <div style={{ marginTop: 8 }}>
-                        <Link href="/forgot-password" style={{ color: "var(--accent)", fontSize: "0.8rem" }}>
-                          Request a new reset link →
-                        </Link>
-                      </div>
-                    ) : null}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="password" className="text-[0.8rem] font-normal text-muted-foreground">{t("newPasswordLabel")}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder={t("newPasswordPlaceholder")}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                      minLength={8}
+                    />
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={loading || !token}
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  {loading ? (
-                    <>
-                      <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "var(--background)", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
-                      {t('updating')}
-                    </>
-                  ) : t('newPasswordBtn')}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="confirm" className="text-[0.8rem] font-normal text-muted-foreground">Confirm password</Label>
+                    <Input
+                      id="confirm"
+                      type="password"
+                      placeholder="Same password again"
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      {error}
+                      {error.includes("invalid") || error.includes("expired") ? (
+                        <div className="mt-2">
+                          <Link href="/forgot-password" className="text-[0.8rem] text-primary hover:underline">
+                            Request a new reset link →
+                          </Link>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  <Button type="submit" disabled={loading || !token} className="w-full">
+                    {loading ? (
+                      <>
+                        <Loader2 className="animate-spin" />
+                        {t("updating")}
+                      </>
+                    ) : t("newPasswordBtn")}
+                  </Button>
+                </form>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--background)" }} />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <ResetPasswordContent />
     </Suspense>
   );

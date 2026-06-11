@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import { getTranslations } from 'next-intl/server';
 
 export default async function PrivacyPage() {
@@ -9,10 +10,9 @@ export default async function PrivacyPage() {
 
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 32 }}>
-            <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--accent-green)" }} />
-            <span style={{ color: "white", fontWeight: 700 }}>Observer AI</span>
-          </Link>
+          <div style={{ marginBottom: 32 }}>
+            <Logo href="/" size={20} textSize="1rem" color="white" gap={8} />
+          </div>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "0 0 8px" }}>{t('title')}</h1>
           <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>{t('lastUpdated')}</p>
         </div>

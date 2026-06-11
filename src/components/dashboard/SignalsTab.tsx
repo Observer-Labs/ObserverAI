@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { SourcePill } from "@/components/ui/Badge";
+import { SourcePill } from "@/components/ui/SignalBadges";
 import type { Signal } from "@/lib/types";
 
 const ALL_SOURCES = [

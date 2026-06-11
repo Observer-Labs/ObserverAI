@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import type { IntegrationsConfig } from "@/lib/types";
 
 interface WorkspaceMeta {
@@ -145,10 +146,7 @@ export default function IntegrationsPage() {
       {/* Top Bar */}
       <div style={{ position: "sticky", top: 0, zIndex: 40, background: "rgba(11,12,16,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", gap: 16, height: 60 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="brand-dot" style={{ width: 22, height: 22 }} />
-            <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9rem" }}>Observer</span>
-          </Link>
+          <Logo href="/" size={22} textSize="0.9rem" gap={8} />
           <div style={{ width: 1, height: 24, background: "var(--border)" }} />
           <span style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.9rem" }}>Integrations</span>
           <div style={{ flex: 1 }} />
