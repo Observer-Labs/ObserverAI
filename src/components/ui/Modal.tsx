@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface ModalProps {
   open: boolean;
@@ -9,24 +9,22 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, children, maxWidth = "720px" }: ModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="obs-card animate-slide-up"
-        style={{ maxWidth, width: "95%", maxHeight: "90vh", overflow: "auto", position: "relative" }}
-        onClick={(e) => e.stopPropagation()}
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        aria-describedby={undefined}
+        className="block max-h-[90vh] w-[95%] overflow-auto rounded-[14px] border bg-card p-0 shadow-sm"
+        style={{ maxWidth }}
       >
+        <DialogTitle className="sr-only">Dialog</DialogTitle>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

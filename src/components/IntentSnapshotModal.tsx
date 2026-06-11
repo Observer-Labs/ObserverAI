@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { SeverityBadge, ConfidenceBar } from "./ui/SignalBadges";
+import { Button } from "@/components/ui/button";
 import type { Cluster } from "@/lib/types";
 
 interface IntentSnapshotModalProps {
@@ -112,32 +114,32 @@ export function IntentSnapshotModal({ cluster, open, onClose }: IntentSnapshotMo
 
   return (
     <Modal open={open} onClose={onClose} maxWidth="760px">
-      <div style={{ padding: 36 }}>
+      <div className="p-9">
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <span style={{ color: "var(--accent-violet)", fontSize: "0.8rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Intent Snapshot</span>
+        <div className="mb-6 flex items-start justify-between">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-violet)]">Intent Snapshot</span>
               <SeverityBadge severity={cluster.severity_label} />
             </div>
-            <h2 style={{ color: "white", fontWeight: 700, fontSize: "1.3rem", margin: 0 }}>{cluster.title}</h2>
+            <h2 className="text-[1.3rem] font-bold text-white">{cluster.title}</h2>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1.4rem", padding: "0 0 0 16px" }}>×</button>
+          <button onClick={onClose} className="cursor-pointer border-0 bg-transparent pl-4 text-[1.4rem] text-muted-foreground">×</button>
         </div>
 
         {/* Meta row */}
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", padding: "16px 0", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 24 }}>
+        <div className="mb-6 flex flex-wrap gap-6 border-y border-[rgba(255,255,255,0.08)] py-4">
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Confidence</div>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Confidence</div>
             <ConfidenceBar value={cluster.confidence} className="" />
           </div>
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Evidence</div>
-            <div style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>{cluster.evidence_count} signals</div>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Evidence</div>
+            <div className="text-[0.9rem] font-semibold text-white">{cluster.evidence_count} signals</div>
           </div>
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Sources</div>
-            <div style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Sources</div>
+            <div className="text-[0.9rem] font-semibold text-white">
               {Object.entries(cluster.source_breakdown ?? {})
                 .filter(([, v]) => (v as number) > 0)
                 .sort((a, b) => (b[1] as number) - (a[1] as number))
@@ -148,55 +150,54 @@ export function IntentSnapshotModal({ cluster, open, onClose }: IntentSnapshotMo
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(70,230,166,0.2)", borderTopColor: "var(--accent-green)", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-            <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>Generating intent snapshot with Claude...</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div className="py-[60px] text-center">
+            <Loader2 className="mx-auto mb-4 size-10 animate-spin text-[var(--accent-green)]" />
+            <p className="text-[0.875rem] text-muted-foreground">Generating intent snapshot with Claude...</p>
           </div>
         ) : snapshot ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="flex flex-col gap-6">
             {/* Problem Statement */}
             <div>
-              <h4 style={{ color: "var(--accent-green)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, fontWeight: 600 }}>Problem Statement</h4>
-              <p style={{ color: "white", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>{snapshot.problem_statement}</p>
+              <h4 className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-green)]">Problem Statement</h4>
+              <p className="text-[0.95rem] leading-[1.6] text-white">{snapshot.problem_statement}</p>
             </div>
 
             {/* Recommended Solution */}
-            <div style={{ padding: 20, borderRadius: 12, background: "rgba(70,230,166,0.06)", border: "1px solid rgba(70,230,166,0.15)" }}>
-              <h4 style={{ color: "var(--accent-green)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10, fontWeight: 600 }}>Recommended Solution</h4>
-              <p style={{ color: "white", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>{snapshot.recommended_solution}</p>
+            <div className="rounded-[12px] border border-[rgba(70,230,166,0.15)] bg-[rgba(70,230,166,0.06)] p-5">
+              <h4 className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-green)]">Recommended Solution</h4>
+              <p className="text-[0.95rem] leading-[1.6] text-white">{snapshot.recommended_solution}</p>
             </div>
 
             {/* Two columns */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div style={{ padding: 20, borderRadius: 12, background: "rgba(110,168,255,0.06)", border: "1px solid rgba(110,168,255,0.15)" }}>
-                <h4 style={{ color: "var(--accent-blue)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, fontWeight: 600 }}>Acceptance Criteria</h4>
-                <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-[12px] border border-[rgba(110,168,255,0.15)] bg-[rgba(110,168,255,0.06)] p-5">
+                <h4 className="mb-3 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-blue)]">Acceptance Criteria</h4>
+                <ul className="flex flex-col gap-1.5 pl-4">
                   {snapshot.acceptance_criteria.map((c, i) => (
-                    <li key={i} style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.5 }}>{c}</li>
+                    <li key={i} className="text-[0.8rem] leading-[1.5] text-muted-foreground">{c}</li>
                   ))}
                 </ul>
               </div>
-              <div style={{ padding: 20, borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <h4 style={{ color: "var(--accent-violet)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, fontWeight: 600 }}>Success Metrics</h4>
-                <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="rounded-[12px] border border-[rgba(167,139,250,0.15)] bg-[rgba(167,139,250,0.06)] p-5">
+                <h4 className="mb-3 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-violet)]">Success Metrics</h4>
+                <ul className="flex flex-col gap-1.5 pl-4">
                   {snapshot.success_metrics.map((m, i) => (
-                    <li key={i} style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.5 }}>{m}</li>
+                    <li key={i} className="text-[0.8rem] leading-[1.5] text-muted-foreground">{m}</li>
                   ))}
                 </ul>
               </div>
             </div>
 
             {/* Effort + Quote */}
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 200, padding: "16px 20px", borderRadius: 12, background: "rgba(255,209,102,0.06)", border: "1px solid rgba(255,209,102,0.2)" }}>
-                <div style={{ color: "var(--warning)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 600 }}>Effort Estimate</div>
-                <div style={{ color: "white", fontWeight: 600 }}>{snapshot.effort_estimate}</div>
+            <div className="flex flex-wrap gap-4">
+              <div className="min-w-[200px] flex-1 rounded-[12px] border border-[rgba(255,209,102,0.2)] bg-[rgba(255,209,102,0.06)] px-5 py-4">
+                <div className="mb-1.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--warning)]">Effort Estimate</div>
+                <div className="font-semibold text-white">{snapshot.effort_estimate}</div>
               </div>
               {cluster.customer_quote && (
-                <div style={{ flex: 2, minWidth: 200, padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6, fontWeight: 600 }}>Customer Voice</div>
-                  <blockquote style={{ margin: 0, color: "white", fontStyle: "italic", fontSize: "0.875rem", lineHeight: 1.5, borderLeft: "3px solid var(--accent-green)", paddingLeft: 12 }}>
+                <div className="min-w-[200px] flex-[2] rounded-[12px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-5 py-4">
+                  <div className="mb-1.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Customer Voice</div>
+                  <blockquote className="border-l-[3px] border-l-[var(--accent-green)] pl-3 text-[0.875rem] italic leading-[1.5] text-white">
                     &quot;{cluster.customer_quote}&quot;
                   </blockquote>
                 </div>
@@ -204,28 +205,28 @@ export function IntentSnapshotModal({ cluster, open, onClose }: IntentSnapshotMo
             </div>
           </div>
         ) : failed ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)" }}>Failed to generate snapshot. Try again.</div>
+          <div className="py-10 text-center text-muted-foreground">Failed to generate snapshot. Try again.</div>
         ) : (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)" }}>No snapshot available.</div>
+          <div className="py-10 text-center text-muted-foreground">No snapshot available.</div>
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 32, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <button className="btn-ghost" onClick={shareToSlack} disabled={sharing === "slack"} style={{ opacity: sharing === "slack" ? 0.5 : 1 }}>
+        <div className="mt-8 flex flex-wrap gap-2.5 border-t border-[rgba(255,255,255,0.08)] pt-6">
+          <Button variant="ghost" onClick={shareToSlack} disabled={sharing === "slack"} className="border">
             {sharing === "slack" ? "Sending..." : "⚡ Share to Slack"}
-          </button>
-          <button className="btn-ghost" onClick={shareToWhatsApp} disabled={sharing === "whatsapp"} style={{ borderColor: "rgba(70,230,166,0.3)", opacity: sharing === "whatsapp" ? 0.5 : 1 }}>
+          </Button>
+          <Button variant="ghost" onClick={shareToWhatsApp} disabled={sharing === "whatsapp"} className="border border-[rgba(70,230,166,0.3)]">
             {sharing === "whatsapp" ? "Sending..." : "💬 WhatsApp Alert"}
-          </button>
-          <button className="btn-ghost" onClick={shareToEmail} disabled={sharing === "email"} style={{ borderColor: "rgba(110,168,255,0.3)", color: "var(--accent-blue)", opacity: sharing === "email" ? 0.5 : 1 }}>
+          </Button>
+          <Button variant="ghost" onClick={shareToEmail} disabled={sharing === "email"} className="border border-[rgba(110,168,255,0.3)] text-[var(--accent-blue)]">
             {sharing === "email" ? "Sending..." : "✉️ Email Brief"}
-          </button>
-          <button className="btn-ghost" onClick={exportMarkdown} style={{ borderColor: "rgba(167,139,250,0.3)", color: "var(--accent-violet)" }}>
+          </Button>
+          <Button variant="ghost" onClick={exportMarkdown} className="border border-[rgba(167,139,250,0.3)] text-[var(--accent-violet)]">
             ↓ Export as Markdown
-          </button>
-          <button className="btn-ghost" onClick={copyMarkdown} style={{ borderColor: "rgba(255,255,255,0.15)", color: "var(--muted)" }}>
+          </Button>
+          <Button variant="ghost" onClick={copyMarkdown} className="border border-[rgba(255,255,255,0.15)] text-muted-foreground">
             {copied ? "✓ Copied!" : "Copy"}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

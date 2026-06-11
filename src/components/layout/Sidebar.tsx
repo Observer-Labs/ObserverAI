@@ -5,6 +5,7 @@ import { supabaseClient } from "@/lib/supabase-client";
 import { useTranslations } from 'next-intl';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { LogoMark } from "@/components/Logo";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   sourceCount?: number;
@@ -107,7 +108,7 @@ export default function Sidebar({
       {/* ── Logo ── */}
       <Link href="/dashboard" className="sidebar-logo">
         <LogoMark size={26} />
-        <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.05rem", fontStyle: "italic", letterSpacing: "-0.02em" }}>
+        <span className="text-[1.05rem] font-bold italic tracking-[-0.02em] text-foreground">
           Observer
         </span>
       </Link>
@@ -119,7 +120,7 @@ export default function Sidebar({
           return (
             <Link key={item.href} href={item.href} className={`sidebar-item ${active ? "active" : ""}`}>
               <span className="sidebar-item-icon">{item.icon}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
               {item.badge !== undefined && (
                 <span className="sidebar-badge">{item.badge}</span>
               )}
@@ -130,48 +131,58 @@ export default function Sidebar({
 
       {/* ── Bottom block ── */}
       <div className="sidebar-bottom">
-        <div style={{ padding: '8px 12px 4px' }}>
+        <div className="px-3 pt-2 pb-1">
           <LocaleSwitcher />
         </div>
         {/* Plan pill */}
         {plan === "trial" && typeof runsLeft === "number" && (
-          <Link href="/settings/billing" className="sidebar-plan" style={{
-            background: runsLeft <= 2 ? "color-mix(in oklch, var(--amber) 12%, transparent)" : "var(--muted-surface)",
-            borderColor: runsLeft <= 2 ? "color-mix(in oklch, var(--amber) 35%, transparent)" : "var(--border)",
-            color: runsLeft <= 2 ? "oklch(0.55 0.14 70)" : "var(--foreground)",
-          }}>
-            <span style={{ fontWeight: 700 }}>{runsLeft}</span>
-            <span style={{ opacity: 0.65 }}>{tSidebar('runsLeftSuffix')}</span>
+          <Link
+            href="/settings/billing"
+            className={cn(
+              "sidebar-plan",
+              runsLeft <= 2
+                ? "border-[color-mix(in_oklch,var(--amber)_35%,transparent)]! bg-[color-mix(in_oklch,var(--amber)_12%,transparent)] text-[oklch(0.55_0.14_70)]"
+                : "border-border! bg-muted text-foreground"
+            )}
+          >
+            <span className="font-bold">{runsLeft}</span>
+            <span className="opacity-65">{tSidebar('runsLeftSuffix')}</span>
             {typeof trialDaysLeft === "number" && trialDaysLeft <= 7 && (
-              <><span style={{ opacity: 0.4 }}>·</span><span>{trialDaysLeft}d</span></>
+              <><span className="opacity-40">·</span><span>{trialDaysLeft}d</span></>
             )}
           </Link>
         )}
         {plan === "expired" && (
-          <Link href="/settings/billing" className="sidebar-plan" style={{ background: "color-mix(in oklch, var(--destructive) 10%, transparent)", borderColor: "color-mix(in oklch, var(--destructive) 30%, transparent)", color: "var(--destructive)" }}>
+          <Link
+            href="/settings/billing"
+            className="sidebar-plan border-[color-mix(in_oklch,var(--destructive)_30%,transparent)]! bg-[color-mix(in_oklch,var(--destructive)_10%,transparent)] text-destructive"
+          >
             {tSidebar('trialEnded')}
           </Link>
         )}
         {plan === "past_due" && (
-          <Link href="/settings/billing" className="sidebar-plan" style={{ background: "color-mix(in oklch, var(--amber) 12%, transparent)", borderColor: "color-mix(in oklch, var(--amber) 35%, transparent)", color: "oklch(0.55 0.14 70)" }}>
+          <Link
+            href="/settings/billing"
+            className="sidebar-plan border-[color-mix(in_oklch,var(--amber)_35%,transparent)]! bg-[color-mix(in_oklch,var(--amber)_12%,transparent)] text-[oklch(0.55_0.14_70)]"
+          >
             {tSidebar('paymentFailed')}
           </Link>
         )}
         {plan === "pro" && (
-          <div className="sidebar-plan" style={{ background: "color-mix(in oklch, var(--success) 12%, transparent)", borderColor: "color-mix(in oklch, var(--success) 30%, transparent)", color: "var(--success)", cursor: "default" }}>
-            <span style={{ fontWeight: 700 }}>PRO</span>
-            <span style={{ opacity: 0.65 }}>{tSidebar('proActive')}</span>
+          <div className="sidebar-plan cursor-default border-[color-mix(in_oklch,var(--success)_30%,transparent)]! bg-[color-mix(in_oklch,var(--success)_12%,transparent)] text-[var(--success)]">
+            <span className="font-bold">PRO</span>
+            <span className="opacity-65">{tSidebar('proActive')}</span>
           </div>
         )}
 
         {/* User row */}
         <div className="sidebar-user">
           <div className="sidebar-avatar">{userInitials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: "var(--foreground)", fontSize: "0.8rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[0.8rem] font-semibold text-foreground">
               {workspaceName || t('myWorkspace')}
             </div>
-            <Link href="/settings" style={{ color: "var(--muted-foreground)", fontSize: "0.7rem", textDecoration: "none" }}>
+            <Link href="/settings" className="text-[0.7rem] text-muted-foreground no-underline">
               {t('settings')}
             </Link>
           </div>

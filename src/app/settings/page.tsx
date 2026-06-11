@@ -1,6 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import type { Workspace } from "@/lib/types";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -19,35 +27,25 @@ function fmtDate(isoDate?: string): string {
   return new Date(isoDate).toLocaleDateString("tr-TR", { year: "numeric", month: "long", day: "numeric" });
 }
 
-// ── Toggle ──────────────────────────────────────────────────────────────────
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={() => onChange(!checked)}
-      className={`toggle-track${checked ? " on" : ""}`}
-      style={{ cursor: "pointer", flexShrink: 0 }}
-    />
-  );
-}
-
 // ── Billing plan badge ──────────────────────────────────────────────────────
+
+const planBadgeBase = "px-3 py-[3px] text-[0.7rem] font-bold";
 
 function PlanBadge({ status, plan }: { status?: string; plan?: string }) {
   if (plan === "trial") return (
-    <span style={{ background: "rgba(110,168,255,0.12)", color: "#6ea8ff", border: "1px solid rgba(110,168,255,0.25)", borderRadius: 9999, padding: "3px 12px", fontSize: "0.7rem", fontWeight: 700 }}>ÜCRETSİZ DENEME</span>
+    <Badge className={cn(planBadgeBase, "border-[rgba(110,168,255,0.25)] bg-[rgba(110,168,255,0.12)] text-[#6ea8ff]")}>ÜCRETSİZ DENEME</Badge>
   );
   if (status === "active") return (
-    <span style={{ background: "rgba(249,115,22,0.12)", color: "var(--accent)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 9999, padding: "3px 12px", fontSize: "0.7rem", fontWeight: 700 }}>PRO · AKTİF</span>
+    <Badge className={cn(planBadgeBase, "border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.12)] text-primary")}>PRO · AKTİF</Badge>
   );
   if (status === "past_due") return (
-    <span style={{ background: "rgba(255,209,102,0.12)", color: "#ffd166", border: "1px solid rgba(255,209,102,0.25)", borderRadius: 9999, padding: "3px 12px", fontSize: "0.7rem", fontWeight: 700 }}>GECİKMİŞ ÖDEME</span>
+    <Badge className={cn(planBadgeBase, "border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.12)] text-[#ffd166]")}>GECİKMİŞ ÖDEME</Badge>
   );
   if (status === "cancelled" || plan === "cancelled") return (
-    <span style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 9999, padding: "3px 12px", fontSize: "0.7rem", fontWeight: 700 }}>İPTAL EDİLDİ</span>
+    <Badge className={cn(planBadgeBase, "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.12)] text-[#ef4444]")}>İPTAL EDİLDİ</Badge>
   );
   return (
-    <span style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 9999, padding: "3px 12px", fontSize: "0.7rem", fontWeight: 700 }}>SÜRESİ DOLDU</span>
+    <Badge className={cn(planBadgeBase, "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.12)] text-[#ef4444]")}>SÜRESİ DOLDU</Badge>
   );
 }
 
@@ -135,9 +133,8 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, border: "2px solid rgba(249,115,22,0.2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
       </div>
     );
   }
@@ -234,54 +231,41 @@ export default function SettingsPage() {
     },
   ];
 
-  const lblStyle: React.CSSProperties = {
-    display: "block", color: "var(--muted)", fontSize: "0.75rem", fontWeight: 500,
-    marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em",
-  };
+  const lblCls = "mb-[6px] block text-[0.75rem] font-medium tracking-[0.05em] uppercase text-muted-foreground";
 
   return (
     <div className="app-shell">
-      <div className="page-wrap" style={{ maxWidth: 860, margin: "0 auto", padding: "36px 32px 80px" }}>
+      <div className="page-wrap mx-auto max-w-[860px] px-8 pt-9 pb-20">
 
         {/* ── Header ── */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.4rem", margin: "0 0 4px" }}>Settings</h1>
-          <p style={{ color: "var(--muted)", fontSize: "0.875rem", margin: 0 }}>
+        <div className="mb-8">
+          <h1 className="mb-1 text-[1.4rem] font-bold text-foreground">Settings</h1>
+          <p className="m-0 text-sm text-muted-foreground">
             Manage your account, plan, and notification preferences
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 24 }}>
+        <div className="grid grid-cols-[200px_1fr] gap-6">
 
           {/* ── Left sidebar tabs ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div className="flex flex-col gap-0.5">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  padding: "10px 14px", borderRadius: 9, border: "none",
-                  background: activeTab === tab.key ? "rgba(249,115,22,0.1)" : "transparent",
-                  color: activeTab === tab.key ? "var(--accent)" : "var(--muted-light)",
-                  cursor: "pointer", textAlign: "left", fontSize: "0.875rem",
-                  fontWeight: activeTab === tab.key ? 600 : 400,
-                  transition: "all 0.15s",
-                  outline: activeTab === tab.key ? "1px solid rgba(249,115,22,0.2)" : "1px solid transparent",
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab.key) e.currentTarget.style.background = "var(--muted-surface)";
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab.key) e.currentTarget.style.background = "transparent";
-                }}
+                className={cn(
+                  "flex cursor-pointer items-center gap-[9px] rounded-[9px] border-none px-3.5 py-2.5 text-left text-sm transition-all outline",
+                  activeTab === tab.key
+                    ? "bg-[rgba(249,115,22,0.1)] font-semibold text-primary outline-[rgba(249,115,22,0.2)]"
+                    : "bg-transparent font-normal text-[var(--muted-light)] outline-transparent hover:bg-muted"
+                )}
               >
-                <span style={{ fontSize: "0.9rem" }}>{tab.icon}</span>
+                <span className="text-[0.9rem]">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
 
-            <div style={{ height: 1, background: "var(--muted-surface)", margin: "8px 0" }} />
+            <Separator className="my-2 bg-muted" />
 
             {/* Quick links */}
             {[
@@ -292,15 +276,9 @@ export default function SettingsPage() {
               <a
                 key={link.href}
                 href={link.href}
-                style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  padding: "9px 14px", borderRadius: 9, textDecoration: "none",
-                  color: "var(--muted)", fontSize: "0.8rem", transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--muted-light)"; e.currentTarget.style.background = "var(--muted-surface)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.background = "transparent"; }}
+                className="flex items-center gap-[9px] rounded-[9px] px-3.5 py-[9px] text-[0.8rem] text-muted-foreground no-underline transition-all hover:bg-muted hover:text-[var(--muted-light)]"
               >
-                <span style={{ fontSize: "0.85rem" }}>{link.icon}</span>
+                <span className="text-[0.85rem]">{link.icon}</span>
                 {link.label}
               </a>
             ))}
@@ -311,61 +289,50 @@ export default function SettingsPage() {
 
             {/* ───── Profile tab ───── */}
             {activeTab === "profile" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="flex flex-col gap-4">
                 {/* Avatar row */}
-                <div style={{
-                  background: "var(--card)", border: "1px solid var(--border)",
-                  borderRadius: 14, padding: "24px 28px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                    <div style={{
-                      width: 56, height: 56, borderRadius: "50%",
-                      background: "rgba(249,115,22,0.15)", border: "2px solid rgba(249,115,22,0.3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)", flexShrink: 0,
-                    }}>
+                <div className="rounded-[14px] border bg-card px-7 py-6">
+                  <div className="mb-6 flex items-center gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[rgba(249,115,22,0.3)] bg-[rgba(249,115,22,0.15)] text-[1.1rem] font-bold text-primary">
                       {userInitials}
                     </div>
                     <div>
-                      <div style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.95rem" }}>
+                      <div className="text-[0.95rem] font-semibold text-foreground">
                         {displayName || userEmail.split("@")[0]}
                       </div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem", marginTop: 2 }}>{userEmail}</div>
+                      <div className="mt-0.5 text-[0.8rem] text-muted-foreground">{userEmail}</div>
                     </div>
                     <PlanBadge plan={plan} status={polarStatus} />
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div className="flex flex-col gap-3.5">
                     <div>
-                      <label style={lblStyle}>Display name</label>
-                      <input
-                        className="obs-input"
+                      <Label className={lblCls}>Display name</Label>
+                      <Input
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                         placeholder={userEmail.split("@")[0]}
-                        style={{ maxWidth: 320 }}
+                        className="max-w-[320px]"
                       />
                     </div>
                     <div>
-                      <label style={lblStyle}>Email address</label>
-                      <input
-                        className="obs-input"
+                      <Label className={lblCls}>Email address</Label>
+                      <Input
                         value={userEmail}
                         disabled
-                        style={{ maxWidth: 320, opacity: 0.5, cursor: "not-allowed" }}
+                        className="max-w-[320px]"
                       />
-                      <p style={{ color: "var(--muted)", fontSize: "0.72rem", marginTop: 4 }}>
+                      <p className="mt-1 text-[0.72rem] text-muted-foreground">
                         Email is managed by your auth provider
                       </p>
                     </div>
-                    <button
-                      className="btn-primary"
+                    <Button
                       onClick={saveProfile}
                       disabled={savingProfile}
-                      style={{ alignSelf: "flex-start", fontSize: "0.875rem", padding: "8px 18px" }}
+                      className="h-auto self-start px-[18px] py-2 text-sm"
                     >
                       {savingProfile ? "Saving…" : savedProfile ? "✓ Saved" : "Save Profile"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -374,75 +341,78 @@ export default function SettingsPage() {
 
             {/* ───── Billing tab ───── */}
             {activeTab === "billing" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="flex flex-col gap-4">
 
                 {/* Alert banners */}
                 {(plan === "cancelled" || plan === "expired") && (
-                  <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="flex items-center gap-3 rounded-xl border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-[18px] py-3.5">
                     <span>⚠️</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: "#ef4444", fontWeight: 600, fontSize: "0.875rem" }}>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-[#ef4444]">
                         {plan === "cancelled" ? "Subscription cancelled" : "Trial expired"}
                       </div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Choose a plan to continue running analyses.</div>
+                      <div className="text-[0.78rem] text-muted-foreground">Choose a plan to continue running analyses.</div>
                     </div>
-                    <a href="/api/billing/checkout" className="btn-primary" style={{ textDecoration: "none", fontSize: "0.8rem", padding: "7px 14px", whiteSpace: "nowrap" }}>
-                      Upgrade →
-                    </a>
+                    <Button asChild className="h-auto px-3.5 py-[7px] text-[0.8rem] whitespace-nowrap">
+                      <a href="/api/billing/checkout">Upgrade →</a>
+                    </Button>
                   </div>
                 )}
 
                 {isPastDue && (
-                  <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,209,102,0.08)", border: "1px solid rgba(255,209,102,0.2)", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="flex items-center gap-3 rounded-xl border border-[rgba(255,209,102,0.2)] bg-[rgba(255,209,102,0.08)] px-[18px] py-3.5">
                     <span>⚡</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: "#ffd166", fontWeight: 600, fontSize: "0.875rem" }}>Payment failed</div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>Update your payment method to avoid interruption.</div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-[#ffd166]">Payment failed</div>
+                      <div className="text-[0.78rem] text-muted-foreground">Update your payment method to avoid interruption.</div>
                     </div>
-                    <a href="/api/billing/portal" style={{ textDecoration: "none", color: "#ffd166", fontSize: "0.8rem", fontWeight: 600, border: "1px solid rgba(255,209,102,0.25)", padding: "7px 14px", borderRadius: 8, whiteSpace: "nowrap" }}>
+                    <a href="/api/billing/portal" className="rounded-lg border border-[rgba(255,209,102,0.25)] px-3.5 py-[7px] text-[0.8rem] font-semibold whitespace-nowrap text-[#ffd166] no-underline">
                       Update →
                     </a>
                   </div>
                 )}
 
                 {/* Plan card */}
-                <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                    <h3 style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1rem", margin: 0 }}>Current plan</h3>
+                <div className="rounded-[14px] border bg-card px-7 py-6">
+                  <div className="mb-5 flex items-center gap-2.5">
+                    <h3 className="m-0 text-base font-semibold text-foreground">Current plan</h3>
                     <PlanBadge plan={plan} status={polarStatus} />
                   </div>
 
                   {isTrial && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Trial ends in</span>
-                        <span style={{ color: "var(--foreground)", fontSize: "0.85rem", fontWeight: 600 }}>{trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""}</span>
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex justify-between">
+                        <span className="text-[0.85rem] text-muted-foreground">Trial ends in</span>
+                        <span className="text-[0.85rem] font-semibold text-foreground">{trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Analyses used</span>
-                        <span style={{ color: "var(--foreground)", fontSize: "0.85rem", fontWeight: 600 }}>{analysisCount} / {TRIAL_LIMIT}</span>
+                      <div className="flex justify-between">
+                        <span className="text-[0.85rem] text-muted-foreground">Analyses used</span>
+                        <span className="text-[0.85rem] font-semibold text-foreground">{analysisCount} / {TRIAL_LIMIT}</span>
                       </div>
-                      <div style={{ height: 6, borderRadius: 9999, background: "var(--muted-surface)", overflow: "hidden", marginTop: 4 }}>
-                        <div style={{ height: "100%", width: `${trialPct}%`, borderRadius: 9999, background: trialPct >= 80 ? "#ef4444" : "var(--accent)", transition: "width 0.3s" }} />
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={cn("h-full rounded-full transition-[width] duration-300", trialPct >= 80 ? "bg-[#ef4444]" : "bg-primary")}
+                          style={{ width: `${trialPct}%` }}
+                        />
                       </div>
                     </div>
                   )}
 
                   {(isActive || isPastDue) && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Renews on</span>
-                        <span style={{ color: "var(--foreground)", fontSize: "0.85rem", fontWeight: 600 }}>{fmtDate(workspace?.polar_renews_at)}</span>
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex justify-between">
+                        <span className="text-[0.85rem] text-muted-foreground">Renews on</span>
+                        <span className="text-[0.85rem] font-semibold text-foreground">{fmtDate(workspace?.polar_renews_at)}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Analyses this month</span>
-                        <span style={{ color: "var(--foreground)", fontSize: "0.85rem", fontWeight: 600 }}>{analysisCount} runs</span>
+                      <div className="flex justify-between">
+                        <span className="text-[0.85rem] text-muted-foreground">Analyses this month</span>
+                        <span className="text-[0.85rem] font-semibold text-foreground">{analysisCount} runs</span>
                       </div>
-                      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                        <a href="/api/billing/portal" style={{ textDecoration: "none", color: "var(--muted-light)", fontSize: "0.8rem", padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--muted-surface)" }}>
+                      <div className="mt-3 flex gap-2.5">
+                        <a href="/api/billing/portal" className="rounded-lg border bg-muted px-4 py-2 text-[0.8rem] text-[var(--muted-light)] no-underline">
                           Manage billing →
                         </a>
-                        <a href="/api/billing/portal" style={{ textDecoration: "none", color: "var(--muted-light)", fontSize: "0.8rem", padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--muted-surface)" }}>
+                        <a href="/api/billing/portal" className="rounded-lg border bg-muted px-4 py-2 text-[0.8rem] text-[var(--muted-light)] no-underline">
                           View invoices →
                         </a>
                       </div>
@@ -452,42 +422,38 @@ export default function SettingsPage() {
 
                 {/* Upgrade card */}
                 {(isTrial || plan === "cancelled" || plan === "expired") && (
-                  <div style={{ padding: 28, borderRadius: 14, background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "50%", height: 1, background: "linear-gradient(90deg, transparent, rgba(249,115,22,0.5), transparent)" }} />
+                  <div className="relative overflow-hidden rounded-[14px] border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.04)] p-7">
+                    <div className="absolute top-0 left-1/2 h-px w-1/2 -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(249,115,22,0.5),transparent)]" />
                     <div>
-                      <div style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.05rem", marginBottom: 6 }}>Choose a plan</div>
-                      <div style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: 18 }}>Plans are based on location count and source coverage.</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+                      <div className="mb-1.5 text-[1.05rem] font-bold text-foreground">Choose a plan</div>
+                      <div className="mb-[18px] text-[0.82rem] text-muted-foreground">Plans are based on location count and source coverage.</div>
+                      <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
                         {billingPlans.map((option) => (
-                          <div key={option.name} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
-                            <div style={{ color: "var(--foreground)", fontWeight: 800, fontSize: "0.92rem", marginBottom: 8 }}>{option.name}</div>
-                            <div style={{ color: "var(--foreground)", fontWeight: 800, fontSize: option.name === "Enterprise" ? "1.2rem" : "1.55rem", letterSpacing: "-0.03em", marginBottom: 6 }}>
+                          <div key={option.name} className="rounded-xl border bg-card p-4">
+                            <div className="mb-2 text-[0.92rem] font-extrabold text-foreground">{option.name}</div>
+                            <div className={cn("mb-1.5 font-extrabold tracking-[-0.03em] text-foreground", option.name === "Enterprise" ? "text-[1.2rem]" : "text-[1.55rem]")}>
                               {option.price}
                             </div>
-                            {option.name !== "Enterprise" && <div style={{ color: "var(--muted)", fontSize: "0.72rem", marginTop: -4, marginBottom: 10 }}>/ ay</div>}
-                            <div style={{ color: "var(--muted)", fontSize: "0.76rem", lineHeight: 1.45, marginBottom: 12 }}>{option.description}</div>
-                            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+                            {option.name !== "Enterprise" && <div className="-mt-1 mb-2.5 text-[0.72rem] text-muted-foreground">/ ay</div>}
+                            <div className="mb-3 text-[0.76rem] leading-[1.45] text-muted-foreground">{option.description}</div>
+                            <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
                               {option.features.map((feature) => (
-                                <li key={feature} style={{ display: "flex", alignItems: "flex-start", gap: 7, color: "var(--muted-foreground)", fontSize: "0.74rem", lineHeight: 1.35 }}>
-                                  <span style={{ color: "var(--foreground)", flexShrink: 0 }}>✓</span>
+                                <li key={feature} className="flex items-start gap-[7px] text-[0.74rem] leading-[1.35] text-muted-foreground">
+                                  <span className="shrink-0 text-foreground">✓</span>
                                   {feature}
                                 </li>
                               ))}
                             </ul>
-                            <a href={option.href} className={option.name === "Growth" ? "btn-primary" : undefined} style={{
-                              display: "block",
-                              textDecoration: "none",
-                              fontSize: "0.76rem",
-                              fontWeight: 700,
-                              padding: "9px 12px",
-                              textAlign: "center",
-                              borderRadius: 8,
-                              border: option.name === "Growth" ? "none" : "1px solid var(--border)",
-                              background: option.name === "Growth" ? undefined : "var(--muted-surface)",
-                              color: option.name === "Growth" ? undefined : "var(--foreground)",
-                            }}>
-                              {option.cta}
-                            </a>
+                            <Button
+                              asChild
+                              variant={option.name === "Growth" ? "default" : "outline"}
+                              className={cn(
+                                "h-auto w-full px-3 py-[9px] text-[0.76rem] font-bold",
+                                option.name !== "Growth" && "border bg-muted text-foreground"
+                              )}
+                            >
+                              <a href={option.href}>{option.cta}</a>
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -499,28 +465,28 @@ export default function SettingsPage() {
 
             {/* ───── Thresholds tab ───── */}
             {activeTab === "thresholds" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px" }}>
-                  <h3 style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1rem", margin: "0 0 6px" }}>Observer Firing Thresholds</h3>
-                  <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: "0 0 24px", lineHeight: 1.6 }}>
+              <div className="flex flex-col gap-4">
+                <div className="rounded-[14px] border bg-card px-7 py-6">
+                  <h3 className="mb-1.5 text-base font-semibold text-foreground">Observer Firing Thresholds</h3>
+                  <p className="mb-6 text-[0.8rem] leading-[1.6] text-muted-foreground">
                     Control when Observer fires alerts. Clusters below these thresholds are still visible in the dashboard but won&apos;t trigger notifications.
                   </p>
 
                   {/* Min severity slider */}
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div className="mb-6">
+                    <div className="mb-2 flex items-center justify-between">
                       <div>
-                        <div style={{ color: "var(--foreground)", fontWeight: 500, fontSize: "0.875rem" }}>Minimum severity</div>
-                        <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: 2 }}>Clusters below this score won&apos;t fire alerts</div>
+                        <div className="text-sm font-medium text-foreground">Minimum severity</div>
+                        <div className="mt-0.5 text-[0.75rem] text-muted-foreground">Clusters below this score won&apos;t fire alerts</div>
                       </div>
-                      <div style={{
-                        padding: "4px 12px", borderRadius: 20,
-                        background: thresholds.min_severity >= 80 ? "rgba(239,68,68,0.12)" : thresholds.min_severity >= 60 ? "rgba(249,115,22,0.12)" : "rgba(245,158,11,0.12)",
-                        border: `1px solid ${thresholds.min_severity >= 80 ? "rgba(239,68,68,0.25)" : thresholds.min_severity >= 60 ? "rgba(249,115,22,0.25)" : "rgba(245,158,11,0.25)"}`,
-                        color: thresholds.min_severity >= 80 ? "#f87171" : thresholds.min_severity >= 60 ? "var(--accent)" : "#fbbf24",
-                        fontSize: "0.75rem", fontWeight: 700,
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>
+                      <div className={cn(
+                        "rounded-[20px] border px-3 py-1 font-mono text-[0.75rem] font-bold",
+                        thresholds.min_severity >= 80
+                          ? "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.12)] text-[#f87171]"
+                          : thresholds.min_severity >= 60
+                            ? "border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.12)] text-primary"
+                            : "border-[rgba(245,158,11,0.25)] bg-[rgba(245,158,11,0.12)] text-[#fbbf24]"
+                      )}>
                         {thresholds.min_severity}
                       </div>
                     </div>
@@ -528,27 +494,22 @@ export default function SettingsPage() {
                       type="range" min={0} max={100} step={5}
                       value={thresholds.min_severity}
                       onChange={(e) => setThresholds((t) => ({ ...t, min_severity: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                      className="w-full cursor-pointer accent-primary"
                     />
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>0, All clusters</span>
-                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>100, Critical only</span>
+                    <div className="mt-1 flex justify-between">
+                      <span className="text-[0.67rem] text-[var(--muted-dim)]">0, All clusters</span>
+                      <span className="text-[0.67rem] text-[var(--muted-dim)]">100, Critical only</span>
                     </div>
                   </div>
 
                   {/* Min evidence */}
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div className="mb-6">
+                    <div className="mb-2 flex items-center justify-between">
                       <div>
-                        <div style={{ color: "var(--foreground)", fontWeight: 500, fontSize: "0.875rem" }}>Minimum evidence count</div>
-                        <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: 2 }}>Minimum number of signals to form an alertable cluster</div>
+                        <div className="text-sm font-medium text-foreground">Minimum evidence count</div>
+                        <div className="mt-0.5 text-[0.75rem] text-muted-foreground">Minimum number of signals to form an alertable cluster</div>
                       </div>
-                      <div style={{
-                        padding: "4px 12px", borderRadius: 20,
-                        background: "var(--muted-surface)", border: "1px solid var(--border)",
-                        color: "var(--foreground)", fontSize: "0.75rem", fontWeight: 700,
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>
+                      <div className="rounded-[20px] border bg-muted px-3 py-1 font-mono text-[0.75rem] font-bold text-foreground">
                         {thresholds.min_evidence}
                       </div>
                     </div>
@@ -556,31 +517,29 @@ export default function SettingsPage() {
                       type="range" min={1} max={50} step={1}
                       value={thresholds.min_evidence}
                       onChange={(e) => setThresholds((t) => ({ ...t, min_evidence: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                      className="w-full cursor-pointer accent-primary"
                     />
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>1 signal</span>
-                      <span style={{ color: "var(--muted-dim)", fontSize: "0.67rem" }}>50 signals</span>
+                    <div className="mt-1 flex justify-between">
+                      <span className="text-[0.67rem] text-[var(--muted-dim)]">1 signal</span>
+                      <span className="text-[0.67rem] text-[var(--muted-dim)]">50 signals</span>
                     </div>
                   </div>
 
                   {/* Cooldown */}
-                  <div style={{ marginBottom: 28 }}>
-                    <div style={{ color: "var(--foreground)", fontWeight: 500, fontSize: "0.875rem", marginBottom: 4 }}>Alert cooldown</div>
-                    <div style={{ color: "var(--muted)", fontSize: "0.75rem", marginBottom: 10 }}>Don&apos;t re-alert the same cluster within this window</div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                  <div className="mb-7">
+                    <div className="mb-1 text-sm font-medium text-foreground">Alert cooldown</div>
+                    <div className="mb-2.5 text-[0.75rem] text-muted-foreground">Don&apos;t re-alert the same cluster within this window</div>
+                    <div className="flex gap-2">
                       {([24, 48, 168] as const).map((h) => (
                         <button
                           key={h}
                           onClick={() => setThresholds((t) => ({ ...t, cooldown_hours: h }))}
-                          style={{
-                            padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer",
-                            background: thresholds.cooldown_hours === h ? "rgba(249,115,22,0.12)" : "var(--muted-surface)",
-                            color: thresholds.cooldown_hours === h ? "var(--accent)" : "var(--muted-light)",
-                            fontSize: "0.82rem", fontWeight: thresholds.cooldown_hours === h ? 600 : 400,
-                            outline: thresholds.cooldown_hours === h ? "1px solid rgba(249,115,22,0.25)" : "1px solid transparent",
-                            transition: "all 0.12s",
-                          }}
+                          className={cn(
+                            "cursor-pointer rounded-lg border-none px-4 py-2 text-[0.82rem] transition-all outline",
+                            thresholds.cooldown_hours === h
+                              ? "bg-[rgba(249,115,22,0.12)] font-semibold text-primary outline-[rgba(249,115,22,0.25)]"
+                              : "bg-muted font-normal text-[var(--muted-light)] outline-transparent"
+                          )}
                         >
                           {h === 24 ? "24h" : h === 48 ? "48h" : "1 week"}
                         </button>
@@ -588,22 +547,21 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <button
-                    className="btn-primary"
+                  <Button
                     onClick={saveThresholds}
                     disabled={savingThresholds}
-                    style={{ fontSize: "0.875rem", padding: "9px 20px" }}
+                    className="h-auto px-5 py-[9px] text-sm"
                   >
                     {savingThresholds ? "Saving…" : savedThresholds ? "✓ Saved" : "Save Thresholds"}
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Quick summary */}
-                <div style={{ background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: 12, padding: "16px 20px" }}>
-                  <p style={{ color: "var(--muted-light)", fontSize: "0.82rem", margin: 0, lineHeight: 1.7 }}>
-                    📡 Observer will fire alerts for clusters with severity ≥ <strong style={{ color: "var(--foreground)" }}>{thresholds.min_severity}</strong>,
-                    backed by at least <strong style={{ color: "var(--foreground)" }}>{thresholds.min_evidence}</strong> evidence signals,
-                    and will not re-alert within <strong style={{ color: "var(--foreground)" }}>{thresholds.cooldown_hours}h</strong> for the same cluster.
+                <div className="rounded-xl border border-[rgba(249,115,22,0.15)] bg-[rgba(249,115,22,0.04)] px-5 py-4">
+                  <p className="m-0 text-[0.82rem] leading-[1.7] text-[var(--muted-light)]">
+                    📡 Observer will fire alerts for clusters with severity ≥ <strong className="text-foreground">{thresholds.min_severity}</strong>,
+                    backed by at least <strong className="text-foreground">{thresholds.min_evidence}</strong> evidence signals,
+                    and will not re-alert within <strong className="text-foreground">{thresholds.cooldown_hours}h</strong> for the same cluster.
                   </p>
                 </div>
               </div>
@@ -611,12 +569,12 @@ export default function SettingsPage() {
 
             {/* ───── Notifications tab ───── */}
             {activeTab === "notifications" && (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px" }}>
-                <h3 style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1rem", margin: "0 0 20px" }}>
+              <div className="rounded-[14px] border bg-card px-7 py-6">
+                <h3 className="mb-5 text-base font-semibold text-foreground">
                   Notification preferences
                 </h3>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <div className="flex flex-col">
                   {[
                     { key: "emailOnAnalysis" as const, label: "Analysis complete", desc: "Get notified when an analysis run finishes" },
                     { key: "emailOnCritical" as const, label: "Critical signals", desc: "Alert when a critical-severity signal is detected" },
@@ -624,98 +582,82 @@ export default function SettingsPage() {
                   ].map((item, i, arr) => (
                     <div
                       key={item.key}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "16px 0",
-                        borderBottom: i < arr.length - 1 ? "1px solid var(--muted-surface)" : "none",
-                      }}
+                      className={cn("flex items-center justify-between py-4", i < arr.length - 1 && "border-b border-muted")}
                     >
                       <div>
-                        <div style={{ color: "var(--foreground)", fontWeight: 500, fontSize: "0.875rem", marginBottom: 2 }}>{item.label}</div>
-                        <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>{item.desc}</div>
+                        <div className="mb-0.5 text-sm font-medium text-foreground">{item.label}</div>
+                        <div className="text-[0.78rem] text-muted-foreground">{item.desc}</div>
                       </div>
-                      <Toggle
+                      <Switch
                         checked={notifConfig[item.key]}
-                        onChange={(v) => setNotifConfig((p) => ({ ...p, [item.key]: v }))}
+                        onCheckedChange={(v) => setNotifConfig((p) => ({ ...p, [item.key]: v }))}
                       />
                     </div>
                   ))}
                 </div>
 
-                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--muted-surface)" }}>
-                  <p style={{ color: "var(--muted)", fontSize: "0.78rem", margin: "0 0 14px" }}>
-                    Email notifications are sent to <span style={{ color: "var(--muted-light)" }}>{userEmail}</span>
+                <div className="mt-5 border-t border-muted pt-5">
+                  <p className="mb-3.5 text-[0.78rem] text-muted-foreground">
+                    Email notifications are sent to <span className="text-[var(--muted-light)]">{userEmail}</span>
                   </p>
-                  <button
-                    className="btn-primary"
+                  <Button
                     onClick={saveNotifications}
                     disabled={savingNotifs}
-                    style={{ fontSize: "0.875rem", padding: "8px 18px" }}
+                    className="h-auto px-[18px] py-2 text-sm"
                   >
                     {savingNotifs ? "Saving…" : savedNotifs ? "✓ Saved" : "Save preferences"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* ───── Account tab ───── */}
             {activeTab === "account" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div className="flex flex-col gap-4">
 
                 {/* Workspace info */}
-                <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "24px 28px" }}>
-                  <h3 style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1rem", margin: "0 0 18px" }}>Workspace</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Workspace ID</span>
-                      <code style={{ color: "var(--muted-light)", fontSize: "0.78rem", background: "var(--muted-surface)", padding: "3px 8px", borderRadius: 5, fontFamily: "monospace" }}>
+                <div className="rounded-[14px] border bg-card px-7 py-6">
+                  <h3 className="mb-[18px] text-base font-semibold text-foreground">Workspace</h3>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.85rem] text-muted-foreground">Workspace ID</span>
+                      <code className="rounded-[5px] bg-muted px-2 py-[3px] font-mono text-[0.78rem] text-[var(--muted-light)]">
                         {workspace?.id?.slice(0, 20)}…
                       </code>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Plan</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.85rem] text-muted-foreground">Plan</span>
                       <PlanBadge plan={plan} status={polarStatus} />
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Total analyses run</span>
-                      <span style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.85rem" }}>{analysisCount}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[0.85rem] text-muted-foreground">Total analyses run</span>
+                      <span className="text-[0.85rem] font-semibold text-foreground">{analysisCount}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Danger zone */}
-                <div style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 14, padding: "24px 28px" }}>
-                  <h3 style={{ color: "#ef4444", fontWeight: 600, fontSize: "1rem", margin: "0 0 6px" }}>Danger zone</h3>
-                  <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: "0 0 18px" }}>
+                <div className="rounded-[14px] border border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.04)] px-7 py-6">
+                  <h3 className="mb-1.5 text-base font-semibold text-[#ef4444]">Danger zone</h3>
+                  <p className="mb-[18px] text-[0.8rem] text-muted-foreground">
                     Irreversible and destructive actions. Proceed with caution.
                   </p>
 
                   {!showDeleteConfirm ? (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      style={{
-                        background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
-                        color: "#ef4444", borderRadius: 8, padding: "9px 18px",
-                        fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
-                        transition: "all 0.15s",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.14)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; }}
+                      className="cursor-pointer rounded-lg border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-[18px] py-[9px] text-sm font-medium text-[#ef4444] transition-all hover:bg-[rgba(239,68,68,0.14)]"
                     >
                       Delete workspace
                     </button>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0, fontWeight: 500 }}>
+                    <div className="flex flex-col gap-3">
+                      <p className="m-0 text-[0.85rem] font-medium text-[#ef4444]">
                         Are you sure? This will permanently delete all your signals, clusters, and settings.
                       </p>
-                      <div style={{ display: "flex", gap: 10 }}>
+                      <div className="flex gap-2.5">
                         <button
-                          style={{
-                            background: "#ef4444", border: "none", color: "var(--foreground)",
-                            borderRadius: 8, padding: "8px 16px", fontSize: "0.875rem",
-                            fontWeight: 600, cursor: "not-allowed", opacity: 0.7,
-                          }}
+                          className="cursor-not-allowed rounded-lg border-none bg-[#ef4444] px-4 py-2 text-sm font-semibold text-foreground opacity-70"
                           title="Contact support to delete your workspace"
                           disabled
                         >
@@ -723,17 +665,13 @@ export default function SettingsPage() {
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(false)}
-                          style={{
-                            background: "none", border: "1px solid var(--border)",
-                            color: "var(--muted-light)", borderRadius: 8, padding: "8px 14px",
-                            fontSize: "0.875rem", cursor: "pointer",
-                          }}
+                          className="cursor-pointer rounded-lg border bg-transparent px-3.5 py-2 text-sm text-[var(--muted-light)]"
                         >
                           Cancel
                         </button>
                       </div>
-                      <p style={{ color: "var(--muted)", fontSize: "0.75rem", margin: 0 }}>
-                        To permanently delete your workspace, contact <a href="mailto:support@observerai.app" style={{ color: "var(--accent)" }}>support@observerai.app</a>
+                      <p className="m-0 text-[0.75rem] text-muted-foreground">
+                        To permanently delete your workspace, contact <a href="mailto:support@observerai.app" className="text-primary">support@observerai.app</a>
                       </p>
                     </div>
                   )}
@@ -744,8 +682,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -1,6 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import type { DistributionConfig } from "@/lib/types";
 
 const defaultConfig: DistributionConfig = {
@@ -10,34 +18,17 @@ const defaultConfig: DistributionConfig = {
   auto_distribute: false,
 };
 
-// ── Toggle ──────────────────────────────────────────────────────────────────
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div
-      onClick={() => onChange(!checked)}
-      className={`toggle-track${checked ? " on" : ""}`}
-      style={{ cursor: "pointer", flexShrink: 0 }}
-    />
-  );
-}
-
 // ── Recipient Chip ──────────────────────────────────────────────────────────
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "3px 10px 3px 12px",
-      background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.25)",
-      borderRadius: 9999, fontSize: "0.78rem", color: "var(--accent)",
-    }}>
+    <Badge className="gap-1.5 border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.1)] py-[3px] pr-2.5 pl-3 text-[0.78rem] font-normal text-primary">
       {label}
       <button
         onClick={onRemove}
-        style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: "0.9rem" }}
+        className="cursor-pointer border-none bg-transparent p-0 text-[0.9rem] leading-none text-muted-foreground"
       >×</button>
-    </div>
+    </Badge>
   );
 }
 
@@ -54,36 +45,24 @@ function ChannelCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div style={{
-      background: "var(--card)",
-      border: "1px solid var(--border)",
-      borderRadius: 14,
-      padding: 24,
-      transition: "border-color 0.2s",
-    }}>
+    <div className="rounded-[14px] border bg-card p-6 transition-colors">
       {/* Card header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: enabled && children ? 20 : 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 11,
-            background: "var(--muted-surface)",
-            border: "1px solid var(--border)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.2rem", flexShrink: 0, transition: "all 0.2s",
-          }}>
+      <div className={cn("flex items-center justify-between", enabled && children && "mb-5")}>
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[11px] border bg-muted text-[1.2rem] transition-all">
             {icon}
           </div>
           <div>
-            <div style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.95rem", marginBottom: 2 }}>{title}</div>
-            <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>{subtitle}</div>
+            <div className="mb-0.5 text-[0.95rem] font-semibold text-foreground">{title}</div>
+            <div className="text-[0.8rem] text-muted-foreground">{subtitle}</div>
           </div>
         </div>
-        <Toggle checked={enabled} onChange={onToggle} />
+        <Switch checked={enabled} onCheckedChange={onToggle} />
       </div>
 
       {/* Expanded content */}
       {enabled && children && (
-        <div style={{ paddingTop: 20, borderTop: "1px solid var(--muted-surface)" }}>
+        <div className="border-t border-muted pt-5">
           {children}
         </div>
       )}
@@ -166,101 +145,85 @@ export default function DistributionSettingsPage() {
 
   if (!authChecked) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, border: "2px solid rgba(249,115,22,0.2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
       </div>
     );
   }
 
-  const lblStyle: React.CSSProperties = {
-    display: "block", color: "var(--muted)", fontSize: "0.75rem", fontWeight: 500,
-    marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em",
-  };
+  const lblCls = "mb-[6px] block text-[0.75rem] font-medium tracking-[0.05em] uppercase text-muted-foreground";
 
   return (
     <div className="app-shell">
-      <div className="page-wrap" style={{ maxWidth: 900, margin: "0 auto", padding: "36px 32px 80px" }}>
+      <div className="page-wrap mx-auto max-w-[900px] px-8 pt-9 pb-20">
 
         {/* ── Page header ── */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32 }}>
+        <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.4rem", margin: "0 0 4px" }}>Dağıtım</h1>
-            <p style={{ color: "var(--muted)", fontSize: "0.875rem", margin: 0 }}>
+            <h1 className="mb-1 text-[1.4rem] font-bold text-foreground">Dağıtım</h1>
+            <p className="m-0 text-sm text-muted-foreground">
               Observer&apos;ın içgörü özetlerini ve uyarıları nereye göndereceğini yapılandırın
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              className="btn-primary"
+          <div className="flex items-center gap-2.5">
+            <Button
               onClick={saveConfig}
               disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", fontSize: "0.875rem" }}
+              className="h-auto gap-1.5 px-[18px] py-2 text-sm"
             >
               {saving ? (
                 <>
-                  <span style={{ width: 12, height: 12, border: "2px solid var(--muted-foreground)", borderTopColor: "var(--foreground)", borderRadius: "50%", animation: "spin 0.8s linear infinite", display: "inline-block" }} />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                   Kaydediliyor…
                 </>
               ) : saved ? "✓ Kaydedildi" : "Kaydet"}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* ── Stats row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
+        <div className="mb-7 grid grid-cols-3 gap-3">
           {[
-            { label: "Aktif Kanal", value: activeChannels, max: 2, color: activeChannels > 0 ? "var(--accent)" : "var(--muted-light)" },
-            { label: "Toplam Alıcı", value: totalRecipients, max: null, color: totalRecipients > 0 ? "var(--accent)" : "var(--muted-light)" },
-            { label: "Otomatik Dağıtım", value: config.auto_distribute ? "Açık" : "Kapalı", max: null, color: config.auto_distribute ? "var(--accent)" : "var(--muted)" },
+            { label: "Aktif Kanal", value: activeChannels, max: 2, color: activeChannels > 0 ? "text-primary" : "text-[var(--muted-light)]" },
+            { label: "Toplam Alıcı", value: totalRecipients, max: null, color: totalRecipients > 0 ? "text-primary" : "text-[var(--muted-light)]" },
+            { label: "Otomatik Dağıtım", value: config.auto_distribute ? "Açık" : "Kapalı", max: null, color: config.auto_distribute ? "text-primary" : "text-muted-foreground" },
           ].map((stat) => (
-            <div key={stat.label} style={{
-              background: "var(--card)", border: "1px solid var(--border)",
-              borderRadius: 12, padding: "16px 20px",
-            }}>
-              <div style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+            <div key={stat.label} className="rounded-xl border bg-card px-5 py-4">
+              <div className="mb-1.5 text-[0.72rem] font-semibold tracking-[0.08em] uppercase text-muted-foreground">
                 {stat.label}
               </div>
-              <div style={{ color: stat.color, fontWeight: 700, fontSize: "1.4rem", lineHeight: 1 }}>
-                {stat.value}{stat.max !== null ? <span style={{ color: "var(--muted)", fontSize: "0.9rem", fontWeight: 400 }}>/{stat.max}</span> : ""}
+              <div className={cn("text-[1.4rem] leading-none font-bold", stat.color)}>
+                {stat.value}{stat.max !== null ? <span className="text-[0.9rem] font-normal text-muted-foreground">/{stat.max}</span> : ""}
               </div>
             </div>
           ))}
         </div>
 
         {/* ── Auto-distribute toggle ── */}
-        <div style={{
-          background: "var(--card)", border: "1px solid var(--border)",
-          borderRadius: 14, padding: "20px 24px", marginBottom: 16,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: 9,
-                background: "var(--muted-surface)",
-                border: "1px solid var(--border)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem",
-              }}>
+        <div className="mb-4 rounded-[14px] border bg-card px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[9px] border bg-muted text-base">
                 ⚡
               </div>
               <div>
-                <div style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.9rem", marginBottom: 2 }}>
+                <div className="mb-0.5 text-[0.9rem] font-semibold text-foreground">
                   Analiz sonrası otomatik dağıt
                 </div>
-                <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                <div className="text-[0.78rem] text-muted-foreground">
                   Analiz tamamlandığında içgörü özetlerini aktif kanallara otomatik gönder
                 </div>
               </div>
             </div>
-            <Toggle
+            <Switch
               checked={config.auto_distribute ?? false}
-              onChange={(v) => setConfig({ ...config, auto_distribute: v })}
+              onCheckedChange={(v) => setConfig({ ...config, auto_distribute: v })}
             />
           </div>
         </div>
 
         {/* ── Channel cards ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+        <div className="mt-2 flex flex-col gap-3">
 
           {/* Email */}
           <ChannelCard
@@ -270,25 +233,27 @@ export default function DistributionSettingsPage() {
             enabled={config.email.enabled}
             onToggle={(v) => setConfig({ ...config, email: { ...config.email, enabled: v } })}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="flex flex-col gap-4">
               <div>
-                <label style={lblStyle}>Alıcılar</label>
-                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                  <input
-                    className="obs-input"
+                <Label className={lblCls}>Alıcılar</Label>
+                <div className="mb-2.5 flex gap-2">
+                  <Input
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addEmail()}
                     placeholder="yonetici@sirket.com"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
-                  <button className="btn-ghost" onClick={addEmail}
-                    style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", color: "var(--muted-light)", background: "none", cursor: "pointer", fontSize: "0.82rem" }}>
+                  <Button
+                    variant="ghost"
+                    onClick={addEmail}
+                    className="h-auto rounded-lg border px-3.5 text-[0.82rem] text-[var(--muted-light)]"
+                  >
                     Ekle
-                  </button>
+                  </Button>
                 </div>
                 {config.email.recipients.length > 0 && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className="flex flex-wrap gap-1.5">
                     {config.email.recipients.map((r) => (
                       <Chip key={r} label={r} onRemove={() => setConfig({ ...config, email: { ...config.email, recipients: config.email.recipients.filter((e) => e !== r) } })} />
                     ))}
@@ -296,14 +261,20 @@ export default function DistributionSettingsPage() {
                 )}
               </div>
               <div>
-                <label style={lblStyle}>Gönderim programı</label>
-                <select className="obs-input" value={config.email.schedule}
-                  onChange={(e) => setConfig({ ...config, email: { ...config.email, schedule: e.target.value as "instant" | "daily" | "weekly" } })}
-                  style={{ width: "100%" }}>
-                  <option value="instant">Anında (yalnızca kritik)</option>
-                  <option value="daily">Günlük özet</option>
-                  <option value="weekly">Haftalık özet</option>
-                </select>
+                <Label className={lblCls}>Gönderim programı</Label>
+                <Select
+                  value={config.email.schedule}
+                  onValueChange={(v) => setConfig({ ...config, email: { ...config.email, schedule: v as "instant" | "daily" | "weekly" } })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="instant">Anında (yalnızca kritik)</SelectItem>
+                    <SelectItem value="daily">Günlük özet</SelectItem>
+                    <SelectItem value="weekly">Haftalık özet</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </ChannelCard>
@@ -316,25 +287,27 @@ export default function DistributionSettingsPage() {
             enabled={config.whatsapp.enabled}
             onToggle={(v) => setConfig({ ...config, whatsapp: { ...config.whatsapp, enabled: v } })}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="flex flex-col gap-4">
               <div>
-                <label style={lblStyle}>Alıcı numaralar</label>
-                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                  <input
-                    className="obs-input"
+                <Label className={lblCls}>Alıcı numaralar</Label>
+                <div className="mb-2.5 flex gap-2">
+                  <Input
                     value={waInput}
                     onChange={(e) => setWaInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addWaNumber()}
                     placeholder="+901234567890"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
-                  <button className="btn-ghost" onClick={addWaNumber}
-                    style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "0 14px", color: "var(--muted-light)", background: "none", cursor: "pointer", fontSize: "0.82rem" }}>
+                  <Button
+                    variant="ghost"
+                    onClick={addWaNumber}
+                    className="h-auto rounded-lg border px-3.5 text-[0.82rem] text-[var(--muted-light)]"
+                  >
                     Ekle
-                  </button>
+                  </Button>
                 </div>
                 {config.whatsapp.recipient_numbers.length > 0 && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className="flex flex-wrap gap-1.5">
                     {config.whatsapp.recipient_numbers.map((n) => (
                       <Chip key={n} label={n} onRemove={() => setConfig({ ...config, whatsapp: { ...config.whatsapp, recipient_numbers: config.whatsapp.recipient_numbers.filter((r) => r !== n) } })} />
                     ))}
@@ -342,29 +315,24 @@ export default function DistributionSettingsPage() {
                 )}
               </div>
 
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 0", borderTop: "1px solid var(--muted-surface)",
-              }}>
+              <div className="flex items-center justify-between border-t border-muted py-3.5">
                 <div>
-                  <div style={{ color: "var(--foreground)", fontWeight: 500, fontSize: "0.875rem", marginBottom: 2 }}>
+                  <div className="mb-0.5 text-sm font-medium text-foreground">
                     Yalnızca kritik uyarılar
                   </div>
-                  <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                  <div className="text-[0.78rem] text-muted-foreground">
                     Yalnızca yüksek önem puanlı sinyalleri gönder (70+)
                   </div>
                 </div>
-                <Toggle
+                <Switch
                   checked={config.whatsapp.critical_only}
-                  onChange={(v) => setConfig({ ...config, whatsapp: { ...config.whatsapp, critical_only: v } })}
+                  onCheckedChange={(v) => setConfig({ ...config, whatsapp: { ...config.whatsapp, critical_only: v } })}
                 />
               </div>
             </div>
           </ChannelCard>
         </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
