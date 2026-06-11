@@ -5,6 +5,7 @@ import {
   isWhatsAppConsentReply,
   normalizeWhatsAppNumber,
   parseInboundWhatsApp,
+  sendWhatsAppWelcomeMessage,
   verifyMetaSignature,
   verifyMetaWebhookToken,
 } from "@/lib/whatsapp";
@@ -67,6 +68,7 @@ async function findWorkspaceForSender(sender: string, explicitWorkspaceId: strin
 
 async function markWhatsAppOptIn(workspace: WorkspaceWithWhatsApp, sender: string, inboundAt: string) {
   const supabase = getSupabaseAdmin();
+  const wasAlreadyOptedIn = workspace.whatsapp_config?.opted_in === true;
   const numbers = Array.from(
     new Set([...(workspace.whatsapp_config?.recipient_numbers ?? []), normalizeWhatsAppNumber(sender)]),
   );
@@ -95,6 +97,8 @@ async function markWhatsAppOptIn(workspace: WorkspaceWithWhatsApp, sender: strin
       },
     })
     .eq("id", workspace.id);
+
+  return { wasAlreadyOptedIn };
 }
 
 export async function POST(req: NextRequest) {
@@ -139,7 +143,17 @@ export async function POST(req: NextRequest) {
     });
 
     if (isWhatsAppConsentReply(message.content)) {
-      await markWhatsAppOptIn(workspace, message.sender, message.timestamp);
+      const { wasAlreadyOptedIn } = await markWhatsAppOptIn(workspace, message.sender, message.timestamp);
+      if (!wasAlreadyOptedIn) {
+        try {
+          await sendWhatsAppWelcomeMessage(message.sender, "tr");
+        } catch (error) {
+          console.warn("Meta WhatsApp welcome message failed", {
+            workspaceId: workspace.id,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
     }
   }
 

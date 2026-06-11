@@ -114,6 +114,15 @@ export async function sendWhatsAppConsentRequest(toNumber: string, locale = "tr"
   return sendMetaTemplateMessage(toNumber, templateName, languageCode);
 }
 
+export async function sendWhatsAppWelcomeMessage(toNumber: string, locale = "tr") {
+  const body =
+    locale === "tr"
+      ? "ObserverAI'a hoş geldiniz! Bundan sonra önemli müşteri sinyalleri ve aksiyon önerileri her zaman cebinizde."
+      : "Welcome to ObserverAI. From now on, important customer signals and action suggestions are always in your pocket.";
+
+  return sendMetaTextMessage(toNumber, body);
+}
+
 export async function sendWhatsAppAlert(toNumber: string, cluster: Cluster, locale = "tr") {
   const coreEnv = requireEnvGroup("core");
   const t = await getTranslations({ locale, namespace: "whatsapp" });
