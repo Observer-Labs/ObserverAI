@@ -89,7 +89,7 @@ export default function LandingPage() {
 
               <h1 className="mb-6 max-w-[560px] text-balance font-display text-[clamp(2.7rem,5.2vw,4.2rem)] font-bold leading-[1.06] tracking-[-0.03em]">
                 {t("heroTitle")}{" "}
-                <span className="bg-[linear-gradient(transparent_62%,rgba(253,186,116,0.55)_62%)] pr-1">{t("heroTitleAccent")}</span>
+                <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("heroTitleAccent")}</span>
               </h1>
 
               <p className="mb-10 max-w-[470px] text-[1.1rem] leading-[1.7] text-muted-foreground">
@@ -97,7 +97,7 @@ export default function LandingPage() {
               </p>
 
               <div className="mb-[18px] flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="h-12 rounded-full bg-[#f97316] px-8 text-[0.975rem] text-white shadow-none transition-all hover:-translate-y-0.5 hover:bg-[#ea6a0a]">
+                <Button asChild size="lg" className="h-12 rounded-full bg-[var(--brand)] px-8 text-[0.975rem] text-white shadow-none transition-all hover:-translate-y-0.5 hover:bg-[var(--brand-strong)]">
                   <Link href="/signup">{t("tryFree")}</Link>
                 </Button>
                 <Button asChild size="lg" variant="ghost" className="h-12 rounded-full px-6 text-[0.95rem] text-foreground hover:bg-[#f4f1ea]">
@@ -130,10 +130,10 @@ export default function LandingPage() {
 
       {/* ── Problem ── */}
       <div data-reveal className="mx-auto max-w-[860px] px-5 py-28 text-center sm:px-10 md:py-36">
-        <p className="mb-7 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[#f97316]">{t("problemLabel")}</p>
+        <p className="mb-7 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("problemLabel")}</p>
         <h2 className="mb-8 font-display text-[clamp(2.2rem,4.4vw,3.6rem)] font-bold leading-[1.08] tracking-[-0.025em]">
           {t("problemTitle")}<br />
-          <span className="bg-[linear-gradient(transparent_62%,rgba(253,186,116,0.55)_62%)] pr-1">{t("problemTitleAccent")}</span>
+          <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("problemTitleAccent")}</span>
         </h2>
         <p className="mx-auto mb-4 max-w-[620px] text-[1.05rem] leading-[1.75] text-muted-foreground">
           {t("problemBody1")}
@@ -153,7 +153,7 @@ export default function LandingPage() {
               return (
                 <div key={step.n} className="relative rounded-3xl bg-white p-7 shadow-[0_2px_16px_rgba(60,50,30,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:rotate-[-0.5deg] hover:shadow-[0_18px_44px_rgba(60,50,30,0.12)]">
                   <div className={`mb-5 flex size-14 items-center justify-center rounded-2xl text-[1.65rem] ${chipTints[i]}`}>{step.icon}</div>
-                  <div className="mb-1.5 font-mono text-[0.6rem] font-bold tracking-[0.1em] text-[#f97316]">{step.n}</div>
+                  <div className="mb-1.5 font-mono text-[0.6rem] font-bold tracking-[0.1em] text-[var(--brand)]">{step.n}</div>
                   <div className="mb-[9px] text-[1.05rem] font-bold tracking-[-0.02em]">{step.title}</div>
                   <div className="text-[0.86rem] leading-relaxed text-muted-foreground">{step.body}</div>
                 </div>
@@ -166,7 +166,7 @@ export default function LandingPage() {
       {/* ── Personas ── */}
       <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10 md:py-32">
         <div className="mb-14 text-center">
-          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[#f97316]">{t("builtForLabel")}</p>
+          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("builtForLabel")}</p>
           <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
             {t("builtForTitle")}
           </h2>
@@ -187,8 +187,8 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div className="rounded-2xl bg-white px-5 py-4 shadow-[0_2px_12px_rgba(60,50,30,0.06)]">
-                  <div className="mb-2 flex items-center gap-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[#f97316]">
-                    <span className="size-1.5 animate-pulse rounded-full bg-[#f97316]" />
+                  <div className="mb-2 flex items-center gap-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--brand)]">
+                    <span className="size-1.5 animate-pulse rounded-full bg-[var(--brand)]" />
                     {t("exampleAlertLabel")}
                   </div>
                   <div className="text-[0.84rem] leading-relaxed text-foreground/85">{p.gap}</div>
@@ -221,13 +221,13 @@ export default function LandingPage() {
 
       {/* ── Final CTA ── */}
       <div className="px-3 py-16 sm:px-5 md:py-20">
-        <div data-reveal className="relative mx-auto max-w-[1320px] overflow-hidden rounded-[40px] bg-[linear-gradient(135deg,#f97316_0%,#fb923c_55%,#fdba74_100%)] px-5 py-20 text-center sm:px-10 md:py-28">
+        <div data-reveal className="relative mx-auto max-w-[1320px] overflow-hidden rounded-[40px] bg-[linear-gradient(135deg,var(--brand)_0%,#ff7a47_55%,#ff9e73_100%)] px-5 py-20 text-center sm:px-10 md:py-28">
           <div className="pointer-events-none absolute -right-20 -top-24 size-[340px] rounded-full bg-white/10 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-32 -left-16 size-[300px] rounded-full bg-white/10 blur-2xl" />
           <h2 className="relative mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.4rem,4.6vw,3.8rem)] font-bold leading-[1.06] tracking-[-0.03em] text-white">
             {t("ctaTitle")}
           </h2>
-          <Button asChild size="lg" className="relative h-[52px] rounded-full bg-white px-10 text-base font-bold text-[#ea6a0a] shadow-none transition-all hover:-translate-y-0.5 hover:bg-white/95">
+          <Button asChild size="lg" className="relative h-[52px] rounded-full bg-white px-10 text-base font-bold text-[var(--brand-strong)] shadow-none transition-all hover:-translate-y-0.5 hover:bg-white/95">
             <Link href="/signup">{t("tryFree")}</Link>
           </Button>
           <p className="relative mt-[18px] text-[0.78rem] text-white/75">{t("noCard")}</p>

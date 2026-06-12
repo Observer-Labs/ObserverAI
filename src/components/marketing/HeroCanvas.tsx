@@ -33,7 +33,7 @@ export default function HeroCanvas({ className }: { className?: string }) {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const slate = new THREE.Color("#94a3b8");
-    const orange = new THREE.Color("#f97316");
+    const orange = new THREE.Color("#ff5a1f");
     let i = 0;
     for (let x = 0; x < COLS; x++) {
       for (let z = 0; z < ROWS; z++) {

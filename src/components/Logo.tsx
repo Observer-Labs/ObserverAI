@@ -4,12 +4,12 @@ import Link from "next/link";
 export function LogoMark({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10.5" stroke="#f97316" strokeWidth="1.2" opacity="0.5" />
+      <circle cx="12" cy="12" r="10.5" stroke="var(--brand)" strokeWidth="1.2" opacity="0.5" />
       <path
         d="M3.5 12C5.5 7.5 8.5 5.5 12 5.5C15.5 5.5 18.5 7.5 20.5 12C18.5 16.5 15.5 18.5 12 18.5C8.5 18.5 5.5 16.5 3.5 12Z"
-        stroke="#f97316" strokeWidth="1.3" fill="none"
+        stroke="var(--brand)" strokeWidth="1.3" fill="none"
       />
-      <circle cx="12" cy="12" r="3" fill="#f97316" />
+      <circle cx="12" cy="12" r="3" fill="var(--brand)" />
       <circle cx="13.2" cy="10.8" r="0.9" fill="rgba(255,255,255,0.6)" />
     </svg>
   );
