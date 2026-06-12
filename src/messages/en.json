@@ -105,7 +105,8 @@
     "pipelineDashboardCaption": "Details and history live in the dashboard",
     "pipelineDashboardStat": "3 new signals this week",
     "howItWorksTitle": "From Noise to Signal",
-    "howItWorksSubtitle": "Observer gathers scattered reviews, filters what matters, and delivers it to two places at once: urgent alerts to your WhatsApp, details to your dashboard."
+    "howItWorksSubtitle": "Observer gathers scattered reviews, filters what matters, and delivers it to two places at once: urgent alerts to your WhatsApp, details to your dashboard.",
+    "pipelineHandled": "Marked as handled"
   },
   "auth": {
     "tagline": "Customer signals, on your WhatsApp.",

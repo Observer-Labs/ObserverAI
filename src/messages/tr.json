@@ -105,7 +105,8 @@
     "pipelineDashboardCaption": "Detaylar ve geçmiş dashboard'da",
     "pipelineDashboardStat": "Bu hafta 3 yeni sinyal",
     "howItWorksTitle": "Gürültüden Sinyale",
-    "howItWorksSubtitle": "Observer dağınık yorumları toplar, önemlileri ayıklar ve aynı anda iki yere taşır: acil olan WhatsApp'ınıza, detaylar dashboard'a."
+    "howItWorksSubtitle": "Observer dağınık yorumları toplar, önemlileri ayıklar ve aynı anda iki yere taşır: acil olan WhatsApp'ınıza, detaylar dashboard'a.",
+    "pipelineHandled": "İşleme alındı"
   },
   "auth": {
     "tagline": "Müşteri sinyalleri, WhatsApp'ınızda.",
