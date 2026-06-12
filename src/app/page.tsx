@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -19,12 +18,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
-const sourceLogos = [
-  { src: "/logos/google.svg", alt: "Google Reviews", width: 28, height: 28, className: "h-7" },
-  { src: "/logos/getir.svg", alt: "Getir", width: 84, height: 28, className: "h-7" },
-  { src: "/logos/yemeksepeti.svg", alt: "Yemeksepeti", width: 140, height: 24, className: "h-5" },
-  { src: "/logos/trendyol.svg", alt: "Trendyol", width: 120, height: 24, className: "h-5" },
-  { src: "/logos/googleanalytics.svg", alt: "Google Analytics", width: 28, height: 28, className: "h-7" },
+const sources = [
+  "Google Reviews", "Getir", "Yemeksepeti", "Trendyol", "POS / Payments", "Google Analytics",
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -119,19 +114,17 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Source logos ── */}
+      {/* ── Sources ── */}
       <div data-reveal className="mx-auto max-w-[1000px] px-5 py-12 sm:px-10">
         <p className="mb-8 text-center text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("watchesLabel")}</p>
-        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 sm:gap-x-16">
-          {sourceLogos.map((logo) => (
-            <Image
-              key={logo.alt}
-              src={logo.src}
-              alt={logo.alt}
-              width={logo.width}
-              height={logo.height}
-              className={`w-auto opacity-45 grayscale transition-all duration-300 hover:opacity-90 hover:grayscale-0 ${logo.className}`}
-            />
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {sources.map((src) => (
+            <div
+              key={src}
+              className="rounded-2xl border border-[#ece8df] bg-white px-6 py-3.5 font-display text-[0.95rem] font-semibold text-foreground/45 transition-colors duration-300 hover:text-foreground/80"
+            >
+              {src}
+            </div>
           ))}
         </div>
       </div>
