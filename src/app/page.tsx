@@ -116,7 +116,6 @@ export default function LandingPage() {
 
       {/* ── Sources ── */}
       <div data-reveal className="mx-auto max-w-[1000px] px-5 py-12 sm:px-10">
-        <p className="mb-8 text-center text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("watchesLabel")}</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           {sources.map((src) => (
             <div
