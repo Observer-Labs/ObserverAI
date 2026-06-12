@@ -15,10 +15,10 @@ export default function SiteHeader() {
         <Button asChild variant="ghost" size="sm" className="rounded-full text-muted-foreground">
           <Link href="/pricing">{tNav("pricing")}</Link>
         </Button>
-        <Button asChild variant="outline" size="sm" className="rounded-full">
+        <Button asChild variant="outline" size="sm" className="rounded-full shadow-none">
           <Link href="/login">{tNav("signIn")}</Link>
         </Button>
-        <Button asChild size="sm" className="rounded-full px-4">
+        <Button asChild size="sm" className="rounded-full px-4 shadow-none">
           <Link href="/signup">{tNav("startFree")}</Link>
         </Button>
       </div>
