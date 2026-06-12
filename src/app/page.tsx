@@ -1,19 +1,16 @@
 "use client";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SiteHeader from "@/components/layout/SiteHeader";
-import Logo from "@/components/Logo";
-import SignalFeed from "@/components/marketing/SignalFeed";
+import Logo, { LogoMark } from "@/components/Logo";
+import PhoneMockup from "@/components/marketing/PhoneMockup";
 import PipelineSection from "@/components/marketing/PipelineSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const HeroCanvas = dynamic(() => import("@/components/marketing/HeroCanvas"), { ssr: false });
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -47,6 +44,11 @@ export default function LandingPage() {
     () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       gsap.from("[data-hero] > *", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
+      gsap.from("[data-hero-phone]", { y: 70, opacity: 0, scale: 0.96, duration: 1, delay: 0.3, ease: "power3.out" });
+      gsap.from("[data-hero-card]", { y: 40, opacity: 0, duration: 0.8, delay: 0.55, stagger: 0.15, ease: "power3.out" });
+      gsap.utils.toArray<HTMLElement>("[data-hero-card]").forEach((el, i) => {
+        gsap.to(el, { y: i % 2 ? 9 : -9, duration: 3 + i, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.4 });
+      });
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
         gsap.from(el, {
           y: 28, opacity: 0, duration: 0.7, ease: "power2.out",
@@ -64,46 +66,72 @@ export default function LandingPage() {
       <SiteHeader />
 
       {/* ── Hero ── */}
-      <div className="relative">
-        <HeroCanvas className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]" />
-        <div className="relative mx-auto max-w-[1200px] px-5 pb-20 pt-14 sm:px-10 md:pt-20">
-          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
-            <div data-hero>
-              {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
-              <div className="mb-8 inline-flex flex-wrap items-center gap-2.5 font-mono">
-                <span className="text-[0.72rem] text-muted-foreground">{t("heroFlow")}</span>
-                <span className="text-muted-foreground/45">→</span>
-                <span className="text-[0.72rem] font-bold">Observer</span>
-                <span className="text-muted-foreground/45">→</span>
-                <span className="inline-flex items-center gap-[5px] text-[0.72rem] font-bold text-[#00a884]">
-                  <span className="size-1.5 animate-pulse rounded-full bg-[#00a884]" />
-                  WhatsApp
-                </span>
-              </div>
+      <div className="relative overflow-hidden">
+        {/* soft pastel gradient blobs */}
+        <div className="pointer-events-none absolute -left-44 top-0 size-[520px] rounded-full bg-[#e0f0e4] opacity-70 blur-3xl" />
+        <div className="pointer-events-none absolute -right-44 top-32 size-[520px] rounded-full bg-[#ffe9d8] opacity-70 blur-3xl" />
 
-              <h1 className="mb-6 max-w-[560px] text-balance font-display text-[clamp(2.7rem,5.2vw,4.2rem)] font-bold leading-[1.06] tracking-[-0.03em]">
-                {t("heroTitle")}{" "}
-                <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("heroTitleAccent")}</span>
-              </h1>
-
-              <p className="mb-10 max-w-[470px] text-[1.1rem] leading-[1.7] text-muted-foreground">
-                {t("heroSubtitle")}
-              </p>
-
-              <div className="mb-[18px] flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="h-12 rounded-full bg-foreground px-8 text-[0.975rem] text-background shadow-none transition-all hover:-translate-y-0.5 hover:bg-foreground/90">
-                  <Link href="/signup">{t("tryFree")}</Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary" className="h-12 rounded-full bg-[#efebe1] px-6 text-[0.95rem] text-foreground shadow-none hover:bg-[#e7e2d4]">
-                  <Link href="/showcase">{t("seeExample")} →</Link>
-                </Button>
-              </div>
-              <p className="text-[0.78rem] text-muted-foreground">
-                {t("noCard")}
-              </p>
+        <div className="relative mx-auto max-w-[1140px] px-5 pt-14 text-center sm:px-10 md:pt-20">
+          <div data-hero className="flex flex-col items-center">
+            {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
+            <div className="mb-7 inline-flex flex-wrap items-center justify-center gap-2.5 rounded-full border border-[#ece8df] bg-white/80 px-4 py-1.5 font-mono backdrop-blur-sm">
+              <span className="text-[0.7rem] text-muted-foreground">{t("heroFlow")}</span>
+              <span className="text-muted-foreground/45">→</span>
+              <span className="text-[0.7rem] font-bold">Observer</span>
+              <span className="text-muted-foreground/45">→</span>
+              <span className="inline-flex items-center gap-[5px] text-[0.7rem] font-bold text-[#00a884]">
+                <span className="size-1.5 animate-pulse rounded-full bg-[#00a884]" />
+                WhatsApp
+              </span>
             </div>
 
-            <SignalFeed />
+            <h1 className="mb-5 max-w-[760px] text-balance font-display text-[clamp(2.6rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.03em]">
+              {t("heroTitle")}{" "}
+              <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("heroTitleAccent")}</span>
+            </h1>
+
+            <p className="mb-9 max-w-[520px] text-balance text-[1.02rem] leading-[1.7] text-muted-foreground">
+              {t("heroSubtitle")}
+            </p>
+
+            <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
+              <Button asChild size="lg" className="h-12 rounded-full bg-foreground px-8 text-[0.95rem] text-background shadow-none transition-all hover:-translate-y-0.5 hover:bg-foreground/90">
+                <Link href="/signup">{t("tryFree")}</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-[#e4dfd2] bg-white px-7 text-[0.92rem] text-foreground shadow-none hover:bg-white/70">
+                <Link href="/showcase">{t("seeExample")}</Link>
+              </Button>
+            </div>
+            <p className="text-[0.76rem] text-muted-foreground">
+              {t("noCard")}
+            </p>
+          </div>
+
+          {/* ── Device + floating cards ── */}
+          <div className="relative mt-12 grid grid-cols-1 items-center gap-8 md:grid-cols-[1fr_auto_1fr] md:gap-10">
+            {/* left floating card: AI suggestion */}
+            <div data-hero-card className="z-10 w-[270px] justify-self-center rounded-2xl border border-[#ece8df] bg-white p-5 text-left md:-mr-8 md:-mt-28 md:justify-self-end">
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <LogoMark size={16} />
+                <span className="text-[0.7rem] font-bold text-muted-foreground">Observer AI</span>
+                <span className="ml-auto font-mono text-[0.62rem] text-muted-foreground/60">{t("feedTime3")}</span>
+              </div>
+              <div className="mb-1.5 text-[0.95rem] font-bold tracking-[-0.01em]">{t("feedCard3Title")}</div>
+              <p className="text-[0.82rem] leading-relaxed text-muted-foreground">{t("feedCard3Body")}</p>
+            </div>
+
+            {/* phone center */}
+            <div data-hero-phone>
+              <PhoneMockup />
+            </div>
+
+            {/* right floating card: resolved outcome */}
+            <div data-hero-card className="z-10 w-[270px] justify-self-center rounded-2xl border border-[#ece8df] bg-white p-5 text-left md:-ml-8 md:mt-24 md:justify-self-start">
+              <div className="mb-2 text-[0.82rem] tracking-[0.14em] text-[#f5a623]">★★★★★</div>
+              <div className="mb-1.5 text-[0.95rem] font-bold tracking-[-0.01em]">{t("feedCard6Title")}</div>
+              <p className="mb-3 text-[0.82rem] leading-relaxed text-muted-foreground">{t("feedCard6Body")}</p>
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[0.6rem] font-bold text-emerald-600">{t("feedSevResolved")}</span>
+            </div>
           </div>
         </div>
       </div>
