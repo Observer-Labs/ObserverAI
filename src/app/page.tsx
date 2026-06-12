@@ -97,10 +97,10 @@ export default function LandingPage() {
               </p>
 
               <div className="mb-[18px] flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="h-12 rounded-full bg-[var(--brand)] px-8 text-[0.975rem] text-white shadow-none transition-all hover:-translate-y-0.5 hover:bg-[var(--brand-strong)]">
+                <Button asChild size="lg" className="h-12 rounded-full bg-foreground px-8 text-[0.975rem] text-background shadow-none transition-all hover:-translate-y-0.5 hover:bg-foreground/90">
                   <Link href="/signup">{t("tryFree")}</Link>
                 </Button>
-                <Button asChild size="lg" variant="ghost" className="h-12 rounded-full px-6 text-[0.95rem] text-foreground hover:bg-[#f4f1ea]">
+                <Button asChild size="lg" variant="secondary" className="h-12 rounded-full bg-[#efebe1] px-6 text-[0.95rem] text-foreground shadow-none hover:bg-[#e7e2d4]">
                   <Link href="/showcase">{t("seeExample")} →</Link>
                 </Button>
               </div>
@@ -227,7 +227,7 @@ export default function LandingPage() {
           <h2 className="relative mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.4rem,4.6vw,3.8rem)] font-bold leading-[1.06] tracking-[-0.03em] text-white">
             {t("ctaTitle")}
           </h2>
-          <Button asChild size="lg" className="relative h-[52px] rounded-full bg-white px-10 text-base font-bold text-[var(--brand-strong)] shadow-none transition-all hover:-translate-y-0.5 hover:bg-white/95">
+          <Button asChild size="lg" className="relative h-[52px] rounded-full bg-white px-10 text-base font-bold text-foreground shadow-none transition-all hover:-translate-y-0.5 hover:bg-white/95">
             <Link href="/signup">{t("tryFree")}</Link>
           </Button>
           <p className="relative mt-[18px] text-[0.78rem] text-white/75">{t("noCard")}</p>
