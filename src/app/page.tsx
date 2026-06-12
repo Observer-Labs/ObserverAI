@@ -87,8 +87,8 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <h1 className="mb-6 font-display text-[clamp(2.9rem,5.5vw,4.5rem)] font-bold leading-[1.04] tracking-[-0.03em]">
-                {t("heroTitle")}<br />
+              <h1 className="mb-6 max-w-[560px] text-balance font-display text-[clamp(2.7rem,5.2vw,4.2rem)] font-bold leading-[1.06] tracking-[-0.03em]">
+                {t("heroTitle")}{" "}
                 <span className="bg-[linear-gradient(transparent_62%,rgba(253,186,116,0.55)_62%)] pr-1">{t("heroTitleAccent")}</span>
               </h1>
 
