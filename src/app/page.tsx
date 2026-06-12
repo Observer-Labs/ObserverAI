@@ -9,6 +9,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Logo from "@/components/Logo";
 import SignalFeed from "@/components/marketing/SignalFeed";
+import PipelineSection from "@/components/marketing/PipelineSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,13 +34,6 @@ export default function LandingPage() {
     { icon: "☕", type: t("persona1Type"), sources: ["Google Reviews", "Getir", "POS"], gap: "Bu hafta 12 kişi Kadıköy şubenizde sabah kuyruğunun çok yavaş olduğunu söyledi. 8-10 arası vardiyaya bir barista ekleyin." },
     { icon: "🍽️", type: t("persona2Type"), sources: ["Yemeksepeti", "Trendyol", "Google"], gap: "Yemeksepeti'ndeki soğuk yemek şikayetleri bu hafta sonu üçe katlandı, hepsi gece 9'dan sonraki geç teslimatlardan. Kurye teslimat sürecini kontrol edin." },
     { icon: "🏪", type: t("persona3Type"), sources: ["Google Reviews", "POS", "Analytics"], gap: "Cumartesi müşteri trafiği artıyor ama satışlar sabit. Müşteriler uzun ödeme kuyruklarından bahsediyor. Hafta sonları ikinci kasayı açın." },
-  ];
-
-  const steps = [
-    { n: "01", icon: "🔌", title: t("step1Title"), body: t("step1Body") },
-    { n: "02", icon: "🧠", title: t("step2Title"), body: t("step2Body") },
-    { n: "03", icon: "💬", title: t("step3Title"), body: t("step3Body") },
-    { n: "04", icon: "✅", title: t("step4Title"), body: t("step4Body") },
   ];
 
   const proof = [
@@ -143,23 +137,11 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* ── How it works ── */}
+      {/* ── How it works: signal pipeline ── */}
       <div className="px-3 sm:px-5">
         <div data-reveal className="mx-auto max-w-[1320px] rounded-[40px] bg-[#f3efe6] px-5 py-20 sm:px-10 md:py-24">
           <p className="mb-14 text-center text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("howItWorksLabel")}</p>
-          <div className="mx-auto grid max-w-[1160px] grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
-            {steps.map((step, i) => {
-              const chipTints = ["bg-[#ffe8d6]", "bg-[#fde7f1]", "bg-[#e3f2e9]", "bg-[#e7f0fd]"];
-              return (
-                <div key={step.n} className="relative rounded-3xl bg-white p-7 shadow-[0_2px_16px_rgba(60,50,30,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:rotate-[-0.5deg] hover:shadow-[0_18px_44px_rgba(60,50,30,0.12)]">
-                  <div className={`mb-5 flex size-14 items-center justify-center rounded-2xl text-[1.65rem] ${chipTints[i]}`}>{step.icon}</div>
-                  <div className="mb-1.5 font-mono text-[0.6rem] font-bold tracking-[0.1em] text-[var(--brand)]">{step.n}</div>
-                  <div className="mb-[9px] text-[1.05rem] font-bold tracking-[-0.02em]">{step.title}</div>
-                  <div className="text-[0.86rem] leading-relaxed text-muted-foreground">{step.body}</div>
-                </div>
-              );
-            })}
-          </div>
+          <PipelineSection />
         </div>
       </div>
 

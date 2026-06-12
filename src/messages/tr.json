@@ -96,7 +96,14 @@
     "feedSevCritical": "KRİTİK",
     "feedSevHigh": "YÜKSEK",
     "feedSevMedium": "ORTA",
-    "feedSevResolved": "ÇÖZÜLDÜ"
+    "feedSevResolved": "ÇÖZÜLDÜ",
+    "pipelineReview1": "Kahve güzeldi ama 25 dakika bekledik",
+    "pipelineReview2": "Sipariş yine soğuk geldi",
+    "pipelineReview3": "Kasada kuyruk çok uzundu",
+    "pipelineCoreCaption": "Binlerce yorumu okur, önemli birkaç sinyale indirir",
+    "pipelineWhatsappCaption": "Acil olan anında WhatsApp'ınıza düşer",
+    "pipelineDashboardCaption": "Detaylar ve geçmiş dashboard'da",
+    "pipelineDashboardStat": "Bu hafta 3 yeni sinyal"
   },
   "auth": {
     "tagline": "Müşteri sinyalleri, WhatsApp'ınızda.",

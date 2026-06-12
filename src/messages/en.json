@@ -96,7 +96,14 @@
     "feedSevCritical": "CRITICAL",
     "feedSevHigh": "HIGH",
     "feedSevMedium": "MEDIUM",
-    "feedSevResolved": "RESOLVED"
+    "feedSevResolved": "RESOLVED",
+    "pipelineReview1": "Great coffee, but we waited 25 minutes",
+    "pipelineReview2": "Order arrived cold again",
+    "pipelineReview3": "The checkout line was way too long",
+    "pipelineCoreCaption": "Reads thousands of comments, distills the few signals that matter",
+    "pipelineWhatsappCaption": "Urgent ones land in your WhatsApp instantly",
+    "pipelineDashboardCaption": "Details and history live in the dashboard",
+    "pipelineDashboardStat": "3 new signals this week"
   },
   "auth": {
     "tagline": "Customer signals, on your WhatsApp.",
