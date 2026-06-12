@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -18,8 +19,12 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
-const sources = [
-  "Google Reviews", "Getir", "Yemeksepeti", "Trendyol", "POS / Payments", "Google Analytics",
+const sourceLogos = [
+  { src: "/logos/google.svg", alt: "Google Reviews", width: 28, height: 28, className: "h-7" },
+  { src: "/logos/getir.svg", alt: "Getir", width: 84, height: 28, className: "h-7" },
+  { src: "/logos/yemeksepeti.svg", alt: "Yemeksepeti", width: 140, height: 24, className: "h-5" },
+  { src: "/logos/trendyol.svg", alt: "Trendyol", width: 120, height: 24, className: "h-5" },
+  { src: "/logos/googleanalytics.svg", alt: "Google Analytics", width: 28, height: 28, className: "h-7" },
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -53,7 +58,6 @@ export default function LandingPage() {
     () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       gsap.from("[data-hero] > *", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
-      gsap.to("[data-marquee]", { xPercent: -50, duration: 26, ease: "none", repeat: -1 });
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
         gsap.from(el, {
           y: 28, opacity: 0, duration: 0.7, ease: "power2.out",
@@ -115,21 +119,20 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Sources marquee ── */}
-      <div className="py-10">
-        <p className="mb-6 text-center text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("watchesLabel")}</p>
-        <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div data-marquee className="flex w-max">
-            {[0, 1].map((set) => (
-              <div key={set} className="flex shrink-0 gap-3 pr-3" aria-hidden={set === 1}>
-                {sources.map((src) => (
-                  <Badge key={src} variant="outline" className="rounded-full border-[#eae5da] bg-white px-5 py-2.5 text-[0.85rem] font-semibold text-foreground/70 shadow-sm">
-                    {src}
-                  </Badge>
-                ))}
-              </div>
-            ))}
-          </div>
+      {/* ── Source logos ── */}
+      <div data-reveal className="mx-auto max-w-[1000px] px-5 py-12 sm:px-10">
+        <p className="mb-8 text-center text-[0.64rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("watchesLabel")}</p>
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 sm:gap-x-16">
+          {sourceLogos.map((logo) => (
+            <Image
+              key={logo.alt}
+              src={logo.src}
+              alt={logo.alt}
+              width={logo.width}
+              height={logo.height}
+              className={`w-auto opacity-45 grayscale transition-all duration-300 hover:opacity-90 hover:grayscale-0 ${logo.className}`}
+            />
+          ))}
         </div>
       </div>
 
