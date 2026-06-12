@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP);
@@ -16,56 +17,48 @@ interface FeedCard {
   variant?: "default" | "whatsapp" | "insight";
 }
 
-const CARDS: FeedCard[] = [
-  {
-    icon: "⭐",
-    source: "Google Reviews",
-    time: "2 dk önce",
-    title: "Bekleme süreleri Kadıköy'de artıyor",
-    body: "Bu hafta 14 şikayet — geçen haftanın 2 katı.",
-    severity: { label: "KRİTİK", className: "bg-red-50 text-red-600 border-red-200" },
-  },
-  {
-    icon: "🛵",
-    source: "Yemeksepeti",
-    time: "18 dk önce",
-    title: "Soğuk yemek şikayetleri 3×'e çıktı",
-    body: "Tamamı 21:00 sonrası geç teslimatlardan geliyor.",
-    severity: { label: "YÜKSEK", className: "bg-amber-50 text-amber-600 border-amber-200" },
-  },
-  {
-    icon: "🧠",
-    source: "Observer AI",
-    time: "şimdi",
-    title: "Önerilen aksiyon",
-    body: "Cuma–Pazar 19:00–21:00 vardiyasına bir kişi ekleyin.",
-    variant: "insight",
-  },
-  {
-    icon: "✓✓",
-    source: "WhatsApp",
-    time: "09:24",
-    title: "Uyarı WhatsApp'a gönderildi",
-    body: "Hafta sonu ciro riski · 1 yazarak işleme alın.",
-    variant: "whatsapp",
-  },
-  {
-    icon: "💳",
-    source: "POS / Payments",
-    time: "1 sa önce",
-    title: "Cumartesi trafik artıyor, ciro sabit",
-    body: "Müşteriler kasa kuyruğundan bahsediyor.",
-    severity: { label: "ORTA", className: "bg-sky-50 text-sky-600 border-sky-200" },
-  },
-  {
-    icon: "✅",
-    source: "Observer",
-    time: "dün",
-    title: "Yanıtlandı olarak işaretlendi",
-    body: "Kurye süreci güncellendi. Şikayetler %40 düştü.",
-    severity: { label: "ÇÖZÜLDÜ", className: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-  },
-];
+const SEV = {
+  critical: "bg-red-50 text-red-600 border-red-200",
+  high: "bg-amber-50 text-amber-600 border-amber-200",
+  medium: "bg-sky-50 text-sky-600 border-sky-200",
+  resolved: "bg-emerald-50 text-emerald-600 border-emerald-200",
+};
+
+function useFeedCards(): FeedCard[] {
+  const t = useTranslations("landing");
+  return [
+    {
+      icon: "⭐", source: "Google Reviews",
+      time: t("feedTime1"), title: t("feedCard1Title"), body: t("feedCard1Body"),
+      severity: { label: t("feedSevCritical"), className: SEV.critical },
+    },
+    {
+      icon: "🛵", source: "Yemeksepeti",
+      time: t("feedTime2"), title: t("feedCard2Title"), body: t("feedCard2Body"),
+      severity: { label: t("feedSevHigh"), className: SEV.high },
+    },
+    {
+      icon: "🧠", source: "Observer AI",
+      time: t("feedTime3"), title: t("feedCard3Title"), body: t("feedCard3Body"),
+      variant: "insight",
+    },
+    {
+      icon: "✓✓", source: "WhatsApp",
+      time: t("feedTime4"), title: t("feedCard4Title"), body: t("feedCard4Body"),
+      variant: "whatsapp",
+    },
+    {
+      icon: "💳", source: "POS / Payments",
+      time: t("feedTime5"), title: t("feedCard5Title"), body: t("feedCard5Body"),
+      severity: { label: t("feedSevMedium"), className: SEV.medium },
+    },
+    {
+      icon: "✅", source: "Observer",
+      time: t("feedTime6"), title: t("feedCard6Title"), body: t("feedCard6Body"),
+      severity: { label: t("feedSevResolved"), className: SEV.resolved },
+    },
+  ];
+}
 
 function Card({ card }: { card: FeedCard }) {
   const isWa = card.variant === "whatsapp";
@@ -116,6 +109,7 @@ function Card({ card }: { card: FeedCard }) {
  */
 export default function SignalFeed() {
   const wrap = useRef<HTMLDivElement>(null);
+  const cards = useFeedCards();
 
   useGSAP(
     () => {
@@ -135,7 +129,7 @@ export default function SignalFeed() {
       <div data-track className="flex flex-col pr-1">
         {[0, 1].map((set) => (
           <div key={set} className="flex flex-col gap-4 pb-4" aria-hidden={set === 1}>
-            {CARDS.map((card) => (
+            {cards.map((card) => (
               <Card key={`${set}-${card.title}`} card={card} />
             ))}
           </div>

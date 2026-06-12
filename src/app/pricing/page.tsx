@@ -81,11 +81,11 @@ export default async function PricingPage() {
       <div className="relative z-[1]">
         <SiteHeader />
 
-        <Reveal className="px-6 pb-12 pt-[76px] text-center">
-          <h1 className="mb-4 text-[clamp(2rem,5vw,3.4rem)] font-extrabold tracking-[-0.03em] text-foreground">
+        <Reveal className="px-6 pb-14 pt-20 text-center">
+          <h1 className="mb-5 font-display text-[clamp(2.5rem,5vw,3.9rem)] font-bold leading-[1.06] tracking-[-0.03em] text-foreground">
             {tPricing("title")}
           </h1>
-          <p className="mx-auto max-w-[560px] text-[1.05rem] leading-relaxed text-muted-foreground">
+          <p className="mx-auto max-w-[560px] text-[1.1rem] leading-[1.7] text-muted-foreground">
             {tPricing("subtitle")}
           </p>
         </Reveal>
@@ -95,7 +95,7 @@ export default async function PricingPage() {
             <Card
               key={plan.name}
               className={cn(
-                "relative gap-0 rounded-2xl border-border py-0 transition-shadow hover:shadow-lg",
+                "relative gap-0 rounded-3xl border-border py-0 shadow-[0_2px_16px_rgba(16,24,40,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]",
                 plan.featured && "border-foreground bg-foreground text-background",
               )}
             >
@@ -140,7 +140,7 @@ export default async function PricingPage() {
                 <Button
                   asChild
                   variant={plan.featured ? "secondary" : "outline"}
-                  className={cn("w-full rounded-[10px] font-bold", plan.featured && "bg-background text-foreground hover:bg-background/90")}
+                  className={cn("h-11 w-full rounded-full font-bold", plan.featured && "bg-background text-foreground hover:bg-background/90")}
                 >
                   <Link href={plan.href}>{plan.cta}</Link>
                 </Button>

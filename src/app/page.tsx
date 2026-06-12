@@ -87,9 +87,9 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <h1 className="mb-6 font-display text-[clamp(3rem,5.8vw,4.8rem)] font-normal leading-[1.02] tracking-[-0.015em]">
+              <h1 className="mb-6 font-display text-[clamp(2.9rem,5.5vw,4.5rem)] font-bold leading-[1.04] tracking-[-0.03em]">
                 {t("heroTitle")}<br />
-                <span className="italic text-muted-foreground">{t("heroTitleAccent")}</span>
+                <span className="text-muted-foreground">{t("heroTitleAccent")}</span>
               </h1>
 
               <p className="mb-10 max-w-[470px] text-[1.1rem] leading-[1.7] text-muted-foreground">
@@ -131,8 +131,8 @@ export default function LandingPage() {
       {/* ── Problem ── */}
       <div data-reveal className="mx-auto max-w-[740px] px-5 py-24 sm:px-10">
         <p className="mb-[26px] text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("problemLabel")}</p>
-        <h2 className="mb-[26px] font-display text-[clamp(2.2rem,4vw,3.2rem)] font-normal leading-[1.08] tracking-[-0.01em]">
-          {t("problemTitle")}<br /><span className="italic text-muted-foreground">{t("problemTitleAccent")}</span>
+        <h2 className="mb-[26px] font-display text-[clamp(2rem,3.6vw,2.9rem)] font-bold leading-[1.1] tracking-[-0.025em]">
+          {t("problemTitle")}<br /><span className="text-muted-foreground">{t("problemTitleAccent")}</span>
         </h2>
         <p className="mb-4 max-w-[600px] text-base leading-[1.72] text-muted-foreground">
           {t("problemBody1")}
@@ -163,7 +163,7 @@ export default function LandingPage() {
       <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10">
         <div className="mb-12 text-center">
           <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{t("builtForLabel")}</p>
-          <h2 className="font-display text-[clamp(2rem,3.6vw,2.9rem)] font-normal tracking-[-0.01em]">
+          <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
             {t("builtForTitle")}
           </h2>
         </div>
@@ -209,7 +209,7 @@ export default function LandingPage() {
       {/* ── Final CTA ── */}
       <div className="border-t border-border">
         <div data-reveal className="mx-auto max-w-[1160px] px-5 pb-[110px] pt-24 text-center sm:px-10">
-          <h2 className="mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.6rem,5vw,4.2rem)] font-normal leading-[1.05] tracking-[-0.01em]">
+          <h2 className="mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.4rem,4.6vw,3.8rem)] font-bold leading-[1.06] tracking-[-0.03em]">
             {t("ctaTitle")}
           </h2>
           <Button asChild size="lg" className="h-[52px] rounded-full px-10 text-base shadow-[0_8px_24px_rgba(16,24,40,0.18)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(16,24,40,0.22)]">
