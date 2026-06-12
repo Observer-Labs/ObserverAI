@@ -30,98 +30,103 @@ function ReviewCard({ text, stars }: { text: string; stars: number }) {
   );
 }
 
-function PhoneMock({ title, body, severity, handled }: { title: string; body: string; severity: string; handled: string }) {
+function WhatsAppWindow({ title, body, severity, handled }: { title: string; body: string; severity: string; handled: string }) {
   return (
-    <div className="w-[270px] overflow-hidden rounded-[38px] border-[9px] border-[#18181b] bg-[#0b141a] shadow-[0_24px_60px_rgba(30,25,15,0.18)]">
-      {/* notch */}
-      <div className="relative z-[2] mx-auto -mb-5 h-5 w-[110px] rounded-b-[12px] bg-[#18181b]" />
-      {/* WA header */}
-      <div className="flex items-center gap-2.5 bg-[#1f2c34] px-3.5 pb-2.5 pt-7">
-        <div className="flex size-8 items-center justify-center rounded-full bg-[#202c33]">
-          <LogoMark size={18} />
+    <div className="w-[330px] overflow-hidden rounded-xl bg-[#0b141a] shadow-[0_32px_70px_rgba(25,20,10,0.35)] ring-1 ring-black/20">
+      {/* window chrome + WA header */}
+      <div className="bg-[#202c33]">
+        <div className="flex items-center gap-1.5 px-3.5 pt-3">
+          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="size-2.5 rounded-full bg-[#febc2e]" />
+          <span className="size-2.5 rounded-full bg-[#28c840]" />
         </div>
-        <div className="flex-1">
-          <div className="text-[0.8rem] font-semibold text-[#e9edef]">Observer</div>
-          <div className="flex items-center gap-1 text-[0.62rem] text-[#9fd9bf]">
-            <span className="size-1 rounded-full bg-[#00a884]" /> online
+        <div className="flex items-center gap-3 px-4 pb-3 pt-2.5">
+          <div className="flex size-9 items-center justify-center rounded-full bg-[#0b141a]">
+            <LogoMark size={20} />
           </div>
+          <div className="flex-1">
+            <div className="text-[0.88rem] font-semibold leading-tight text-[#e9edef]">Observer</div>
+            <div className="text-[0.7rem] text-[#8696a0]">online</div>
+          </div>
+          <span className="text-[#8696a0]">⌕</span>
+          <span className="text-[#8696a0]">⋮</span>
         </div>
       </div>
       {/* chat */}
-      <div className="flex min-h-[270px] flex-col gap-2 px-3 py-4">
-        <div className="max-w-[94%] rounded-[4px_12px_12px_12px] bg-[#202c33] px-3 py-2.5">
+      <div className="flex min-h-[300px] flex-col justify-end gap-2 bg-[radial-gradient(rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:18px_18px] px-4 py-5">
+        <div className="max-w-[92%] rounded-lg rounded-tl-none bg-[#202c33] px-3 py-2 shadow-[0_1px_1px_rgba(0,0,0,0.3)]">
           <div className="mb-1 flex items-start justify-between gap-2">
-            <span className="text-[0.78rem] font-bold leading-snug text-[#e9edef]">{title}</span>
-            <span className="shrink-0 rounded-full bg-[#f0857d]/15 px-1.5 py-0.5 font-mono text-[0.52rem] font-bold text-[#f0857d]">{severity}</span>
+            <span className="text-[0.82rem] font-bold leading-snug text-[#e9edef]">{title}</span>
+            <span className="mt-0.5 shrink-0 rounded bg-[#f0857d]/15 px-1.5 py-px font-mono text-[0.55rem] font-bold text-[#f0857d]">{severity}</span>
           </div>
-          <p className="text-[0.7rem] leading-relaxed text-[#8696a0]">{body}</p>
-          <div className="mt-1 text-right text-[0.55rem] text-[#667781]">09:24</div>
+          <p className="text-[0.74rem] leading-relaxed text-[#aebac1]">{body}</p>
+          <div className="mt-1 text-right text-[0.58rem] text-[#667781]">09:24</div>
         </div>
-        <div className="ml-auto w-fit rounded-[12px_4px_12px_12px] bg-[#005c4b] px-3 py-1.5">
-          <span className="text-[0.76rem] font-semibold text-[#e9edef]">1</span>
-          <span className="ml-1.5 text-[0.56rem] text-[#9fd9bf]">✓✓</span>
+        <div className="ml-auto flex w-fit items-baseline gap-2 rounded-lg rounded-tr-none bg-[#005c4b] px-3 py-1.5 shadow-[0_1px_1px_rgba(0,0,0,0.3)]">
+          <span className="text-[0.8rem] text-[#e9edef]">1</span>
+          <span className="text-[0.56rem] text-[#7fc4ab]">09:25 ✓✓</span>
         </div>
-        <div className="max-w-[80%] rounded-[10px] border border-[#00a884]/30 bg-[#00a884]/[0.16] px-2.5 py-1.5">
-          <span className="text-[0.66rem] font-semibold text-[#7fe0c0]">✅ {handled}</span>
+        <div className="self-center rounded-full border border-[#00a884]/25 bg-[#00a884]/10 px-3 py-1 text-[0.66rem] font-medium text-[#7fe0c0]">
+          ✅ {handled}
         </div>
+      </div>
+      {/* input bar */}
+      <div className="flex items-center gap-2.5 bg-[#202c33] px-4 py-2.5">
+        <span className="text-[#8696a0]">☺</span>
+        <div className="flex-1 rounded-lg bg-[#2a3942] px-3 py-1.5 text-[0.72rem] text-[#8696a0]">Mesaj</div>
+        <span className="text-[#8696a0]">🎤</span>
       </div>
     </div>
   );
 }
 
-function MacbookMock({ statText, row1, row2, sevHigh, sevMedium }: { statText: string; row1: string; row2: string; sevHigh: string; sevMedium: string }) {
+function BrowserWindow({ statText, row1, row2, sevHigh, sevMedium }: { statText: string; row1: string; row2: string; sevHigh: string; sevMedium: string }) {
   const tNav = useTranslations("nav");
   const navItems = [tNav("signals"), tNav("sources"), tNav("alerts"), tNav("history")];
   return (
-    <div className="absolute left-0 top-0 w-[680px] max-w-none sm:w-[760px]">
-      {/* screen */}
-      <div className="rounded-t-[14px] border-[10px] border-b-0 border-[#1c1c1e] bg-[#1c1c1e] shadow-[0_24px_60px_rgba(30,25,15,0.18)]">
-        <div className="overflow-hidden rounded-t-[5px] bg-white">
-          {/* browser chrome */}
-          <div className="flex items-center gap-2 border-b border-[#eee9df] bg-[#faf8f3] px-3.5 py-2">
-            <span className="size-2 rounded-full bg-[#ff5f57]" />
-            <span className="size-2 rounded-full bg-[#febc2e]" />
-            <span className="size-2 rounded-full bg-[#28c840]" />
-            <span className="ml-3 rounded-md bg-white px-3 py-0.5 font-mono text-[0.6rem] text-foreground/45">observerai.app/dashboard</span>
+    <div className="absolute left-0 top-0 w-[760px] max-w-none overflow-hidden rounded-xl bg-white shadow-[0_24px_60px_rgba(25,20,10,0.18)] ring-1 ring-black/[0.08]">
+      {/* browser chrome */}
+      <div className="flex items-center gap-2 border-b border-[#e8e3d8] bg-[#f6f3ec] px-4 py-2.5">
+        <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+        <span className="size-2.5 rounded-full bg-[#febc2e]" />
+        <span className="size-2.5 rounded-full bg-[#28c840]" />
+        <div className="ml-4 flex items-center gap-1.5 rounded-md bg-white px-3 py-1 ring-1 ring-black/[0.05]">
+          <span className="text-[0.6rem] text-[#28c840]">🔒</span>
+          <span className="font-mono text-[0.64rem] text-foreground/50">observerai.app/dashboard</span>
+        </div>
+      </div>
+      <div className="flex">
+        {/* sidebar */}
+        <div className="w-40 shrink-0 border-r border-[#efebe1] px-4 py-4">
+          <div className="mb-5 flex items-center gap-1.5">
+            <LogoMark size={17} />
+            <span className="text-[0.74rem] font-bold italic">Observer</span>
           </div>
-          <div className="flex">
-            {/* sidebar */}
-            <div className="w-36 shrink-0 border-r border-[#eee9df] px-3.5 py-4">
-              <div className="mb-4 flex items-center gap-1.5">
-                <LogoMark size={16} />
-                <span className="text-[0.7rem] font-bold italic">Observer</span>
-              </div>
-              {navItems.map((label, i) => (
-                <div key={label} className={`mb-1 rounded-md px-2 py-1.5 text-[0.66rem] font-medium ${i === 0 ? "bg-[#f3efe6] text-foreground" : "text-foreground/45"}`}>
-                  {label}
-                </div>
-              ))}
+          {navItems.map((label, i) => (
+            <div key={label} className={`mb-1 rounded-md px-2.5 py-1.5 text-[0.7rem] font-medium ${i === 0 ? "bg-[#f3efe6] text-foreground" : "text-foreground/45"}`}>
+              {label}
             </div>
-            {/* main */}
-            <div className="min-h-[280px] flex-1 px-5 py-4">
-              <div className="mb-3 text-[0.78rem] font-bold">{statText}</div>
-              <div className="mb-4 flex h-[64px] max-w-[300px] items-end gap-1">
-                {[34, 58, 26, 72, 44, 62, 90].map((h, i) => (
-                  <div key={i} style={{ height: `${h}%` }} className={`flex-1 rounded-t-[3px] ${i === 6 ? "bg-[var(--brand)]" : "bg-[#ece7da]"}`} />
-                ))}
-              </div>
-              <div className="flex max-w-[420px] flex-col gap-1.5">
-                <div className="flex items-center gap-2 rounded-lg border border-[#eee9df] px-3 py-2">
-                  <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-mono text-[0.52rem] font-bold text-amber-600">{sevHigh}</span>
-                  <span className="truncate text-[0.68rem] text-foreground/75">{row1}</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-[#eee9df] px-3 py-2">
-                  <span className="rounded-full bg-sky-50 px-1.5 py-0.5 font-mono text-[0.52rem] font-bold text-sky-600">{sevMedium}</span>
-                  <span className="truncate text-[0.68rem] text-foreground/75">{row2}</span>
-                </div>
-              </div>
+          ))}
+        </div>
+        {/* main */}
+        <div className="min-h-[300px] flex-1 px-6 py-5">
+          <div className="mb-3.5 text-[0.85rem] font-bold">{statText}</div>
+          <div className="mb-5 flex h-[72px] max-w-[330px] items-end gap-1.5">
+            {[34, 58, 26, 72, 44, 62, 90].map((h, i) => (
+              <div key={i} style={{ height: `${h}%` }} className={`flex-1 rounded-t-[3px] ${i === 6 ? "bg-[var(--brand)]" : "bg-[#ece7da]"}`} />
+            ))}
+          </div>
+          <div className="flex max-w-[440px] flex-col gap-2">
+            <div className="flex items-center gap-2.5 rounded-lg border border-[#efebe1] px-3.5 py-2.5">
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 font-mono text-[0.55rem] font-bold text-amber-600">{sevHigh}</span>
+              <span className="truncate text-[0.72rem] text-foreground/75">{row1}</span>
+            </div>
+            <div className="flex items-center gap-2.5 rounded-lg border border-[#efebe1] px-3.5 py-2.5">
+              <span className="rounded-full bg-sky-50 px-2 py-0.5 font-mono text-[0.55rem] font-bold text-sky-600">{sevMedium}</span>
+              <span className="truncate text-[0.72rem] text-foreground/75">{row2}</span>
             </div>
           </div>
         </div>
-      </div>
-      {/* base */}
-      <div className="relative -mx-[4%] h-3.5 rounded-b-[12px] bg-[#2a2a2e]">
-        <div className="absolute left-1/2 top-0 h-1.5 w-[90px] -translate-x-1/2 rounded-b-[8px] bg-[#1c1c1e]" />
       </div>
     </div>
   );
@@ -201,32 +206,33 @@ export default function PipelineSection() {
       </svg>
       <div className="flex justify-center py-4 text-[#ddd5c4] sm:hidden">↓</div>
 
-      {/* ── Outputs: phone left, cropped macbook right ── */}
-      <div className="grid grid-cols-1 items-center gap-10 sm:grid-cols-[0.9fr_1.1fr] sm:gap-6">
-        {/* WhatsApp phone — the prominent branch */}
-        <div className="flex flex-col items-center">
-          <PhoneMock
+      {/* ── Outputs: overlapping app windows, browser bleeds off the right ── */}
+      <div className="relative sm:h-[440px]">
+        {/* dashboard browser window, behind, cropped at the panel edge */}
+        <div className="relative mb-6 h-[300px] overflow-hidden rounded-xl sm:absolute sm:left-[230px] sm:top-0 sm:mb-0 sm:h-auto sm:overflow-visible">
+          <BrowserWindow
+            statText={t("pipelineDashboardStat")}
+            row1={t("feedCard2Title")}
+            row2={t("feedCard5Title")}
+            sevHigh={t("feedSevHigh")}
+            sevMedium={t("feedSevMedium")}
+          />
+        </div>
+        {/* whatsapp window, in front */}
+        <div className="relative z-10 mx-auto w-fit sm:mx-0 sm:mt-10">
+          <WhatsAppWindow
             title={t("feedCard1Title")}
             body={t("feedCard1Body")}
             severity={t("feedSevCritical")}
             handled={t("pipelineHandled")}
           />
-          <p className="mt-5 max-w-[280px] text-center text-[0.84rem] leading-snug text-muted-foreground">{t("pipelineWhatsappCaption")}</p>
         </div>
+      </div>
 
-        {/* Dashboard macbook — bleeds off the right edge */}
-        <div className="flex flex-col">
-          <div className="relative h-[260px] sm:h-[340px]">
-            <MacbookMock
-              statText={t("pipelineDashboardStat")}
-              row1={t("feedCard2Title")}
-              row2={t("feedCard5Title")}
-              sevHigh={t("feedSevHigh")}
-              sevMedium={t("feedSevMedium")}
-            />
-          </div>
-          <p className="mt-5 max-w-[320px] text-[0.84rem] leading-snug text-muted-foreground">{t("pipelineDashboardCaption")}</p>
-        </div>
+      {/* captions */}
+      <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <p className="max-w-[300px] text-[0.84rem] leading-snug text-muted-foreground">{t("pipelineWhatsappCaption")}</p>
+        <p className="max-w-[300px] text-[0.84rem] leading-snug text-muted-foreground sm:text-right">{t("pipelineDashboardCaption")}</p>
       </div>
     </div>
   );
