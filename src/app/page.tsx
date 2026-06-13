@@ -138,19 +138,17 @@ export default function LandingPage() {
       </div>
 
       {/* ── How it works: signal pipeline ── */}
-      <div className="px-3 sm:px-5">
-        <div data-reveal className="mx-auto max-w-[1320px] overflow-hidden rounded-[40px] bg-[#f3efe6] px-5 py-20 sm:px-10 md:py-24">
-          <div className="mb-16 text-center">
-            <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("howItWorksLabel")}</p>
-            <h2 className="mb-5 font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
-              {t("howItWorksTitle")}
-            </h2>
-            <p className="mx-auto max-w-[560px] text-balance text-[1.02rem] leading-[1.7] text-muted-foreground">
-              {t("howItWorksSubtitle")}
-            </p>
-          </div>
-          <PipelineSection />
+      <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10 md:py-32">
+        <div className="mb-16 text-center">
+          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("howItWorksLabel")}</p>
+          <h2 className="mb-5 font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
+            {t("howItWorksTitle")}
+          </h2>
+          <p className="mx-auto max-w-[560px] text-balance text-[1.02rem] leading-[1.7] text-muted-foreground">
+            {t("howItWorksSubtitle")}
+          </p>
         </div>
+        <PipelineSection />
       </div>
 
       {/* ── Personas ── */}

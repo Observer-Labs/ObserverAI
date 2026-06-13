@@ -56,10 +56,10 @@ export default function PipelineSection() {
   );
 
   return (
-    <div ref={wrap} className="flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-center">
+    <div ref={wrap} className="flex flex-col items-stretch sm:flex-row sm:items-center">
 
       {/* ── 1. Reviews ── */}
-      <div data-stage className="flex w-full flex-col sm:w-[290px]">
+      <div data-stage className="flex w-full flex-col sm:flex-1">
         <StageHeader label="01" title={t("pipelineCol1Title")} />
         <div className="flex flex-1 flex-col gap-2.5 rounded-3xl border border-[#ece8df] bg-white p-4">
           {reviews.map((r) => (
@@ -77,7 +77,7 @@ export default function PipelineSection() {
       <FlowArrow />
 
       {/* ── 2. Dashboard (Observer reads & clusters) ── */}
-      <div data-stage className="flex w-full flex-col sm:w-[320px]">
+      <div data-stage className="flex w-full flex-col sm:flex-1">
         <StageHeader label="02" title={t("pipelineCol2Title")} />
         <div className="flex flex-1 flex-col rounded-3xl border border-[#ece8df] bg-white p-4">
           <div className="mb-3 flex items-center gap-2 border-b border-[#f3efe6] pb-3">
@@ -110,7 +110,7 @@ export default function PipelineSection() {
       <FlowArrow />
 
       {/* ── 3. WhatsApp ── */}
-      <div data-stage className="flex w-full flex-col sm:w-[290px]">
+      <div data-stage className="flex w-full flex-col sm:flex-1">
         <StageHeader label="03" title={t("pipelineCol3Title")} />
         <div className="flex flex-1 flex-col gap-2.5 rounded-3xl bg-[#0b141a] p-4 ring-2 ring-[#00a884]/35">
           <div className="flex items-center gap-2">
