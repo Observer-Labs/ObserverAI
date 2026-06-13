@@ -105,8 +105,12 @@
     "pipelineDashboardCaption": "Detaylar ve geçmiş dashboard'da",
     "pipelineDashboardStat": "Bu hafta 3 yeni sinyal",
     "howItWorksTitle": "Gürültüden Sinyale",
-    "howItWorksSubtitle": "Observer dağınık yorumları toplar, önemlileri ayıklar ve aynı anda iki yere taşır: acil olan WhatsApp'ınıza, detaylar dashboard'a.",
-    "pipelineHandled": "İşleme alındı"
+    "howItWorksSubtitle": "Observer dağınık müşteri yorumlarını toplar, dashboard'da anlamlı sinyallere dönüştürür ve önemli olanları WhatsApp'ınıza taşır.",
+    "pipelineHandled": "İşleme alındı",
+    "pipelineCol1Title": "Müşteri Yorumları",
+    "pipelineCol1Caption": "Google, Getir, Yemeksepeti ve daha fazlası",
+    "pipelineCol2Title": "Observer Dashboard",
+    "pipelineCol3Title": "WhatsApp"
   },
   "auth": {
     "tagline": "Müşteri sinyalleri, WhatsApp'ınızda.",
