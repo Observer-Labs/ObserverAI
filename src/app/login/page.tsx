@@ -4,11 +4,18 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabase-client";
 import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import GoogleButton from "@/components/auth/GoogleButton";
-import { useTranslations } from 'next-intl';
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useTranslations } from "next-intl";
 
 function LoginContent() {
-  const t = useTranslations('auth');
+  const t = useTranslations("auth");
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +38,7 @@ function LoginContent() {
         // for new users. If it ever fires, surface a generic message that points
         // users to forgot-password.
         const msg = signInError.message.includes("Email not confirmed")
-          ? t('errSignInFailed')
+          ? t("errSignInFailed")
           : signInError.message;
         setError(msg);
         return;
@@ -51,111 +58,98 @@ function LoginContent() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+    <div className="relative flex min-h-screen items-center justify-center bg-background">
       {/* Background accent */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "60%", height: "40%", background: "radial-gradient(ellipse at top, color-mix(in oklch, var(--foreground) 4%, transparent) 0%, transparent 70%)" }} />
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute left-1/2 top-0 h-2/5 w-3/5 -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--foreground)_4%,transparent)_0%,transparent_70%)]" />
       </div>
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 440, padding: "0 24px" }}>
+      <div className="relative z-[1] w-full max-w-[440px] px-6">
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <div className="brand-dot" />
-            <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.1rem" }}>Observer</span>
-          </Link>
-          <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginTop: 8, marginBottom: 0 }}>
-            {t('tagline')}
+        <div className="mb-10 text-center">
+          <Logo href="/" size={26} textSize="1.1rem" gap={10} />
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("tagline")}
           </p>
         </div>
 
-        {/* Card */}
-        <div className="obs-card animate-slide-up" style={{ padding: 36 }}>
-          <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.25rem", margin: "0 0 6px" }}>{t('loginTitle')}</h1>
-          <p style={{ color: "var(--muted)", fontSize: "0.875rem", margin: "0 0 28px" }}>
-            {t('loginSubtitle')}{" "}
-            <Link href="/signup" style={{ color: "var(--accent)", textDecoration: "none" }}>{t('signUpFree')}</Link>
-          </p>
+        <Card className="animate-slide-up rounded-[14px] py-0">
+          <CardContent className="p-9">
+            <h1 className="mb-1.5 text-xl font-bold">{t("loginTitle")}</h1>
+            <p className="mb-7 text-sm text-muted-foreground">
+              {t("loginSubtitle")}{" "}
+              <Link href="/signup" className="text-primary hover:underline">{t("signUpFree")}</Link>
+            </p>
 
-          <GoogleButton label={t('signInWithGoogle')} />
+            <GoogleButton label={t("signInWithGoogle")} />
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            <span style={{ color: "var(--muted)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          </div>
-
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ display: "block", color: "var(--muted)", fontSize: "0.8rem", marginBottom: 6 }}>
-                {t('emailLabel')}
-              </label>
-              <input
-                className="obs-input"
-                type="email"
-                placeholder={t('emailPlaceholder')}
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                autoComplete="email"
-                required
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
+            <div className="my-5 flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-[0.72rem] uppercase tracking-[0.08em] text-muted-foreground">or</span>
+              <Separator className="flex-1" />
             </div>
 
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <label style={{ display: "block", color: "var(--muted)", fontSize: "0.8rem" }}>
-                  {t('passwordLabel')}
-                </label>
-                <Link href="/forgot-password" style={{ color: "var(--accent)", fontSize: "0.75rem", textDecoration: "none", opacity: 0.75 }}>
-                  {t('forgotPassword')}
-                </Link>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="email" className="text-[0.8rem] font-normal text-muted-foreground">
+                  {t("emailLabel")}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={t("emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                  autoComplete="email"
+                  required
+                />
               </div>
-              <input
-                className="obs-input"
-                type="password"
-                placeholder={t('passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-            </div>
 
-            {error && (
-              <div style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(255,92,122,0.1)", border: "1px solid rgba(255,92,122,0.25)", color: "var(--danger)", fontSize: "0.875rem" }}>
-                {error}
+              <div className="grid gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-[0.8rem] font-normal text-muted-foreground">
+                    {t("passwordLabel")}
+                  </Label>
+                  <Link href="/forgot-password" className="text-[0.75rem] text-primary/75 hover:text-primary">
+                    {t("forgotPassword")}
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder={t("passwordPlaceholder")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading}
-              style={{ width: "100%", justifyContent: "center", marginTop: 4 }}
-            >
-              {loading ? (
-                <>
-                  <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "var(--primary-foreground)", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
-                  {t('signingIn')}
-                </>
-              ) : t('signInBtn')}
-            </button>
-          </form>
-        </div>
+              {error && (
+                <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" disabled={loading} className="mt-1 w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    {t("signingIn")}
+                  </>
+                ) : t("signInBtn")}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--background)" }} />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <LoginContent />
     </Suspense>
   );

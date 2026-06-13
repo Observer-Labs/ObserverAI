@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabaseClient } from "@/lib/supabase-client";
+import { LogoMark } from "@/components/Logo";
+import { cn } from "@/lib/utils";
 
 interface TopNavProps {
   sourceCount?: number;
@@ -14,20 +16,6 @@ interface TopNavProps {
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
-
-function LogoMark() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10.5" stroke="#f97316" strokeWidth="1.2" opacity="0.5"/>
-      <path
-        d="M3.5 12C5.5 7.5 8.5 5.5 12 5.5C15.5 5.5 18.5 7.5 20.5 12C18.5 16.5 15.5 18.5 12 18.5C8.5 18.5 5.5 16.5 3.5 12Z"
-        stroke="#f97316" strokeWidth="1.3" fill="none"
-      />
-      <circle cx="12" cy="12" r="3" fill="#f97316"/>
-      <circle cx="13.2" cy="10.8" r="0.9" fill="rgba(255,255,255,0.6)"/>
-    </svg>
-  );
-}
 
 function SignalsIcon() {
   return (
@@ -128,47 +116,22 @@ export default function TopNav({
   };
 
   return (
-    <div style={{
-      position: "sticky", top: 0, zIndex: 50,
-      background: "rgba(8,8,8,0.93)",
-      backdropFilter: "blur(20px)",
-      WebkitBackdropFilter: "blur(20px)",
-      borderBottom: "1px solid rgba(255,255,255,0.07)",
-    }}>
+    <div className="sticky top-0 z-50 border-b border-white/[0.07] bg-[rgba(8,8,8,0.93)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)]">
       {/* Orange accent line at top */}
-      <div style={{
-        height: 2,
-        background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.55) 30%, rgba(249,115,22,0.55) 70%, transparent 100%)",
-      }} />
+      <div className="h-0.5 bg-[linear-gradient(90deg,transparent_0%,rgba(249,115,22,0.55)_30%,rgba(249,115,22,0.55)_70%,transparent_100%)]" />
 
-      <div style={{
-        maxWidth: 1400, margin: "0 auto",
-        padding: "0 24px",
-        display: "flex", alignItems: "center", gap: 2,
-        height: 50,
-      }}>
+      <div className="mx-auto flex h-[50px] max-w-[1400px] items-center gap-0.5 px-6">
 
         {/* ── Logo ── */}
-        <Link href="/dashboard" style={{
-          textDecoration: "none",
-          display: "flex", alignItems: "center", gap: 9,
-          marginRight: 16, flexShrink: 0,
-        }}>
+        <Link href="/dashboard" className="mr-4 flex shrink-0 items-center gap-[9px] no-underline">
           <LogoMark />
-          <span style={{
-            color: "#fff", fontWeight: 700, fontSize: "0.95rem",
-            fontStyle: "italic", letterSpacing: "-0.02em",
-          }}>
+          <span className="text-[0.95rem] font-bold italic tracking-[-0.02em] text-white">
             Observer
           </span>
         </Link>
 
         {/* Separator */}
-        <div style={{
-          width: 1, height: 16,
-          background: "rgba(255,255,255,0.1)",
-          marginRight: 14, flexShrink: 0,
-        }} />
+        <div className="mr-3.5 h-4 w-px shrink-0 bg-white/10" />
 
         {/* ── Nav tabs ── */}
         {navItems.map((item) => (
@@ -183,38 +146,27 @@ export default function TopNav({
         ))}
 
         {/* Spacer */}
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
 
         {/* ── Right controls ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div className="flex shrink-0 items-center gap-2.5">
 
           {/* Stats counter pill */}
           {(sourceCount > 0 || signalCount > 0) && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "3px 10px", borderRadius: 20,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}>
+            <div className="flex items-center gap-2 rounded-[20px] border border-white/[0.07] bg-white/[0.04] px-2.5 py-[3px]">
               {sourceCount > 0 && (
-                <span style={{
-                  color: "var(--muted-light)", fontSize: "0.72rem",
-                  fontFamily: "'JetBrains Mono', monospace", fontWeight: 500,
-                }}>
-                  <span style={{ color: "var(--accent)" }}>{sourceCount}</span>
-                  <span style={{ opacity: 0.5 }}> src</span>
+                <span className="font-mono text-[0.72rem] font-medium text-[var(--muted-light)]">
+                  <span className="text-primary">{sourceCount}</span>
+                  <span className="opacity-50"> src</span>
                 </span>
               )}
               {sourceCount > 0 && signalCount > 0 && (
-                <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.12)" }} />
+                <div className="h-2.5 w-px bg-white/[0.12]" />
               )}
               {signalCount > 0 && (
-                <span style={{
-                  color: "var(--muted-light)", fontSize: "0.72rem",
-                  fontFamily: "'JetBrains Mono', monospace", fontWeight: 500,
-                }}>
-                  <span style={{ color: "var(--accent)" }}>{signalCount}</span>
-                  <span style={{ opacity: 0.5 }}> sig</span>
+                <span className="font-mono text-[0.72rem] font-medium text-[var(--muted-light)]">
+                  <span className="text-primary">{signalCount}</span>
+                  <span className="opacity-50"> sig</span>
                 </span>
               )}
             </div>
@@ -225,100 +177,59 @@ export default function TopNav({
             <Link
               href="/settings/billing"
               title={`${runsLeft} of trial runs remaining${typeof trialDaysLeft === "number" ? ` · ${trialDaysLeft} days left` : ""}`}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "4px 11px", borderRadius: 20,
-                background: runsLeft <= 2
-                  ? "rgba(251,191,36,0.10)"
-                  : "rgba(249,115,22,0.08)",
-                border: `1px solid ${runsLeft <= 2 ? "rgba(251,191,36,0.30)" : "rgba(249,115,22,0.22)"}`,
-                color: runsLeft <= 2 ? "#fbbf24" : "var(--accent)",
-                fontSize: "0.7rem", fontWeight: 600,
-                fontFamily: "'JetBrains Mono', monospace",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}
+              className={cn(
+                "flex items-center gap-1.5 whitespace-nowrap rounded-[20px] border px-[11px] py-1 font-mono text-[0.7rem] font-semibold no-underline",
+                runsLeft <= 2
+                  ? "border-[rgba(251,191,36,0.30)] bg-[rgba(251,191,36,0.10)] text-[#fbbf24]"
+                  : "border-[rgba(249,115,22,0.22)] bg-[rgba(249,115,22,0.08)] text-primary"
+              )}
             >
-              <span style={{ fontWeight: 700 }}>{runsLeft}</span>
-              <span style={{ opacity: 0.65 }}>runs left</span>
+              <span className="font-bold">{runsLeft}</span>
+              <span className="opacity-65">runs left</span>
               {typeof trialDaysLeft === "number" && trialDaysLeft <= 7 && (
                 <>
-                  <span style={{ opacity: 0.4 }}>·</span>
+                  <span className="opacity-40">·</span>
                   <span>{trialDaysLeft}d</span>
                 </>
               )}
             </Link>
           )}
           {plan === "expired" && (
-            <Link href="/settings/billing" style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "4px 12px", borderRadius: 20,
-              background: "rgba(239,68,68,0.10)",
-              border: "1px solid rgba(239,68,68,0.30)",
-              color: "#f87171", fontSize: "0.7rem", fontWeight: 600,
-              textDecoration: "none", whiteSpace: "nowrap",
-            }}>
+            <Link
+              href="/settings/billing"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-[20px] border border-[rgba(239,68,68,0.30)] bg-[rgba(239,68,68,0.10)] px-3 py-1 text-[0.7rem] font-semibold text-[#f87171] no-underline"
+            >
               Trial ended · Upgrade →
             </Link>
           )}
           {plan === "past_due" && (
-            <Link href="/settings/billing" style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "4px 12px", borderRadius: 20,
-              background: "rgba(251,191,36,0.10)",
-              border: "1px solid rgba(251,191,36,0.30)",
-              color: "#fbbf24", fontSize: "0.7rem", fontWeight: 600,
-              textDecoration: "none", whiteSpace: "nowrap",
-            }}>
+            <Link
+              href="/settings/billing"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-[20px] border border-[rgba(251,191,36,0.30)] bg-[rgba(251,191,36,0.10)] px-3 py-1 text-[0.7rem] font-semibold text-[#fbbf24] no-underline"
+            >
               Payment failed
             </Link>
           )}
 
           {/* Avatar */}
-          <div style={{
-            width: 28, height: 28, borderRadius: "50%",
-            background: "rgba(249,115,22,0.12)",
-            border: "1.5px solid rgba(249,115,22,0.28)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "0.68rem", fontWeight: 700, color: "var(--accent)",
-            flexShrink: 0, letterSpacing: "0.03em",
-          }}>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[rgba(249,115,22,0.28)] bg-[rgba(249,115,22,0.12)] text-[0.68rem] font-bold tracking-[0.03em] text-primary">
             {userInitials}
           </div>
 
           {/* Settings */}
-          <Link href="/settings" title="Settings" style={{
-            color: "var(--muted-dim)", display: "flex", alignItems: "center",
-            padding: 5, borderRadius: 7,
-            transition: "color 0.12s, background 0.12s",
-          }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#fff";
-              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--muted-dim)";
-              e.currentTarget.style.background = "transparent";
-            }}
+          <Link
+            href="/settings"
+            title="Settings"
+            className="flex items-center rounded-[7px] p-[5px] text-[var(--muted-dim)] transition-colors duration-[120ms] hover:bg-white/[0.06] hover:text-white"
           >
             <GearIcon />
           </Link>
 
           {/* Sign out */}
-          <button onClick={handleSignOut} title="Sign out" style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "var(--muted-dim)", display: "flex", alignItems: "center",
-            padding: 5, borderRadius: 7,
-            transition: "color 0.12s, background 0.12s",
-          }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#fff";
-              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--muted-dim)";
-              e.currentTarget.style.background = "transparent";
-            }}
+          <button
+            onClick={handleSignOut}
+            title="Sign out"
+            className="flex cursor-pointer items-center rounded-[7px] border-none bg-transparent p-[5px] text-[var(--muted-dim)] transition-colors duration-[120ms] hover:bg-white/[0.06] hover:text-white"
           >
             <SignOutIcon />
           </button>

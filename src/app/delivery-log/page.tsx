@@ -1,6 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -38,11 +43,11 @@ function channelLabel(ch: string): string {
   return ch;
 }
 
-function statusColor(status: string): { bg: string; text: string; border: string } {
-  if (status === "sent")    return { bg: "rgba(249,115,22,0.1)",  text: "var(--accent)",  border: "rgba(249,115,22,0.25)" };
-  if (status === "failed")  return { bg: "rgba(239,68,68,0.1)",   text: "#ef4444",        border: "rgba(239,68,68,0.25)" };
-  if (status === "pending") return { bg: "var(--muted-surface)", text: "var(--muted-light)", border: "var(--border)" };
-  return { bg: "var(--muted-surface)", text: "var(--muted)", border: "var(--border)" };
+function statusClass(status: string): string {
+  if (status === "sent")    return "border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.1)] text-primary";
+  if (status === "failed")  return "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.1)] text-[#ef4444]";
+  if (status === "pending") return "border-border bg-muted text-[var(--muted-light)]";
+  return "border-border bg-muted text-muted-foreground";
 }
 
 // ── Mock data for empty state illustration ──────────────────────────────────
@@ -95,43 +100,35 @@ export default function DeliveryLogPage() {
 
   if (!authChecked || loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, border: "2px solid rgba(249,115,22,0.2)", borderTopColor: "var(--accent)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
       </div>
     );
   }
 
-  const filterTabStyle = (active: boolean): React.CSSProperties => ({
-    padding: "5px 12px", borderRadius: 7, fontSize: "0.78rem", fontWeight: 500,
-    cursor: "pointer", border: "none", transition: "all 0.15s",
-    background: active ? "rgba(249,115,22,0.12)" : "transparent",
-    color: active ? "var(--accent)" : "var(--muted)",
-    outline: active ? "1px solid rgba(249,115,22,0.25)" : "1px solid transparent",
-  });
+  const filterTabClass = (active: boolean): string =>
+    cn(
+      "cursor-pointer rounded-[7px] border-none px-3 py-[5px] text-[0.78rem] font-medium transition-all",
+      active
+        ? "bg-[rgba(249,115,22,0.12)] text-primary [outline:1px_solid_rgba(249,115,22,0.25)]"
+        : "bg-transparent text-muted-foreground [outline:1px_solid_transparent]"
+    );
 
   return (
     <div className="app-shell">
-      <div className="page-wrap" style={{ maxWidth: 1100, margin: "0 auto", padding: "36px 32px 80px" }}>
+      <div className="page-wrap mx-auto max-w-[1100px] px-8 pt-9 pb-20">
 
         {/* ── Header ── */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32 }}>
+        <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.4rem", margin: "0 0 4px" }}>Teslimat Kaydı</h1>
-            <p style={{ color: "var(--muted)", fontSize: "0.875rem", margin: 0 }}>
+            <h1 className="mb-1 text-[1.4rem] font-bold text-foreground">Teslimat Kaydı</h1>
+            <p className="text-[0.875rem] text-muted-foreground">
               Tüm kanallardaki giden brief teslimatları
             </p>
           </div>
           <a
             href="/settings/distribution"
-            style={{
-              color: "var(--muted-light)", fontSize: "0.82rem", fontWeight: 500,
-              textDecoration: "none", padding: "8px 14px",
-              border: "1px solid var(--border)", borderRadius: 8,
-              transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-hover)"; e.currentTarget.style.color = "var(--foreground)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--muted-light)"; }}
+            className="flex items-center gap-1.5 rounded-md border px-3.5 py-2 text-[0.82rem] font-medium text-[var(--muted-light)] no-underline transition-all hover:border-[var(--border-hover)] hover:text-foreground"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -141,21 +138,18 @@ export default function DeliveryLogPage() {
         </div>
 
         {/* ── Stats row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
+        <div className="mb-7 grid grid-cols-4 gap-3">
           {[
-            { label: "Toplam Teslimat", value: stats.total, color: "var(--foreground)" },
-            { label: "İletildi", value: stats.sent, color: "var(--accent)" },
-            { label: "Başarısız", value: stats.failed, color: "#ef4444" },
-            { label: "Bekliyor", value: stats.pending, color: "var(--muted-light)" },
+            { label: "Toplam Teslimat", value: stats.total, className: "text-foreground" },
+            { label: "İletildi", value: stats.sent, className: "text-primary" },
+            { label: "Başarısız", value: stats.failed, className: "text-[#ef4444]" },
+            { label: "Bekliyor", value: stats.pending, className: "text-[var(--muted-light)]" },
           ].map((s) => (
-            <div key={s.label} style={{
-              background: "var(--card)", border: "1px solid var(--border)",
-              borderRadius: 12, padding: "16px 20px",
-            }}>
-              <div style={{ color: "var(--muted)", fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+            <div key={s.label} className="rounded-[12px] border bg-card px-5 py-4">
+              <div className="mb-1.5 text-[0.72rem] font-semibold tracking-[0.08em] uppercase text-muted-foreground">
                 {s.label}
               </div>
-              <div style={{ color: s.color, fontWeight: 700, fontSize: "1.5rem", lineHeight: 1 }}>
+              <div className={cn("text-2xl leading-none font-bold", s.className)}>
                 {s.value}
               </div>
             </div>
@@ -164,18 +158,18 @@ export default function DeliveryLogPage() {
 
         {/* ── Filters ── */}
         {deliveries.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-            <div style={{ display: "flex", gap: 4 }}>
+          <div className="mb-5 flex items-center gap-4">
+            <div className="flex gap-1">
               {["all", "email", "whatsapp"].map((ch) => (
-                <button key={ch} style={filterTabStyle(channelFilter === ch)} onClick={() => setChannelFilter(ch)}>
+                <button key={ch} className={filterTabClass(channelFilter === ch)} onClick={() => setChannelFilter(ch)}>
                   {ch === "all" ? "Tüm kanallar" : channelLabel(ch)}
                 </button>
               ))}
             </div>
-            <div style={{ width: 1, height: 20, background: "var(--border)" }} />
-            <div style={{ display: "flex", gap: 4 }}>
+            <Separator orientation="vertical" className="h-5" />
+            <div className="flex gap-1">
               {["all", "sent", "failed", "pending"].map((st) => (
-                <button key={st} style={filterTabStyle(statusFilter === st)} onClick={() => setStatusFilter(st)}>
+                <button key={st} className={filterTabClass(statusFilter === st)} onClick={() => setStatusFilter(st)}>
                   {st === "all" ? "Tüm durumlar" : st === "sent" ? "İletildi" : st === "failed" ? "Başarısız" : "Bekliyor"}
                 </button>
               ))}
@@ -184,119 +178,93 @@ export default function DeliveryLogPage() {
         )}
 
         {/* ── Table or empty state ── */}
-        <div style={{
-          background: "var(--card)",
-          border: "1px solid var(--border)",
-          borderRadius: 14,
-          overflow: "hidden",
-        }}>
+        <div className="overflow-hidden rounded-[14px] border bg-card">
           {deliveries.length === 0 ? (
             /* ── Empty state ── */
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px", textAlign: "center" }}>
-              <div style={{
-                width: 60, height: 60, borderRadius: 16,
-                background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.15)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "1.6rem", marginBottom: 20,
-              }}>
+            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+              <div className="mb-5 flex h-[60px] w-[60px] items-center justify-center rounded-2xl border border-[rgba(249,115,22,0.15)] bg-[rgba(249,115,22,0.08)] text-[1.6rem]">
                 📬
               </div>
-              <div style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "1rem", marginBottom: 8 }}>
+              <div className="mb-2 text-base font-semibold text-foreground">
                 Henüz teslimat yok
               </div>
-              <p style={{ color: "var(--muted)", fontSize: "0.875rem", maxWidth: 380, lineHeight: 1.6, margin: "0 0 24px" }}>
+              <p className="mb-6 max-w-[380px] text-[0.875rem] leading-[1.6] text-muted-foreground">
                 Dağıtım kanallarınızı bağlayın ve bir analiz çalıştırın. Observer gönderilen her brief&apos;i burada kayıt altına alır.
               </p>
-              <div style={{ display: "flex", gap: 10 }}>
-                <a
-                  href="/settings/distribution"
-                  className="btn-primary"
-                  style={{ textDecoration: "none", fontSize: "0.875rem", padding: "9px 18px" }}
+              <div className="flex gap-2.5">
+                <Button
+                  asChild
+                  className="h-auto rounded-md px-[18px] py-[9px] text-[0.875rem] font-semibold no-underline"
                 >
-                  Kanalları ayarla
-                </a>
-                <a
-                  href="/dashboard"
-                  style={{
-                    textDecoration: "none", color: "var(--muted-light)", fontSize: "0.875rem",
-                    padding: "9px 18px", border: "1px solid var(--border)",
-                    borderRadius: 8, background: "none",
-                  }}
+                  <a href="/settings/distribution">Kanalları ayarla</a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-auto rounded-md bg-transparent px-[18px] py-[9px] text-[0.875rem] font-normal text-[var(--muted-light)] shadow-none no-underline"
                 >
-                  Sinyallere git
-                </a>
+                  <a href="/dashboard">Sinyallere git</a>
+                </Button>
               </div>
             </div>
           ) : (
             /* ── Delivery table ── */
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="w-full border-collapse">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr className="border-b">
                   {["Kanal", "Alıcı", "Konu", "Gönderildi", "Durum"].map((h) => (
-                    <th key={h} style={{
-                      color: "var(--muted)", fontSize: "0.7rem", fontWeight: 600,
-                      textTransform: "uppercase", letterSpacing: "0.08em",
-                      padding: "12px 16px", textAlign: "left",
-                    }}>
+                    <th key={h} className="px-4 py-3 text-left text-[0.7rem] font-semibold tracking-[0.08em] uppercase text-muted-foreground">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((d, i) => {
-                  const sc = statusColor(d.status);
-                  return (
-                    <tr
-                      key={d.id}
-                      style={{
-                        borderBottom: i < filtered.length - 1 ? "1px solid var(--muted-surface)" : "none",
-                        transition: "background 0.12s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--muted-surface)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: "0.95rem" }}>{channelIcon(d.channel)}</span>
-                          <span style={{ color: "var(--foreground)", fontSize: "0.875rem", fontWeight: 500 }}>{channelLabel(d.channel)}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px 16px", color: "var(--muted)", fontSize: "0.8rem", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {d.recipient}
-                      </td>
-                      <td style={{ padding: "14px 16px", color: "var(--muted-light)", fontSize: "0.8rem", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {d.subject ?? `Brief for cluster ${d.cluster_id.slice(0, 8)}`}
-                      </td>
-                      <td style={{ padding: "14px 16px", color: "var(--muted)", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
-                        {timeSince(d.sent_at)}
-                      </td>
-                      <td style={{ padding: "14px 16px" }}>
-                        <span style={{
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                          padding: "3px 10px", borderRadius: 9999, fontSize: "0.72rem", fontWeight: 600,
-                          background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
-                        }}>
-                          {d.status === "sent" ? "✓ " : d.status === "failed" ? "✕ " : "⏳ "}
-                          {d.status === "sent" ? "İletildi" : d.status === "failed" ? "Başarısız" : "Bekliyor"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered.map((d, i) => (
+                  <tr
+                    key={d.id}
+                    className={cn(
+                      "transition-colors hover:bg-muted",
+                      i < filtered.length - 1 && "border-b border-muted"
+                    )}
+                  >
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[0.95rem]">{channelIcon(d.channel)}</span>
+                        <span className="text-[0.875rem] font-medium text-foreground">{channelLabel(d.channel)}</span>
+                      </div>
+                    </td>
+                    <td className="max-w-[180px] truncate px-4 py-3.5 text-[0.8rem] text-muted-foreground">
+                      {d.recipient}
+                    </td>
+                    <td className="max-w-[240px] truncate px-4 py-3.5 text-[0.8rem] text-[var(--muted-light)]">
+                      {d.subject ?? `Brief for cluster ${d.cluster_id.slice(0, 8)}`}
+                    </td>
+                    <td className="px-4 py-3.5 text-[0.8rem] whitespace-nowrap text-muted-foreground">
+                      {timeSince(d.sent_at)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <Badge
+                        variant="outline"
+                        className={cn("gap-1 px-2.5 py-[3px] text-[0.72rem] font-semibold", statusClass(d.status))}
+                      >
+                        {d.status === "sent" ? "✓ " : d.status === "failed" ? "✕ " : "⏳ "}
+                        {d.status === "sent" ? "İletildi" : d.status === "failed" ? "Başarısız" : "Bekliyor"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
         </div>
 
         {filtered.length > 0 && filtered.length < deliveries.length && (
-          <p style={{ color: "var(--muted)", fontSize: "0.8rem", textAlign: "center", marginTop: 16 }}>
+          <p className="mt-4 text-center text-[0.8rem] text-muted-foreground">
             {deliveries.length} teslimatın {filtered.length} tanesi gösteriliyor
           </p>
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

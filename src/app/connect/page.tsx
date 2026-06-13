@@ -3,6 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import type { IntegrationsConfig } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -354,56 +358,59 @@ function ConnectPageContent() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.75rem" }}>Loading…</div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="font-mono text-xs text-muted-foreground">Loading…</div>
       </div>
     );
   }
 
   return (
     <div className="app-shell">
-      <div className="page-wrap" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 80px" }}>
+      <div className="page-wrap mx-auto max-w-[1100px] px-8 pt-10 pb-20">
 
         {/* ── Header ── */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 36 }}>
+        <div className="mb-9 flex items-start justify-between">
           <div>
-            <h1 style={{ margin: 0, fontSize: "1.45rem", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.025em" }}>
+            <h1 className="m-0 text-[1.45rem] font-extrabold tracking-[-0.025em] text-foreground">
               Veri Kaynakları
             </h1>
-            <p style={{ margin: "6px 0 0", fontSize: "0.82rem", color: "var(--muted)", lineHeight: 1.6 }}>
+            <p className="mt-1.5 mb-0 text-[0.82rem] leading-[1.6] text-muted-foreground">
               Platformlarınızı bağlayın. Observer geri bildirimleri otomatik olarak toplar, gruplandırır ve önceliklendirir.
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <div className="flex shrink-0 items-center gap-3">
             {/* Progress pill */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 20 }}>
-              <div style={{ display: "flex", gap: 3 }}>
+            <div className="flex items-center gap-2 rounded-[20px] border bg-card px-3 py-1.5">
+              <div className="flex gap-[3px]">
                 {ACTIVE_SOURCES.map((s) => (
-                  <div key={s.key} style={{ width: 6, height: 6, borderRadius: "50%", background: isConnected(s.key, workspace) ? "#22c55e" : "var(--border)" }} />
+                  <div key={s.key} className={cn("size-1.5 rounded-full", isConnected(s.key, workspace) ? "bg-[#22c55e]" : "bg-border")} />
                 ))}
               </div>
-              <span style={{ fontSize: "0.7rem", fontWeight: 700, color: connectedCount > 0 ? "#4ade80" : "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>
+              <span className={cn("font-mono text-[0.7rem] font-bold", connectedCount > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
                 {connectedCount}/{ACTIVE_SOURCES.length} bağlı
               </span>
             </div>
             {connectedCount > 0 && (
-              <button
+              <Button
                 onClick={syncAll}
                 disabled={syncing}
-                style={{ padding: "8px 18px", borderRadius: 8, background: syncing ? "rgba(249,115,22,0.5)" : "var(--accent)", border: "none", color: "var(--primary-foreground)", fontSize: "0.8rem", fontWeight: 700, cursor: syncing ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                className={cn(
+                  "h-auto gap-1.5 rounded-lg px-[18px] py-2 text-[0.8rem] font-bold disabled:opacity-100",
+                  syncing && "bg-[rgba(249,115,22,0.5)]"
+                )}
               >
                 {syncing ? "Senkronize ediliyor…" : "↻ Senkronize Et & Analiz Et"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         {/* ── Active Sources Grid + Detail ── */}
-        <div style={{ display: "grid", gridTemplateColumns: selected ? "340px 1fr" : "1fr", gap: 20, alignItems: "start", marginBottom: 48 }}>
+        <div className={cn("mb-12 grid items-start gap-5", selected ? "grid-cols-[340px_1fr]" : "grid-cols-1")}>
 
           {/* Source Cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--muted-dim)", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>
+          <div className="flex flex-col gap-2.5">
+            <div className="mb-1 font-mono text-[0.6rem] font-bold tracking-[0.12em] text-[var(--muted-dim)] uppercase">
               Aktif Kaynaklar
             </div>
             {ACTIVE_SOURCES.map((source) => {
@@ -413,33 +420,34 @@ function ConnectPageContent() {
                 <button
                   key={source.key}
                   onClick={() => setSelected(isActive ? null : source.key)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 14, padding: "14px 16px",
-                    background: isActive ? "rgba(249,115,22,0.06)" : "var(--card)",
-                    border: `1px solid ${isActive ? "rgba(249,115,22,0.35)" : "var(--border)"}`,
-                    borderRadius: 10, cursor: "pointer", textAlign: "left", transition: "all 0.12s",
-                  }}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-3.5 rounded-[10px] border px-4 py-3.5 text-left transition-all duration-[120ms]",
+                    isActive ? "border-[rgba(249,115,22,0.35)] bg-[rgba(249,115,22,0.06)]" : "border-border bg-card"
+                  )}
                 >
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: `${source.color}18`, border: `1px solid ${source.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem", flexShrink: 0 }}>
+                  <div
+                    className="flex size-9 shrink-0 items-center justify-center rounded-lg border text-[1.1rem]"
+                    style={{ background: `${source.color}18`, borderColor: `${source.color}30` }}
+                  >
                     {source.icon}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--foreground)" }}>{source.label}</span>
-                      <span style={{ fontSize: "0.6rem", fontWeight: 600, padding: "1px 6px", borderRadius: 4, background: "var(--muted-surface)", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.88rem] font-bold text-foreground">{source.label}</span>
+                      <span className="rounded bg-muted px-1.5 py-px font-mono text-[0.6rem] font-semibold text-[var(--muted-dim)]">
                         {source.category}
                       </span>
                     </div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{source.description}</div>
+                    <div className="mt-0.5 text-[0.72rem] leading-[1.5] text-muted-foreground">{source.description}</div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div className="flex shrink-0 items-center gap-1.5">
                     {connected ? (
-                      <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", fontFamily: "'JetBrains Mono', monospace" }}>
-                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e" }} />
+                      <span className="flex items-center gap-1 font-mono text-[0.65rem] font-bold text-[#4ade80]">
+                        <div className="size-[5px] rounded-full bg-[#22c55e]" />
                         LIVE
                       </span>
                     ) : (
-                      <span style={{ fontSize: isActive ? "1rem" : "0.65rem", lineHeight: 1, fontWeight: 600, color: isActive ? "var(--accent)" : "var(--muted-dim)" }}>
+                      <span className={cn("leading-none font-semibold", isActive ? "text-base text-primary" : "text-[0.65rem] text-[var(--muted-dim)]")}>
                         {isActive ? "›" : "Bağlan →"}
                       </span>
                     )}
@@ -455,19 +463,19 @@ function ConnectPageContent() {
             const connected = isConnected(selected, workspace);
             const fields = SOURCE_FIELDS[selected];
             return (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", position: "sticky", top: 88 }}>
+              <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
                 {/* Panel Header */}
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: "1.2rem" }}>{src.icon}</span>
+                <div className="flex items-center justify-between border-b px-5 py-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[1.2rem]">{src.icon}</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--foreground)" }}>{src.label}</div>
-                      <div style={{ fontSize: "0.65rem", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>{src.category}</div>
+                      <div className="text-[0.9rem] font-bold text-foreground">{src.label}</div>
+                      <div className="font-mono text-[0.65rem] text-muted-foreground">{src.category}</div>
                     </div>
                   </div>
                   {connected && (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.65rem", fontWeight: 700, color: "#4ade80", padding: "3px 8px", background: "rgba(34,197,94,0.1)", borderRadius: 6, border: "1px solid rgba(34,197,94,0.2)" }}>
-                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e" }} />
+                    <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
+                      <div className="size-[5px] rounded-full bg-[#22c55e]" />
                       Bağlı
                     </span>
                   )}
@@ -475,20 +483,19 @@ function ConnectPageContent() {
 
                 {/* Special: Email OAuth */}
                 {selected === "email" && !workspace?.gmail_token ? (
-                  <div style={{ padding: 24 }}>
-                    <p style={{ margin: "0 0 20px", fontSize: "0.82rem", color: "var(--muted)", lineHeight: 1.65 }}>
+                  <div className="p-6">
+                    <p className="mt-0 mb-5 text-[0.82rem] leading-[1.65] text-muted-foreground">
                       Gmail hesabınızı bağlayarak destek e-postalarını sinyal olarak içeri aktarın. Observer yalnızca okur, hiçbir şey göndermez.
                     </p>
-                    <a
-                      href="/api/auth/gmail"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 8, background: "#EA4335", border: "none", color: "#fff", fontSize: "0.82rem", fontWeight: 700, textDecoration: "none" }}
-                    >
-                      <span>✉️</span> Gmail&apos;i Bağla
-                    </a>
+                    <Button asChild className="h-auto gap-2 rounded-lg bg-[#EA4335] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#EA4335]/90">
+                      <a href="/api/auth/gmail">
+                        <span>✉️</span> Gmail&apos;i Bağla
+                      </a>
+                    </Button>
                     {formValues.email && (
-                      <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                        <div style={{ fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", marginBottom: 14 }}>Filtreler</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                      <div className="mt-6 border-t pt-5">
+                        <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">Filtreler</div>
+                        <div className="flex flex-col gap-[18px]">
                           {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
                         </div>
                       </div>
@@ -496,49 +503,56 @@ function ConnectPageContent() {
                   </div>
                 ) : selected === "slack" && !workspace?.slack_token ? (
                   /* Special: Slack OAuth */
-                  <div style={{ padding: 24 }}>
-                    <p style={{ margin: "0 0 20px", fontSize: "0.82rem", color: "var(--muted)", lineHeight: 1.65 }}>
+                  <div className="p-6">
+                    <p className="mt-0 mb-5 text-[0.82rem] leading-[1.65] text-muted-foreground">
                       Slack çalışma alanınızı bağlayarak kanal mesajlarını sinyal olarak içeri aktarın. Observer yalnızca davet ettiğiniz genel kanalları okur.
                     </p>
-                    <a
-                      href={`/api/auth/slack?state=${workspace?.id ?? ""}`}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 8, background: "#4A154B", border: "none", color: "#fff", fontSize: "0.82rem", fontWeight: 700, textDecoration: "none" }}
-                    >
-                      <span>⚡</span> Slack&apos;ı Bağla
-                    </a>
-                    <p style={{ margin: "16px 0 0", fontSize: "0.72rem", color: "var(--muted-dim)", lineHeight: 1.55 }}>
-                      Bağlandıktan sonra Observer botunu kanallara davet edin: <code style={{ background: "var(--muted-surface)", padding: "2px 6px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}>/invite @signal</code>
+                    <Button asChild className="h-auto gap-2 rounded-lg bg-[#4A154B] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#4A154B]/90">
+                      <a href={`/api/auth/slack?state=${workspace?.id ?? ""}`}>
+                        <span>⚡</span> Slack&apos;ı Bağla
+                      </a>
+                    </Button>
+                    <p className="mt-4 mb-0 text-[0.72rem] leading-[1.55] text-[var(--muted-dim)]">
+                      Bağlandıktan sonra Observer botunu kanallara davet edin: <code className="rounded bg-muted px-1.5 py-0.5 font-mono">/invite @signal</code>
                     </p>
                   </div>
                 ) : (
-                  <div style={{ padding: 24 }}>
+                  <div className="p-6">
                     {/* Slack re-auth link if already connected */}
                     {selected === "slack" && workspace?.slack_token && (
-                      <div style={{ marginBottom: 20, padding: "10px 14px", background: "rgba(74,21,75,0.15)", border: "1px solid rgba(74,21,75,0.3)", borderRadius: 8 }}>
-                        <div style={{ fontSize: "0.72rem", color: "var(--muted)", lineHeight: 1.55 }}>
+                      <div className="mb-5 rounded-lg border border-[rgba(74,21,75,0.3)] bg-[rgba(74,21,75,0.15)] px-3.5 py-2.5">
+                        <div className="text-[0.72rem] leading-[1.55] text-muted-foreground">
                           Slack çalışma alanı bağlı. Aşağıdan içe aktarma ayarlarını düzenleyin.{" "}
-                          <a href={`/api/auth/slack?state=${workspace?.id ?? ""}`} style={{ color: "var(--accent)", textDecoration: "none" }}>Yeniden bağlan →</a>
+                          <a href={`/api/auth/slack?state=${workspace?.id ?? ""}`} className="text-primary no-underline">Yeniden bağlan →</a>
                         </div>
                       </div>
                     )}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                    <div className="flex flex-col gap-[18px]">
                       {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
                     </div>
-                    <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
-                      <button
+                    <div className="mt-6 flex gap-2.5">
+                      <Button
                         onClick={() => saveSource(selected)}
                         disabled={saving}
-                        style={{ flex: 1, padding: "10px 16px", borderRadius: 8, background: savedKey === selected ? "#22c55e" : saving ? "rgba(249,115,22,0.5)" : "var(--accent)", border: "none", color: "var(--primary-foreground)", fontWeight: 700, fontSize: "0.82rem", cursor: saving ? "default" : "pointer", transition: "background 0.2s" }}
+                        className={cn(
+                          "h-auto flex-1 rounded-lg px-4 py-2.5 text-[0.82rem] font-bold transition-colors duration-200 disabled:opacity-100",
+                          savedKey === selected
+                            ? "bg-[#22c55e] hover:bg-[#22c55e]"
+                            : saving
+                              ? "bg-[rgba(249,115,22,0.5)]"
+                              : undefined
+                        )}
                       >
                         {savedKey === selected ? "✓ Kaydedildi" : saving ? "Kaydediliyor…" : connected ? "Güncelle" : "Bağlan"}
-                      </button>
+                      </Button>
                       {connected && (
-                        <button
+                        <Button
+                          variant="outline"
                           onClick={() => disconnectSource(selected)}
-                          style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer" }}
+                          className="h-auto rounded-lg border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-3.5 py-2.5 text-[0.78rem] font-semibold text-[#f87171] hover:bg-[rgba(239,68,68,0.08)] hover:text-[#f87171]"
                         >
                           Bağlantıyı Kes
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -550,21 +564,21 @@ function ConnectPageContent() {
 
         {/* ── Coming Soon ── */}
         <div>
-          <div style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--muted-dim)", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 12 }}>
+          <div className="mb-3 font-mono text-[0.6rem] font-bold tracking-[0.12em] text-[var(--muted-dim)] uppercase">
             Yakında
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
             {COMING_SOON.map((s) => (
               <div
                 key={s.label}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, opacity: 0.5 }}
+                className="flex items-center gap-2.5 rounded-lg border bg-card px-3.5 py-3 opacity-50"
               >
-                <span style={{ fontSize: "0.95rem" }}>{s.icon}</span>
+                <span className="text-[0.95rem]">{s.icon}</span>
                 <div>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--foreground)" }}>{s.label}</div>
-                  <div style={{ fontSize: "0.6rem", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace", marginTop: 1 }}>{s.category}</div>
+                  <div className="text-[0.8rem] font-semibold text-foreground">{s.label}</div>
+                  <div className="mt-px font-mono text-[0.6rem] text-[var(--muted-dim)]">{s.category}</div>
                 </div>
-                <div style={{ marginLeft: "auto", fontSize: "0.55rem", fontWeight: 700, color: "var(--accent)", padding: "1px 5px", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap" }}>SOON</div>
+                <div className="ml-auto rounded border border-[rgba(249,115,22,0.3)] px-[5px] py-px font-mono text-[0.55rem] font-bold whitespace-nowrap text-primary">SOON</div>
               </div>
             ))}
           </div>
@@ -584,55 +598,51 @@ function renderField(
   setFormValues: React.Dispatch<React.SetStateAction<Record<ActiveSourceKey, Record<string, unknown>>>>
 ) {
   const val = formValues[sourceKey][f.key] ?? "";
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "9px 12px", borderRadius: 7,
-    background: "var(--muted-surface)", border: "1px solid var(--border)",
-    color: "var(--foreground)", fontSize: "0.82rem", outline: "none", fontFamily: "inherit",
-    boxSizing: "border-box",
-  };
+  const inputClasses =
+    "w-full rounded-[7px] border border-border bg-muted px-3 py-[9px] text-[0.82rem] text-foreground outline-none";
 
   return (
     <div key={f.key}>
-      <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>
+      <Label className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
         {f.label}
-      </label>
+      </Label>
       {f.type === "checkbox" ? (
-        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+        <Label className="flex cursor-pointer items-center gap-2.5">
           <input
             type="checkbox"
             checked={Boolean(val)}
             onChange={(e) => setFormValues((p) => ({ ...p, [sourceKey]: { ...p[sourceKey], [f.key]: e.target.checked } }))}
-            style={{ width: 16, height: 16, accentColor: "var(--accent)", cursor: "pointer" }}
+            className="size-4 cursor-pointer accent-primary"
           />
-          <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>{f.hint}</span>
-        </label>
+          <span className="text-[0.8rem] font-normal text-muted-foreground">{f.hint}</span>
+        </Label>
       ) : f.type === "textarea" ? (
         <textarea
           value={String(val)}
           onChange={(e) => setFormValues((p) => ({ ...p, [sourceKey]: { ...p[sourceKey], [f.key]: e.target.value } }))}
           placeholder={f.placeholder}
           rows={4}
-          style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
+          className={cn(inputClasses, "resize-y leading-[1.5]")}
         />
       ) : f.type === "select" && f.options ? (
         <select
           value={String(val)}
           onChange={(e) => setFormValues((p) => ({ ...p, [sourceKey]: { ...p[sourceKey], [f.key]: e.target.value } }))}
-          style={{ ...inputStyle, cursor: "pointer" }}
+          className={cn(inputClasses, "cursor-pointer")}
         >
           {f.options.map((o) => <option key={String(o.value)} value={String(o.value)}>{o.label}</option>)}
         </select>
       ) : (
-        <input
+        <Input
           type={f.type ?? "text"}
           value={String(val)}
           onChange={(e) => setFormValues((p) => ({ ...p, [sourceKey]: { ...p[sourceKey], [f.key]: f.type === "number" ? Number(e.target.value) : e.target.value } }))}
           placeholder={f.placeholder}
-          style={inputStyle}
+          className="h-auto rounded-[7px] border-border bg-muted px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem] dark:bg-muted"
         />
       )}
       {f.hint && f.type !== "checkbox" && (
-        <div style={{ marginTop: 5, fontSize: "0.67rem", color: "var(--muted-dim)", lineHeight: 1.55 }}>{f.hint}</div>
+        <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
       )}
     </div>
   );

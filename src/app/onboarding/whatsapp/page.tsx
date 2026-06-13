@@ -2,6 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from 'next-intl';
+import { cn } from "@/lib/utils";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const COUNTRIES = [
   { code: "+90", flag: "🇹🇷", name: "Türkiye" },
@@ -63,118 +68,118 @@ export default function OnboardingWhatsAppPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-10">
 
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 48 }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--primary)" }} />
-        <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.05rem" }}>Observer</span>
+      <div className="mb-12">
+        <Logo size={28} textSize="1.05rem" gap={10} />
       </div>
 
       {/* Progress */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
+      <div className="mb-10 flex items-center gap-2">
         {[t('step1'), t('step2')].map((s, i) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-              background: i === 0 ? "#22c55e" : "var(--muted-surface)",
-              border: i === 0 ? "none" : "1px solid var(--border)",
-              fontSize: "0.72rem", fontWeight: 700,
-              color: i === 0 ? "#fff" : "var(--muted-foreground)",
-            }}>{i + 1}</div>
-            <span style={{ fontSize: "0.78rem", color: i === 0 ? "var(--foreground)" : "var(--muted-foreground)", fontWeight: i === 0 ? 600 : 400 }}>{s}</span>
-            {i < 1 && <div style={{ width: 24, height: 1, background: "var(--border)" }} />}
+          <div key={s} className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex size-[26px] items-center justify-center rounded-full text-[0.72rem] font-bold",
+                i === 0
+                  ? "bg-[#22c55e] text-white"
+                  : "border bg-muted text-muted-foreground"
+              )}
+            >{i + 1}</div>
+            <span className={cn("text-[0.78rem]", i === 0 ? "font-semibold text-foreground" : "font-normal text-muted-foreground")}>{s}</span>
+            {i < 1 && <div className="h-px w-6 bg-border" />}
           </div>
         ))}
       </div>
 
       {/* Main card */}
-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 24, padding: "40px 40px 32px", width: "100%", maxWidth: 480 }}>
+      <div className="w-full max-w-[480px] rounded-3xl border bg-card px-10 pt-10 pb-8">
 
         {/* WA icon + header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(37,211,102,0.1)", border: "1px solid rgba(37,211,102,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.8rem", margin: "0 auto 18px" }}>💬</div>
-          <h1 style={{ color: "var(--foreground)", fontSize: "1.5rem", fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 10px" }}>
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-[18px] flex size-16 items-center justify-center rounded-[18px] border border-[rgba(37,211,102,0.25)] bg-[rgba(37,211,102,0.1)] text-[1.8rem]">💬</div>
+          <h1 className="mt-0 mb-2.5 text-2xl font-extrabold tracking-[-0.03em] text-foreground">
             {t('whatsappTitle')}
           </h1>
-          <p style={{ color: "#71717a", fontSize: "0.88rem", lineHeight: 1.65, margin: 0 }}>
+          <p className="m-0 text-[0.88rem] leading-[1.65] text-[#71717a]">
             {t('whatsappSubtitle')}
           </p>
         </div>
 
         {/* Phone input */}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", color: "#71717a", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontFamily: "Menlo, monospace" }}>
+        <div className="mb-5">
+          <Label className="mb-2 font-mono text-[0.72rem] font-bold tracking-[0.1em] text-[#71717a] uppercase">
             WhatsApp Number
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
+          </Label>
+          <div className="flex gap-2">
             <select
               value={country.code}
               onChange={(e) => setCountry(COUNTRIES.find(c => c.code === e.target.value) ?? COUNTRIES[0])}
-              style={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--foreground)", padding: "11px 10px", fontSize: "0.875rem", outline: "none", cursor: "pointer", flexShrink: 0 }}
+              className="shrink-0 cursor-pointer rounded-[10px] border border-border bg-background px-2.5 py-[11px] text-sm text-foreground outline-none"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
               ))}
             </select>
-            <input
+            <Input
               type="tel"
               placeholder={t('phonePlaceholder')}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               autoFocus
-              style={{ flex: 1, background: "var(--background)", border: "1px solid var(--border)", borderRadius: 10, color: "var(--foreground)", padding: "11px 14px", fontSize: "0.975rem", outline: "none", fontFamily: "'Inter', sans-serif" }}
+              className="h-auto flex-1 rounded-[10px] border-border bg-background px-3.5 py-[11px] text-[0.975rem] shadow-none md:text-[0.975rem] dark:bg-background"
             />
           </div>
           {isValid && (
-            <div style={{ color: "#22c55e", fontSize: "0.72rem", marginTop: 6, fontFamily: "Menlo, monospace" }}>
+            <div className="mt-1.5 font-mono text-[0.72rem] text-[#22c55e]">
               ✓ Will send alerts to {fullNumber}
             </div>
           )}
         </div>
 
         {/* WhatsApp preview bubble */}
-        <div style={{ background: "#0c1512", border: "1px solid rgba(37,211,102,0.15)", borderRadius: 14, padding: "16px 18px", marginBottom: 28 }}>
-          <div style={{ color: "#22c55e", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "Menlo, monospace", marginBottom: 10 }}>Preview, what you&apos;ll receive</div>
-          <div style={{ background: "#10241c", borderRadius: "4px 12px 12px 12px", padding: "11px 14px" }}>
-            <div style={{ color: "#f87171", fontSize: "0.78rem", fontWeight: 800, marginBottom: 4 }}>🔴 HIGH · 84/100</div>
-            <div style={{ color: "#e9edef", fontSize: "0.82rem", lineHeight: 1.55, marginBottom: 8 }}>
+        <div className="mb-7 rounded-[14px] border border-[rgba(37,211,102,0.15)] bg-[#0c1512] px-[18px] py-4">
+          <div className="mb-2.5 font-mono text-[0.62rem] font-bold tracking-[0.1em] text-[#22c55e] uppercase">Preview, what you&apos;ll receive</div>
+          <div className="rounded-[4px_12px_12px_12px] bg-[#10241c] px-3.5 py-[11px]">
+            <div className="mb-1 text-[0.78rem] font-extrabold text-[#f87171]">🔴 HIGH · 84/100</div>
+            <div className="mb-2 text-[0.82rem] leading-[1.55] text-[#e9edef]">
               14 customers complained about wait times this week, 2× vs last week.
             </div>
-            <div style={{ color: "#9fd9bf", fontSize: "0.75rem", marginBottom: 8 }}>💰 Weekend revenue at risk</div>
-            <div style={{ color: "#22c55e", fontSize: "0.75rem", fontWeight: 700, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 8 }}>
+            <div className="mb-2 text-[0.75rem] text-[#9fd9bf]">💰 Weekend revenue at risk</div>
+            <div className="border-t border-[rgba(255,255,255,0.07)] pt-2 text-[0.75rem] font-bold text-[#22c55e]">
               Reply: <strong>1</strong> = details &nbsp;·&nbsp; <strong>2</strong> = on it &nbsp;·&nbsp; <strong>3</strong> = skip
             </div>
           </div>
         </div>
 
         {/* Save button */}
-        <button
+        <Button
           onClick={handleSave}
           disabled={!isValid || saving || saved}
-          style={{
-            width: "100%", padding: "14px", borderRadius: 12, border: "none",
-            background: saved ? "var(--success)" : isValid ? "var(--primary)" : "var(--muted-surface)",
-            color: (isValid || saved) ? "var(--primary-foreground)" : "var(--muted-foreground)",
-            fontSize: "0.95rem", fontWeight: 700, cursor: isValid ? "pointer" : "not-allowed",
-            transition: "all 0.15s", letterSpacing: "-0.01em",
-            boxShadow: isValid && !saved ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
-            marginBottom: 12,
-          }}
+          className={cn(
+            "mb-3 h-auto w-full rounded-xl p-3.5 text-[0.95rem] font-bold tracking-[-0.01em] transition-all duration-150 disabled:opacity-100",
+            saved
+              ? "bg-[var(--success)] text-primary-foreground"
+              : isValid
+                ? "bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(249,115,22,0.35)]"
+                : "bg-muted text-muted-foreground"
+          )}
         >
           {saved ? "✓ Saved! Continuing…" : saving ? t('saving') : t('saveBtn')}
-        </button>
+        </Button>
 
         {/* Skip */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => router.push("/onboarding/connect")}
-          style={{ width: "100%", background: "none", border: "none", color: "#52525b", fontSize: "0.82rem", cursor: "pointer", padding: "8px" }}
+          className="h-auto w-full p-2 text-[0.82rem] font-normal text-[#52525b] hover:bg-transparent hover:text-[#52525b]"
         >
           Skip for now, set up later in Alerts
-        </button>
+        </Button>
       </div>
 
-      <p style={{ color: "#3f3f46", fontSize: "0.72rem", marginTop: 20, textAlign: "center", maxWidth: 360, lineHeight: 1.6 }}>
+      <p className="mt-5 max-w-[360px] text-center text-[0.72rem] leading-[1.6] text-[#3f3f46]">
         We only send messages when Observer detects something important. No spam. You can change your number anytime.
       </p>
     </div>

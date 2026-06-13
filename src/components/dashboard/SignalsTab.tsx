@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { SourcePill } from "@/components/ui/Badge";
+import { SourcePill } from "@/components/ui/SignalBadges";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Signal } from "@/lib/types";
 
 const ALL_SOURCES = [
@@ -78,13 +80,17 @@ export function SignalsTab() {
   return (
     <div>
       {/* Filter tabs */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="mb-4 flex flex-wrap items-center gap-1.5">
         {FILTER_TABS.map((f) => (
           <button
             key={f}
-            className={`pill-tab ${filter === f ? "active" : ""}`}
+            className={cn(
+              "cursor-pointer whitespace-nowrap rounded-[7px] border px-3.5 py-1.5 text-[0.8rem] font-medium transition-all duration-[0.12s]",
+              filter === f
+                ? "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.1)] text-foreground"
+                : "border-transparent bg-transparent text-[var(--muted-light)] hover:bg-[rgba(255,255,255,0.05)] hover:text-foreground"
+            )}
             onClick={() => setFilter(f)}
-            style={{ fontSize: "0.8rem" }}
           >
             {f === "all" ? "All Sources" : f === "appstore" ? "App Store" : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -92,71 +98,73 @@ export function SignalsTab() {
       </div>
 
       {/* Pull buttons */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+      <div className="mb-5 flex flex-wrap gap-2">
         {ALL_SOURCES.map((src) => (
-          <button
+          <Button
             key={src.key}
-            className="btn-secondary"
+            variant="outline"
             onClick={() => ingest(src.key)}
             disabled={ingesting === src.key}
-            style={{ fontSize: "0.75rem", padding: "5px 12px" }}
+            className="h-auto px-3 py-[5px] text-[0.75rem]"
           >
             {ingesting === src.key ? `Pulling ${src.label}…` : `${src.icon} Pull ${src.label}`}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Stats row */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+      <div className="mb-5 flex flex-wrap gap-2.5">
         {statSources.filter((s) => s.value > 0 || s.label === "Total").map((stat) => (
-          <div key={stat.label} style={{ padding: "8px 14px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ color: stat.color, fontWeight: 700, fontSize: "1.1rem" }}>{stat.value}</div>
-            <div style={{ color: "var(--muted)", fontSize: "0.68rem" }}>{stat.label}</div>
+          <div key={stat.label} className="rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-3.5 py-2">
+            <div className="text-[1.1rem] font-bold" style={{ color: stat.color }}>{stat.value}</div>
+            <div className="text-[0.68rem] text-muted-foreground">{stat.label}</div>
           </div>
         ))}
       </div>
 
       {/* Signals feed */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "48px 0", color: "var(--muted)" }}>Loading signals...</div>
+        <div className="py-12 text-center text-muted-foreground">Loading signals...</div>
       ) : filteredSignals.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "48px 0" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>📭</div>
-          <p style={{ color: "var(--muted)" }}>No signals yet. Pull from your connected sources above.</p>
-          <a href="/settings/integrations" style={{ color: "var(--accent-blue)", fontSize: "0.875rem" }}>
+        <div className="py-12 text-center">
+          <div className="mb-4 text-[2.5rem]">📭</div>
+          <p className="text-muted-foreground">No signals yet. Pull from your connected sources above.</p>
+          <a href="/settings/integrations" className="text-[0.875rem] text-[var(--accent-blue)]">
             → Set up integrations
           </a>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
           {filteredSignals.map((signal) => (
             <div
               key={signal.id}
-              className="obs-card"
-              style={{ padding: "16px 20px", opacity: signal.reviewed ? 0.5 : 1, transition: "opacity 0.2s" }}
+              className={cn(
+                "rounded-[14px] border bg-card px-5 py-4 shadow-sm transition-opacity duration-200",
+                signal.reviewed && "opacity-50"
+              )}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <div className="flex items-start gap-4">
                 <SourcePill source={signal.source} />
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "var(--accent-green)", fontSize: "0.75rem", fontWeight: 500 }}>#{signal.channel}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[0.75rem] font-medium text-[var(--accent-green)]">#{signal.channel}</span>
                       {signal.sender && (
-                        <span style={{ color: "var(--muted)", fontSize: "0.75rem" }}>· {signal.sender}</span>
+                        <span className="text-[0.75rem] text-muted-foreground">· {signal.sender}</span>
                       )}
                     </div>
-                    <span style={{ color: "var(--muted)", fontSize: "0.7rem", flexShrink: 0 }}>
+                    <span className="shrink-0 text-[0.7rem] text-muted-foreground">
                       {new Date(signal.timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  <p style={{ color: "white", fontSize: "0.875rem", lineHeight: 1.5, margin: 0, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                  <p className="line-clamp-3 text-[0.875rem] leading-[1.5] text-white">
                     {signal.content}
                   </p>
                   {signal.tags && signal.tags.length > 0 && (
-                    <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
                       {signal.tags.map((tag) => (
-                        <span key={tag} style={{ fontSize: "0.7rem", color: "var(--accent-blue)", background: "rgba(110,168,255,0.1)", padding: "2px 8px", borderRadius: 9999, border: "1px solid rgba(110,168,255,0.2)" }}>
+                        <span key={tag} className="rounded-full border border-[rgba(110,168,255,0.2)] bg-[rgba(110,168,255,0.1)] px-2 py-0.5 text-[0.7rem] text-[var(--accent-blue)]">
                           {tag}
                         </span>
                       ))}
@@ -165,16 +173,16 @@ export function SignalsTab() {
                 </div>
 
                 {!signal.reviewed && (
-                  <button
-                    className="btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => markReviewed(signal.id)}
-                    style={{ flexShrink: 0, fontSize: "0.75rem", padding: "4px 12px" }}
+                    className="h-auto shrink-0 px-3 py-1 text-[0.75rem]"
                   >
                     Mark reviewed
-                  </button>
+                  </Button>
                 )}
                 {signal.reviewed && (
-                  <span style={{ color: "var(--accent-green)", fontSize: "0.75rem", flexShrink: 0 }}>✓ Reviewed</span>
+                  <span className="shrink-0 text-[0.75rem] text-[var(--accent-green)]">✓ Reviewed</span>
                 )}
               </div>
             </div>

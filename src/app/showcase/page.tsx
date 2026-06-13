@@ -1,9 +1,16 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import type { Cluster } from "@/lib/types";
-import { ConfidenceBar, SeverityBadge } from "@/components/ui/Badge";
+import { ConfidenceBar, SeverityBadge } from "@/components/ui/SignalBadges";
 import { Modal } from "@/components/ui/Modal";
+import { LogoMark } from "@/components/Logo";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 // ── Demo clusters ─────────────────────────────────────────────────────────────
 
@@ -203,19 +210,6 @@ function sourceChips(cluster: Cluster): Array<{ name: string; count: number }> {
     .map(([name, count]) => ({ name, count }));
 }
 
-// ── Logo ──────────────────────────────────────────────────────────────────────
-
-function LogoMark() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10.5" stroke="#f97316" strokeWidth="1.2" opacity="0.5"/>
-      <path d="M3.5 12C5.5 7.5 8.5 5.5 12 5.5C15.5 5.5 18.5 7.5 20.5 12C18.5 16.5 15.5 18.5 12 18.5C8.5 18.5 5.5 16.5 3.5 12Z" stroke="#f97316" strokeWidth="1.3" fill="none"/>
-      <circle cx="12" cy="12" r="3" fill="#f97316"/>
-      <circle cx="13.2" cy="10.8" r="0.9" fill="rgba(255,255,255,0.6)"/>
-    </svg>
-  );
-}
-
 // ── AI Insight Banner ─────────────────────────────────────────────────────────
 
 function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: () => void }) {
@@ -229,28 +223,28 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
   const current = insights[idx];
   return (
     <div className="ai-insight-banner">
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.22)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1.1rem" }}>🧠</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--accent)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace" }}>AI INSIGHT {idx + 1}/{insights.length}</span>
-            <span style={{ padding: "2px 7px", borderRadius: 4, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.18)", fontSize: "0.62rem", fontWeight: 600, color: "var(--accent)" }}>{current.confidence}% confidence</span>
+      <div className="flex items-start gap-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-[rgba(249,115,22,0.22)] bg-[rgba(249,115,22,0.1)] text-[1.1rem]">🧠</div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-[5px] flex items-center gap-2">
+            <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">AI INSIGHT {idx + 1}/{insights.length}</span>
+            <span className="rounded-[4px] border border-[rgba(249,115,22,0.18)] bg-[rgba(249,115,22,0.1)] px-[7px] py-0.5 text-[0.62rem] font-semibold text-primary">{current.confidence}% confidence</span>
           </div>
-          <p style={{ fontWeight: 600, fontSize: "0.92rem", color: "#fff", margin: "0 0 3px", lineHeight: 1.4 }}>{current.headline}</p>
-          <p style={{ color: "var(--muted-light)", fontSize: "0.81rem", margin: 0, lineHeight: 1.55, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{current.detail}</p>
+          <p className="mb-[3px] text-[0.92rem] font-semibold leading-[1.4] text-white">{current.headline}</p>
+          <p className="line-clamp-2 text-[0.81rem] leading-[1.55] text-[var(--muted-light)]">{current.detail}</p>
           {insights.length > 1 && (
-            <div style={{ display: "flex", gap: 4, marginTop: 10 }}>
+            <div className="mt-2.5 flex gap-1">
               {insights.map((_, i) => (
-                <button key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? 18 : 5, height: 5, borderRadius: 3, border: "none", cursor: "pointer", padding: 0, background: i === idx ? "var(--accent)" : "rgba(255,255,255,0.16)", transition: "all 0.2s" }} />
+                <button key={i} onClick={() => setIdx(i)} className={cn("h-[5px] cursor-pointer rounded-[3px] p-0 transition-all duration-200", i === idx ? "w-[18px] bg-primary" : "w-[5px] bg-white/[0.16]")} />
               ))}
             </div>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div className="flex shrink-0 items-center gap-1.5">
           {idx < insights.length - 1 && (
-            <button onClick={() => setIdx((i) => i + 1)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", borderRadius: 7, color: "#fff", cursor: "pointer", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>›</button>
+            <button onClick={() => setIdx((i) => i + 1)} className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[7px] border bg-white/[0.06] text-base text-white">›</button>
           )}
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted-dim)", cursor: "pointer", padding: "4px 6px", fontSize: "0.9rem", borderRadius: 5, lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} className="cursor-pointer rounded-[5px] px-1.5 py-1 text-[0.9rem] leading-none text-[var(--muted-dim)]">✕</button>
         </div>
       </div>
     </div>
@@ -268,15 +262,15 @@ function PipelineStepper() {
     { key: "measure", label: "Measure", count: 1 },
   ];
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 18px", display: "flex", alignItems: "center", gap: 0 }}>
+    <div className="flex items-center gap-0 rounded-xl border bg-card px-[18px] py-2.5">
       {steps.map((step, i) => (
         <React.Fragment key={step.key}>
           <div className={`pipeline-step ${i <= 1 ? "ps-active" : "ps-pending"}`}>
             <span className={`step-badge ${i <= 1 ? "active" : "pending"}`}>{i < 1 ? "✓" : i + 1}</span>
             {step.label}
-            {step.count > 0 && <span style={{ color: "var(--muted)", fontSize: "0.7rem", fontFamily: "'JetBrains Mono', monospace" }}>×{step.count}</span>}
+            {step.count > 0 && <span className="font-mono text-[0.7rem] text-muted-foreground">×{step.count}</span>}
           </div>
-          {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, var(--border), transparent)", minWidth: 12, maxWidth: 36 }} />}
+          {i < steps.length - 1 && <div className="h-px min-w-3 max-w-9 flex-1 bg-linear-to-r from-border to-transparent" />}
         </React.Fragment>
       ))}
     </div>
@@ -294,26 +288,26 @@ function StatusStrip() {
     { label: "avg confidence", value: "79%", color: "#f1f1f5" },
   ];
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: "0 16px", height: 38, marginBottom: 16, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 16, flexShrink: 0 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", animation: "pulse-dot 2s ease-in-out infinite" }} />
-        <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--muted-light)", letterSpacing: "0.02em" }}>Live</span>
+    <div className="mb-4 flex h-[38px] items-center gap-0 overflow-hidden rounded-[10px] border bg-card px-4">
+      <div className="flex shrink-0 items-center gap-1.5 pr-4">
+        <div className="h-1.5 w-1.5 animate-[pulse-dot_2s_ease-in-out_infinite] rounded-full bg-[#22c55e]" />
+        <span className="text-[0.7rem] font-semibold tracking-[0.02em] text-[var(--muted-light)]">Live</span>
       </div>
-      <div style={{ width: 1, height: 16, background: "var(--border)", marginRight: 16, flexShrink: 0 }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 0, flex: 1 }}>
+      <div className="mr-4 h-4 w-px shrink-0 bg-border" />
+      <div className="flex flex-1 items-center gap-0">
         {items.map((item, i) => (
           <React.Fragment key={item.label}>
-            {i > 0 && <div style={{ width: 1, height: 14, background: "var(--border)", margin: "0 12px", flexShrink: 0 }} />}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: item.color, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.02em" }}>{item.value}</span>
-              <span style={{ fontSize: "0.7rem", color: "var(--muted)", letterSpacing: "-0.01em" }}>{item.label}</span>
+            {i > 0 && <div className="mx-3 h-3.5 w-px shrink-0 bg-border" />}
+            <div className="flex shrink-0 items-baseline gap-[5px]">
+              <span className="font-mono text-[0.82rem] font-bold tracking-[-0.02em]" style={{ color: item.color }}>{item.value}</span>
+              <span className="text-[0.7rem] tracking-[-0.01em] text-muted-foreground">{item.label}</span>
             </div>
           </React.Fragment>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 16, flexShrink: 0 }}>
-        <div style={{ width: 1, height: 14, background: "var(--border)", marginRight: 4 }} />
-        <span style={{ fontSize: "0.7rem", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace" }}>Last run: 2m ago</span>
+      <div className="flex shrink-0 items-center gap-[5px] pl-4">
+        <div className="mr-1 h-3.5 w-px bg-border" />
+        <span className="font-mono text-[0.7rem] text-[var(--muted-dim)]">Last run: 2m ago</span>
       </div>
     </div>
   );
@@ -326,17 +320,17 @@ function SourceBreakdownChart({ cluster }: { cluster: Cluster }) {
   const max = Math.max(...chips.map((c) => c.count), 1);
   const colors: Record<string, string> = { email: "#6ea8ff", zendesk: "#f79a00", intercom: "#4dabf7", reddit: "#ff4500", slack: "#e879f9", appstore: "#a78bfa", github: "#c9d1d9", whatsapp: "#46e6a6", jira: "#2684ff" };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="flex flex-col gap-2">
       {chips.map(({ name, count }) => {
         const color = colors[name] ?? "#9aa3b2";
         return (
           <div key={name}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: "0.68rem", fontWeight: 600, color, textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "'JetBrains Mono', monospace" }}>{name}</span>
-              <span style={{ fontSize: "0.68rem", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>{count}</span>
+            <div className="mb-1 flex justify-between">
+              <span className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.06em]" style={{ color }}>{name}</span>
+              <span className="font-mono text-[0.68rem] text-muted-foreground">{count}</span>
             </div>
-            <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.round((count / max) * 100)}%`, background: color, borderRadius: 3, opacity: 0.7, transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
+            <div className="h-[5px] overflow-hidden rounded-[3px] bg-white/[0.06]">
+              <div className="h-full rounded-[3px] opacity-70 transition-[width] duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)]" style={{ width: `${Math.round((count / max) * 100)}%`, background: color }} />
             </div>
           </div>
         );
@@ -401,87 +395,86 @@ function IntentSnapshotModal({ cluster, open, onClose }: { cluster: Cluster | nu
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const sharebtn = (key: string, label: string, style?: React.CSSProperties) => {
+  const sharebtn = (key: string, label: string, className?: string) => {
     const state = shareState[key] ?? "idle";
     return (
-      <button className="btn-ghost" onClick={() => simulateShare(key)} disabled={state !== "idle"} style={{ opacity: state === "sending" ? 0.5 : 1, ...style }}>
+      <Button variant="ghost" onClick={() => simulateShare(key)} disabled={state !== "idle"} className={cn("h-auto rounded-[7px] border px-3.5 py-[7px] text-[0.82rem] font-medium text-muted-foreground", state === "sending" ? "disabled:opacity-50" : "disabled:opacity-100", className)}>
         {state === "sending" ? "Sending…" : state === "done" ? `✓ Sent` : label}
-      </button>
+      </Button>
     );
   };
 
   return (
     <Modal open={open} onClose={onClose} maxWidth="760px">
-      <div style={{ padding: 36 }}>
+      <div className="p-9">
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <span style={{ color: "var(--accent-violet)", fontSize: "0.8rem", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Intent Snapshot</span>
+        <div className="mb-6 flex items-start justify-between">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-violet)]">Intent Snapshot</span>
               <SeverityBadge severity={cluster.severity_label} />
             </div>
-            <h2 style={{ color: "white", fontWeight: 700, fontSize: "1.3rem", margin: 0 }}>{cluster.title}</h2>
+            <h2 className="text-[1.3rem] font-bold text-white">{cluster.title}</h2>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "1.4rem", padding: "0 0 0 16px" }}>×</button>
+          <button onClick={onClose} className="cursor-pointer pl-4 text-[1.4rem] text-muted-foreground">×</button>
         </div>
 
         {/* Meta row */}
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" as const, padding: "16px 0", borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 24 }}>
+        <div className="mb-6 flex flex-wrap gap-6 border-y border-white/[0.08] py-4">
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4 }}>Confidence</div>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Confidence</div>
             <ConfidenceBar value={cluster.confidence} />
           </div>
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4 }}>Evidence</div>
-            <div style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>{cluster.evidence_count} signals</div>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Evidence</div>
+            <div className="text-[0.9rem] font-semibold text-white">{cluster.evidence_count} signals</div>
           </div>
           <div>
-            <div style={{ color: "var(--muted)", fontSize: "0.7rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4 }}>Sources</div>
-            <div style={{ color: "white", fontWeight: 600, fontSize: "0.9rem" }}>
+            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Sources</div>
+            <div className="text-[0.9rem] font-semibold text-white">
               {sourceChips(cluster).map(({ name, count }) => `${name} ${count}`).join(" · ")}
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center" as const, padding: "60px 0" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(70,230,166,0.2)", borderTopColor: "var(--accent-green)", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-            <p style={{ color: "var(--muted)", fontSize: "0.875rem" }}>Generating intent snapshot with Claude…</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div className="py-[60px] text-center">
+            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[var(--accent-green)]" />
+            <p className="text-[0.875rem] text-muted-foreground">Generating intent snapshot with Claude…</p>
           </div>
         ) : shown && snapshot ? (
-          <div style={{ display: "flex", flexDirection: "column" as const, gap: 24 }}>
+          <div className="flex flex-col gap-6">
             <div>
-              <h4 style={{ color: "var(--accent-green)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 10, fontWeight: 600 }}>Problem Statement</h4>
-              <p style={{ color: "white", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>{snapshot.problem_statement}</p>
+              <h4 className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-green)]">Problem Statement</h4>
+              <p className="text-[0.95rem] leading-[1.6] text-white">{snapshot.problem_statement}</p>
             </div>
-            <div style={{ padding: 20, borderRadius: 12, background: "rgba(70,230,166,0.06)", border: "1px solid rgba(70,230,166,0.15)" }}>
-              <h4 style={{ color: "var(--accent-green)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 10, fontWeight: 600 }}>Recommended Solution</h4>
-              <p style={{ color: "white", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>{snapshot.recommended_solution}</p>
+            <div className="rounded-xl border border-[rgba(70,230,166,0.15)] bg-[rgba(70,230,166,0.06)] p-5">
+              <h4 className="mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-green)]">Recommended Solution</h4>
+              <p className="text-[0.95rem] leading-[1.6] text-white">{snapshot.recommended_solution}</p>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div style={{ padding: 20, borderRadius: 12, background: "rgba(110,168,255,0.06)", border: "1px solid rgba(110,168,255,0.15)" }}>
-                <h4 style={{ color: "var(--accent-blue)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 12, fontWeight: 600 }}>Acceptance Criteria</h4>
-                <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column" as const, gap: 6 }}>
-                  {snapshot.acceptance_criteria.map((c, i) => <li key={i} style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.5 }}>{c}</li>)}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border border-[rgba(110,168,255,0.15)] bg-[rgba(110,168,255,0.06)] p-5">
+                <h4 className="mb-3 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-blue)]">Acceptance Criteria</h4>
+                <ul className="flex flex-col gap-1.5 pl-4">
+                  {snapshot.acceptance_criteria.map((c, i) => <li key={i} className="text-[0.8rem] leading-[1.5] text-muted-foreground">{c}</li>)}
                 </ul>
               </div>
-              <div style={{ padding: 20, borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <h4 style={{ color: "var(--accent-violet)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 12, fontWeight: 600 }}>Success Metrics</h4>
-                <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column" as const, gap: 6 }}>
-                  {snapshot.success_metrics.map((m, i) => <li key={i} style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.5 }}>{m}</li>)}
+              <div className="rounded-xl border border-[rgba(167,139,250,0.15)] bg-[rgba(167,139,250,0.06)] p-5">
+                <h4 className="mb-3 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--accent-violet)]">Success Metrics</h4>
+                <ul className="flex flex-col gap-1.5 pl-4">
+                  {snapshot.success_metrics.map((m, i) => <li key={i} className="text-[0.8rem] leading-[1.5] text-muted-foreground">{m}</li>)}
                 </ul>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const }}>
-              <div style={{ flex: 1, minWidth: 200, padding: "16px 20px", borderRadius: 12, background: "rgba(255,209,102,0.06)", border: "1px solid rgba(255,209,102,0.2)" }}>
-                <div style={{ color: "var(--warning)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 6, fontWeight: 600 }}>Effort Estimate</div>
-                <div style={{ color: "white", fontWeight: 600 }}>{snapshot.effort_estimate}</div>
+            <div className="flex flex-wrap gap-4">
+              <div className="min-w-[200px] flex-1 rounded-xl border border-[rgba(255,209,102,0.2)] bg-[rgba(255,209,102,0.06)] px-5 py-4">
+                <div className="mb-1.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--warning)]">Effort Estimate</div>
+                <div className="font-semibold text-white">{snapshot.effort_estimate}</div>
               </div>
               {cluster.customer_quote && (
-                <div style={{ flex: 2, minWidth: 200, padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <div style={{ color: "var(--muted)", fontSize: "0.75rem", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 6, fontWeight: 600 }}>Customer Voice</div>
-                  <blockquote style={{ margin: 0, color: "white", fontStyle: "italic", fontSize: "0.875rem", lineHeight: 1.5, borderLeft: "3px solid var(--accent-green)", paddingLeft: 12 }}>
+                <div className="min-w-[200px] flex-[2] rounded-xl border border-white/[0.08] bg-white/[0.03] px-5 py-4">
+                  <div className="mb-1.5 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Customer Voice</div>
+                  <blockquote className="border-l-[3px] pl-3 text-[0.875rem] italic leading-[1.5] text-white [border-left-color:var(--accent-green)]">
                     &ldquo;{cluster.customer_quote}&rdquo;
                   </blockquote>
                 </div>
@@ -491,35 +484,35 @@ function IntentSnapshotModal({ cluster, open, onClose }: { cluster: Cluster | nu
         ) : null}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const, marginTop: 32, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="mt-8 flex flex-wrap gap-2.5 border-t border-white/[0.08] pt-6">
           {sharebtn("slack", "⚡ Share to Slack")}
 
           {/* WhatsApp alert, prominent */}
-          <button className="btn-ghost" onClick={() => simulateShare("whatsapp")} disabled={shareState["whatsapp"] !== "idle" && shareState["whatsapp"] !== undefined} style={{ borderColor: "rgba(70,230,166,0.35)", color: "#46e6a6", opacity: shareState["whatsapp"] === "sending" ? 0.5 : 1 }}>
+          <Button variant="ghost" onClick={() => simulateShare("whatsapp")} disabled={shareState["whatsapp"] !== "idle" && shareState["whatsapp"] !== undefined} className={cn("h-auto rounded-[7px] border border-[rgba(70,230,166,0.35)] px-3.5 py-[7px] text-[0.82rem] font-medium text-[#46e6a6]", shareState["whatsapp"] === "sending" ? "disabled:opacity-50" : "disabled:opacity-100")}>
             {shareState["whatsapp"] === "sending" ? "Sending…" : shareState["whatsapp"] === "done" ? "✓ Alert Sent" : "💬 WhatsApp Alert"}
-          </button>
+          </Button>
 
-          {sharebtn("email", "✉️ Email Brief", { borderColor: "rgba(110,168,255,0.3)", color: "var(--accent-blue)" })}
+          {sharebtn("email", "✉️ Email Brief", "border-[rgba(110,168,255,0.3)] text-[var(--accent-blue)]")}
 
           {/* Jira */}
-          <button className="btn-ghost" onClick={createJira} disabled={shareState["jira"] !== "idle" && shareState["jira"] !== undefined} style={{ borderColor: "rgba(38,132,255,0.3)", color: "#2684ff", opacity: shareState["jira"] === "sending" ? 0.5 : 1 }}>
+          <Button variant="ghost" onClick={createJira} disabled={shareState["jira"] !== "idle" && shareState["jira"] !== undefined} className={cn("h-auto rounded-[7px] border border-[rgba(38,132,255,0.3)] px-3.5 py-[7px] text-[0.82rem] font-medium text-[#2684ff]", shareState["jira"] === "sending" ? "disabled:opacity-50" : "disabled:opacity-100")}>
             {shareState["jira"] === "sending" ? "Creating…" : jiraTicket ? `✓ ${jiraTicket} Created` : "📋 Create Jira Ticket"}
-          </button>
+          </Button>
 
-          <button className="btn-ghost" onClick={exportMd} style={{ borderColor: "rgba(167,139,250,0.3)", color: "var(--accent-violet)" }}>↓ Export PRD</button>
-          <button className="btn-ghost" onClick={copyMd} style={{ borderColor: "rgba(255,255,255,0.15)", color: "var(--muted)" }}>{copied ? "✓ Copied!" : "Copy"}</button>
+          <Button variant="ghost" onClick={exportMd} className="h-auto rounded-[7px] border border-[rgba(167,139,250,0.3)] px-3.5 py-[7px] text-[0.82rem] font-medium text-[var(--accent-violet)]">↓ Export PRD</Button>
+          <Button variant="ghost" onClick={copyMd} className="h-auto rounded-[7px] border border-white/[0.15] px-3.5 py-[7px] text-[0.82rem] font-medium text-muted-foreground">{copied ? "✓ Copied!" : "Copy"}</Button>
         </div>
 
         {/* WhatsApp alert preview */}
         {shareState["whatsapp"] === "done" && (
-          <div style={{ marginTop: 16, padding: "14px 18px", borderRadius: 10, background: "rgba(70,230,166,0.06)", border: "1px solid rgba(70,230,166,0.2)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: "0.8rem" }}>💬</span>
-              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#46e6a6", textTransform: "uppercase" as const, letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace" }}>WhatsApp Alert Sent · +1 555 0147</span>
-              <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace" }}>just now</span>
+          <div className="mt-4 rounded-[10px] border border-[rgba(70,230,166,0.2)] bg-[rgba(70,230,166,0.06)] px-[18px] py-3.5">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-[0.8rem]">💬</span>
+              <span className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#46e6a6]">WhatsApp Alert Sent · +1 555 0147</span>
+              <span className="ml-auto font-mono text-[0.65rem] text-[var(--muted-dim)]">just now</span>
             </div>
-            <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.3)", fontFamily: "monospace", fontSize: "0.75rem", color: "var(--muted-light)", lineHeight: 1.6 }}>
-              <span style={{ color: "#46e6a6", fontWeight: 700 }}>*Observer Alert*</span>{"\n"}<br />
+            <div className="rounded-lg bg-black/30 px-3.5 py-2.5 text-[0.75rem] leading-[1.6] text-[var(--muted-light)] [font-family:monospace]">
+              <span className="font-bold text-[#46e6a6]">*Observer Alert*</span>{"\n"}<br />
               ⚠️ {severityLabel(cluster.severity).toUpperCase()} · Score {cluster.severity}/100<br />
               {cluster.title}<br /><br />
               📊 {cluster.evidence_count} signals · {Math.round(cluster.confidence * 100)}% confidence<br />
@@ -529,11 +522,11 @@ function IntentSnapshotModal({ cluster, open, onClose }: { cluster: Cluster | nu
         )}
 
         {jiraTicket && (
-          <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(38,132,255,0.06)", border: "1px solid rgba(38,132,255,0.2)", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: "0.9rem" }}>📋</span>
+          <div className="mt-3 flex items-center gap-2.5 rounded-[10px] border border-[rgba(38,132,255,0.2)] bg-[rgba(38,132,255,0.06)] px-4 py-3">
+            <span className="text-[0.9rem]">📋</span>
             <div>
-              <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#2684ff" }}>Jira ticket created: <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{jiraTicket}</span></div>
-              <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: 2 }}>Assigned to Product · Sprint 14 · Priority: {severityLabel(cluster.severity)}</div>
+              <div className="text-[0.78rem] font-bold text-[#2684ff]">Jira ticket created: <span className="font-mono">{jiraTicket}</span></div>
+              <div className="mt-0.5 text-[0.7rem] text-muted-foreground">Assigned to Product · Sprint 14 · Priority: {severityLabel(cluster.severity)}</div>
             </div>
           </div>
         )}
@@ -552,36 +545,36 @@ function SignalCard({ cluster, selected, onClick, staggerIndex, approval }: {
   const chips = sourceChips(cluster);
   const confPct = Math.round(cluster.confidence * 100);
   return (
-    <div className={`signal-card sev-${sev} ${selected ? "selected" : ""} stagger-${Math.min(staggerIndex + 1, 8)}`} onClick={onClick} style={{ padding: "16px 18px 14px 20px", cursor: "pointer", position: "relative" as const }}>
+    <div className={cn(`signal-card sev-${sev} ${selected ? "selected" : ""} stagger-${Math.min(staggerIndex + 1, 8)}`, "relative cursor-pointer pt-4 pr-[18px] pb-3.5 pl-5")} onClick={onClick}>
       {approval !== "pending" && (
-        <div style={{ position: "absolute" as const, top: 12, right: 14, padding: "2px 8px", borderRadius: 5, fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", background: approval === "approved" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.1)", color: approval === "approved" ? "#4ade80" : "#f87171", border: `1px solid ${approval === "approved" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}` }}>
+        <div className={cn("absolute top-3 right-3.5 rounded-[5px] border px-2 py-0.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em]", approval === "approved" ? "border-[rgba(34,197,94,0.25)] bg-[rgba(34,197,94,0.12)] text-[#4ade80]" : "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.1)] text-[#f87171]")}>
           {approval === "approved" ? "✓ Approved" : "✕ Rejected"}
         </div>
       )}
-      <h3 style={{ margin: "0 0 10px", fontWeight: 700, fontSize: "0.96rem", lineHeight: 1.45, color: "#fff", letterSpacing: "-0.018em", paddingRight: approval !== "pending" ? 90 : 0 }}>
+      <h3 className={cn("mb-2.5 text-[0.96rem] font-bold leading-[1.45] tracking-[-0.018em] text-white", approval !== "pending" ? "pr-[90px]" : "pr-0")}>
         {cluster.title}
       </h3>
       {chips.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, marginBottom: 10 }}>
+        <div className="mb-2.5 flex flex-wrap gap-1">
           {chips.map(({ name, count }) => (
-            <span key={name} style={{ padding: "2px 7px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", fontSize: "0.62rem", fontWeight: 600, color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>
-              {name}<span style={{ opacity: 0.4, fontWeight: 400, marginLeft: 4 }}>{count}</span>
+            <span key={name} className="rounded-[4px] border border-white/[0.08] bg-white/[0.04] px-[7px] py-0.5 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+              {name}<span className="ml-1 font-normal opacity-40">{count}</span>
             </span>
           ))}
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="flex items-center gap-2">
         <span className={`badge badge-${sev}`}>{sev}</span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.67rem", color: "var(--muted)" }}>
-          <span style={{ color: "rgba(255,255,255,0.72)", fontWeight: 600 }}>{cluster.evidence_count}</span> sig
+        <span className="font-mono text-[0.67rem] text-muted-foreground">
+          <span className="font-semibold text-white/[0.72]">{cluster.evidence_count}</span> sig
         </span>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.67rem", color: "var(--muted)" }}>
-          <span style={{ color, fontWeight: 700 }}>{confPct}%</span>
+        <span className="font-mono text-[0.67rem] text-muted-foreground">
+          <span className="font-bold" style={{ color }}>{confPct}%</span>
         </span>
-        <span style={{ marginLeft: "auto", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.65rem", color: "var(--muted-dim)" }}>{urgencyLabel(cluster.severity)}</span>
+        <span className="ml-auto font-mono text-[0.65rem] text-[var(--muted-dim)]">{urgencyLabel(cluster.severity)}</span>
       </div>
-      <div style={{ marginTop: 11, height: 2, borderRadius: 1, background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${confPct}%`, background: color, opacity: 0.5, borderRadius: 1 }} />
+      <div className="mt-[11px] h-0.5 overflow-hidden rounded-[1px] bg-white/[0.05]">
+        <div className="h-full rounded-[1px] opacity-50" style={{ width: `${confPct}%`, background: color }} />
       </div>
     </div>
   );
@@ -592,11 +585,11 @@ function SignalCard({ cluster, selected, onClick, staggerIndex, approval }: {
 function BriefSection({ number, label, accentColor, children }: { number: string; label: string; accentColor?: string; children: React.ReactNode }) {
   return (
     <>
-      <div style={{ height: 1, background: "var(--border)", margin: "0 18px" }} />
-      <div style={{ padding: "14px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-          <div style={{ width: 2, height: 12, borderRadius: 1, flexShrink: 0, background: accentColor || "rgba(255,255,255,0.14)" }} />
-          <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--muted)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace" }}>{number} · {label}</span>
+      <div className="mx-[18px] h-px bg-border" />
+      <div className="px-[18px] py-3.5">
+        <div className="mb-2.5 flex items-center gap-[7px]">
+          <div className="h-3 w-0.5 shrink-0 rounded-[1px]" style={{ background: accentColor || "rgba(255,255,255,0.14)" }} />
+          <span className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">{number} · {label}</span>
         </div>
         {children}
       </div>
@@ -653,12 +646,12 @@ function DistributePopover({ onClose, cluster }: { onClose: () => void; cluster:
   const selectedNames = WA_RECIPIENTS.filter((r) => waRecipients.includes(r.id)).map((r) => r.name.split(" ")[0]);
 
   return (
-    <div ref={ref} style={{ position: "absolute" as const, bottom: "calc(100% + 8px)", left: 0, right: 0, zIndex: 100, background: "var(--card)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+    <div ref={ref} className="absolute bottom-[calc(100%_+_8px)] left-0 right-0 z-[100] rounded-xl border border-[rgba(249,115,22,0.25)] bg-card p-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
       {done ? (
-        <div style={{ textAlign: "center" as const, padding: "12px 0" }}>
-          <div style={{ fontSize: "1.4rem", marginBottom: 6 }}>✓</div>
-          <div style={{ color: "#4ade80", fontWeight: 700, fontSize: "0.84rem" }}>Brief distributed</div>
-          <div style={{ color: "var(--muted)", fontSize: "0.72rem", marginTop: 3 }}>
+        <div className="py-3 text-center">
+          <div className="mb-1.5 text-[1.4rem]">✓</div>
+          <div className="text-[0.84rem] font-bold text-[#4ade80]">Brief distributed</div>
+          <div className="mt-[3px] text-[0.72rem] text-muted-foreground">
             {sel.includes("whatsapp") && waRecipients.length > 0
               ? `WhatsApp → ${selectedNames.join(", ")}`
               : `Sent via ${sel.join(", ")}`}
@@ -666,54 +659,54 @@ function DistributePopover({ onClose, cluster }: { onClose: () => void; cluster:
         </div>
       ) : step === "recipients" ? (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setStep("channels")} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.8rem", padding: "0 2px" }}>←</button>
-            <div style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", color: "#46e6a6", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace" }}>WhatsApp Recipients</div>
+          <div className="mb-3 flex items-center gap-2">
+            <button onClick={() => setStep("channels")} className="cursor-pointer px-0.5 text-[0.8rem] text-muted-foreground">←</button>
+            <div className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-[#46e6a6]">WhatsApp Recipients</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column" as const, gap: 5, marginBottom: 14 }}>
+          <div className="mb-3.5 flex flex-col gap-[5px]">
             {WA_RECIPIENTS.map((r) => {
               const active = waRecipients.includes(r.id);
               return (
-                <button key={r.id} onClick={() => setWaRecipients((p) => p.includes(r.id) ? p.filter((x) => x !== r.id) : [...p, r.id])} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: `1px solid ${active ? "#46e6a655" : "rgba(255,255,255,0.08)"}`, background: active ? "#46e6a611" : "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.12s" }}>
-                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: active ? "#46e6a622" : "rgba(255,255,255,0.06)", border: `1.5px solid ${active ? "#46e6a6" : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 700, color: active ? "#46e6a6" : "var(--muted)", flexShrink: 0, letterSpacing: "0.02em" }}>
+                <button key={r.id} onClick={() => setWaRecipients((p) => p.includes(r.id) ? p.filter((x) => x !== r.id) : [...p, r.id])} className={cn("flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-all duration-[120ms]", active ? "border-[#46e6a655] bg-[#46e6a611]" : "border-white/[0.08] bg-white/[0.02]")}>
+                  <div className={cn("flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-[1.5px] text-[0.6rem] font-bold tracking-[0.02em]", active ? "border-[#46e6a6] bg-[#46e6a622] text-[#46e6a6]" : "border-white/[0.12] bg-white/[0.06] text-muted-foreground")}>
                     {r.avatar}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.8rem", color: active ? "#46e6a6" : "#fff" }}>{r.name}</div>
-                    <div style={{ fontSize: "0.67rem", color: "var(--muted)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{r.role} · {r.phone}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className={cn("text-[0.8rem] font-semibold", active ? "text-[#46e6a6]" : "text-white")}>{r.name}</div>
+                    <div className="truncate text-[0.67rem] text-muted-foreground">{r.role} · {r.phone}</div>
                   </div>
-                  <div style={{ width: 14, height: 14, borderRadius: 4, border: `1.5px solid ${active ? "#46e6a6" : "rgba(255,255,255,0.2)"}`, background: active ? "#46e6a6" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {active && <span style={{ color: "#000", fontSize: "0.55rem", fontWeight: 900 }}>✓</span>}
+                  <div className={cn("flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border-[1.5px]", active ? "border-[#46e6a6] bg-[#46e6a6]" : "border-white/20 bg-transparent")}>
+                    {active && <span className="text-[0.55rem] font-black text-black">✓</span>}
                   </div>
                 </button>
               );
             })}
           </div>
-          <button onClick={doSend} disabled={waRecipients.length === 0} style={{ width: "100%", padding: "9px 14px", borderRadius: 8, background: waRecipients.length > 0 ? "#46e6a6" : "rgba(255,255,255,0.05)", border: "none", color: waRecipients.length > 0 ? "#000" : "var(--muted-dim)", fontWeight: 700, fontSize: "0.82rem", cursor: waRecipients.length > 0 ? "pointer" : "default", opacity: sending ? 0.7 : 1 }}>
+          <button onClick={doSend} disabled={waRecipients.length === 0} className={cn("w-full rounded-lg px-3.5 py-[9px] text-[0.82rem] font-bold", waRecipients.length > 0 ? "cursor-pointer bg-[#46e6a6] text-black" : "cursor-default bg-white/[0.05] text-[var(--muted-dim)]", sending ? "opacity-70" : "opacity-100")}>
             {sending ? "Sending…" : `Send to ${waRecipients.length} recipient${waRecipients.length !== 1 ? "s" : ""}`}
           </button>
         </>
       ) : (
         <>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted-dim)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 12 }}>Distribute Brief</div>
-          <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: 14 }}>
+          <div className="mb-3 font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-[var(--muted-dim)]">Distribute Brief</div>
+          <div className="mb-3.5 flex flex-col gap-1.5">
             {DIST_CHANNELS.map(({ key, label, icon, desc, accent }) => {
               const active = sel.includes(key);
               return (
-                <button key={key} onClick={() => setSel((p) => p.includes(key) ? p.filter((k) => k !== key) : [...p, key])} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, border: `1px solid ${active ? (accent ? `${accent}55` : "rgba(249,115,22,0.35)") : "rgba(255,255,255,0.08)"}`, background: active ? (accent ? `${accent}11` : "rgba(249,115,22,0.07)") : "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.12s" }}>
-                  <span style={{ fontSize: "0.95rem" }}>{icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.8rem", color: active ? (accent ?? "var(--accent)") : "#fff" }}>{label}</div>
-                    <div style={{ fontSize: "0.67rem", color: "var(--muted)" }}>{desc}</div>
+                <button key={key} onClick={() => setSel((p) => p.includes(key) ? p.filter((k) => k !== key) : [...p, key])} className="flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-all duration-[120ms]" style={{ borderColor: active ? (accent ? `${accent}55` : "rgba(249,115,22,0.35)") : "rgba(255,255,255,0.08)", background: active ? (accent ? `${accent}11` : "rgba(249,115,22,0.07)") : "rgba(255,255,255,0.02)" }}>
+                  <span className="text-[0.95rem]">{icon}</span>
+                  <div className="flex-1">
+                    <div className="text-[0.8rem] font-semibold" style={{ color: active ? (accent ?? "var(--accent)") : "#fff" }}>{label}</div>
+                    <div className="text-[0.67rem] text-muted-foreground">{desc}</div>
                   </div>
-                  <div style={{ width: 14, height: 14, borderRadius: 4, border: `1.5px solid ${active ? (accent ?? "var(--accent)") : "rgba(255,255,255,0.2)"}`, background: active ? (accent ?? "var(--accent)") : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {active && <span style={{ color: "#000", fontSize: "0.55rem", fontWeight: 900 }}>✓</span>}
+                  <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border-[1.5px]" style={{ borderColor: active ? (accent ?? "var(--accent)") : "rgba(255,255,255,0.2)", background: active ? (accent ?? "var(--accent)") : "transparent" }}>
+                    {active && <span className="text-[0.55rem] font-black text-black">✓</span>}
                   </div>
                 </button>
               );
             })}
           </div>
-          <button onClick={handleNext} disabled={sel.length === 0} style={{ width: "100%", padding: "9px 14px", borderRadius: 8, background: sel.length > 0 ? "var(--accent)" : "rgba(255,255,255,0.05)", border: "none", color: sel.length > 0 ? "#fff" : "var(--muted-dim)", fontWeight: 600, fontSize: "0.82rem", cursor: sel.length > 0 ? "pointer" : "default" }}>
+          <button onClick={handleNext} disabled={sel.length === 0} className={cn("w-full rounded-lg px-3.5 py-[9px] text-[0.82rem] font-semibold", sel.length > 0 ? "cursor-pointer bg-primary text-white" : "cursor-default bg-white/[0.05] text-[var(--muted-dim)]")}>
             {sel.includes("whatsapp") ? `Next: Choose Recipients →` : `Send Brief (${sel.length})`}
           </button>
         </>
@@ -739,8 +732,8 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
 
   if (!cluster) {
     return (
-      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 320 }}>
-        <p style={{ color: "var(--muted-dim)", fontSize: "0.78rem", margin: 0, textAlign: "center" as const, maxWidth: 160, lineHeight: 1.65, fontFamily: "'JetBrains Mono', monospace" }}>Select a signal<br />to open its brief</p>
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[14px] border bg-card p-8">
+        <p className="max-w-[160px] text-center font-mono text-[0.78rem] leading-[1.65] text-[var(--muted-dim)]">Select a signal<br />to open its brief</p>
       </div>
     );
   }
@@ -758,37 +751,37 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
   ];
 
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
+    <div className="overflow-hidden rounded-[14px] border bg-card">
       {/* Header */}
-      <div style={{ padding: "10px 18px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--muted-dim)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace" }}>Intel Brief</span>
-          <span style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace" }}>#{briefId}</span>
+      <div className="flex items-center justify-between border-b px-[18px] py-2.5">
+        <div className="flex items-center gap-[7px]">
+          <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[var(--muted-dim)]">Intel Brief</span>
+          <span className="font-mono text-[0.62rem] text-white/[0.18]">#{briefId}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="flex items-center gap-1.5">
           {approval !== "pending" && (
-            <span style={{ fontSize: "0.6rem", fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: approval === "approved" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.1)", color: approval === "approved" ? "#4ade80" : "#f87171", border: `1px solid ${approval === "approved" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
+            <span className={cn("rounded-[4px] border px-[7px] py-0.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.06em]", approval === "approved" ? "border-[rgba(34,197,94,0.25)] bg-[rgba(34,197,94,0.12)] text-[#4ade80]" : "border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.1)] text-[#f87171]")}>
               {approval === "approved" ? "✓ approved" : "✕ rejected"}
             </span>
           )}
           <span className={`badge badge-${sev}`}>{sev}</span>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22c55e", animation: "pulse-dot 2s ease-in-out infinite" }} />
+          <div className="h-[5px] w-[5px] animate-[pulse-dot_2s_ease-in-out_infinite] rounded-full bg-[#22c55e]" />
         </div>
       </div>
 
       {/* Score + title */}
-      <div style={{ padding: "18px 18px 0" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 7, marginBottom: 10 }}>
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "2.6rem", fontWeight: 900, lineHeight: 0.9, color, letterSpacing: "-0.05em" }}>{cluster.severity}</span>
-          <span style={{ fontSize: "0.6rem", fontWeight: 600, color: "var(--muted-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, paddingBottom: 3 }}>/ 100</span>
+      <div className="px-[18px] pt-[18px]">
+        <div className="mb-2.5 flex items-end gap-[7px]">
+          <span className="font-mono text-[2.6rem] font-black leading-[0.9] tracking-[-0.05em]" style={{ color }}>{cluster.severity}</span>
+          <span className="pb-[3px] text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-[var(--muted-dim)]">/ 100</span>
         </div>
-        <h4 style={{ margin: "0 0 14px", fontSize: "0.9rem", fontWeight: 700, color: "#fff", lineHeight: 1.5, letterSpacing: "-0.015em" }}>{cluster.title}</h4>
+        <h4 className="mb-3.5 text-[0.9rem] font-bold leading-[1.5] tracking-[-0.015em] text-white">{cluster.title}</h4>
       </div>
 
       {/* Tab strip */}
-      <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 18px" }}>
+      <div className="flex border-b px-[18px]">
         {TABS.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: "0.7rem", fontWeight: 600, color: activeTab === tab.key ? "var(--accent)" : "var(--muted)", borderBottom: `2px solid ${activeTab === tab.key ? "var(--accent)" : "transparent"}`, transition: "all 0.12s", letterSpacing: "0.02em", marginBottom: -1 }}>
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={cn("-mb-px cursor-pointer border-b-2 px-3 py-2 text-[0.7rem] font-semibold tracking-[0.02em] transition-all duration-[120ms]", activeTab === tab.key ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
             {tab.label}
           </button>
         ))}
@@ -798,37 +791,38 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
       {activeTab === "assessment" && (
         <>
           <BriefSection number="01" label="Assessment" accentColor={color}>
-            <p style={{ margin: "0 0 12px", fontSize: "0.82rem", color: "var(--muted-light)", lineHeight: 1.7 }}>{cluster.recommended_action}</p>
-            <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(249,115,22,0.05)", border: "1px solid rgba(249,115,22,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--accent)", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" as const }}>Urgency</span>
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color }}>{urgencyLabel(cluster.severity)}</span>
+            <p className="mb-3 text-[0.82rem] leading-[1.7] text-[var(--muted-light)]">{cluster.recommended_action}</p>
+            <div className="flex items-center justify-between rounded-lg border border-[rgba(249,115,22,0.12)] bg-[rgba(249,115,22,0.05)] px-3.5 py-2.5">
+              <span className="font-mono text-[0.68rem] font-bold uppercase text-primary">Urgency</span>
+              <span className="text-[0.82rem] font-bold" style={{ color }}>{urgencyLabel(cluster.severity)}</span>
             </div>
           </BriefSection>
 
           {/* ── Distribute CTA ── */}
-          <div style={{ padding: "0 18px 18px" }}>
-            <div style={{ borderRadius: 10, background: "linear-gradient(135deg, rgba(70,230,166,0.07) 0%, rgba(70,230,166,0.03) 100%)", border: "1px solid rgba(70,230,166,0.18)", padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div className="px-[18px] pb-[18px]">
+            <div className="rounded-[10px] border border-[rgba(70,230,166,0.18)] bg-[linear-gradient(135deg,rgba(70,230,166,0.07)_0%,rgba(70,230,166,0.03)_100%)] px-4 py-3.5">
+              <div className="mb-2.5 flex items-center justify-between">
                 <div>
-                  <div style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", color: "#46e6a6", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 2 }}>Share Brief</div>
-                  <div style={{ fontSize: "0.7rem", color: "var(--muted)" }}>Alert your team via WhatsApp, Slack or Email</div>
+                  <div className="mb-0.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-[#46e6a6]">Share Brief</div>
+                  <div className="text-[0.7rem] text-muted-foreground">Alert your team via WhatsApp, Slack or Email</div>
                 </div>
-                <div style={{ display: "flex", gap: 5 }}>
-                  <span style={{ fontSize: "1rem" }}>💬</span>
-                  <span style={{ fontSize: "1rem" }}>⚡</span>
-                  <span style={{ fontSize: "1rem" }}>✉️</span>
+                <div className="flex gap-[5px]">
+                  <span className="text-base">💬</span>
+                  <span className="text-base">⚡</span>
+                  <span className="text-base">✉️</span>
                 </div>
               </div>
-              <div style={{ position: "relative" as const }}>
+              <div className="relative">
                 <button
                   onClick={() => setShowDistribute((v) => !v)}
-                  style={{ width: "100%", padding: "11px 16px", borderRadius: 8, background: showDistribute ? "rgba(70,230,166,0.2)" : "rgba(70,230,166,0.12)", border: `1.5px solid ${showDistribute ? "rgba(70,230,166,0.6)" : "rgba(70,230,166,0.35)"}`, color: "#46e6a6", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.15s", letterSpacing: "0.01em" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70,230,166,0.2)"; e.currentTarget.style.borderColor = "rgba(70,230,166,0.6)"; }}
-                  onMouseLeave={(e) => { if (!showDistribute) { e.currentTarget.style.background = "rgba(70,230,166,0.12)"; e.currentTarget.style.borderColor = "rgba(70,230,166,0.35)"; } }}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-[1.5px] px-4 py-[11px] text-[0.85rem] font-bold tracking-[0.01em] text-[#46e6a6] transition-all duration-150 hover:border-[rgba(70,230,166,0.6)] hover:bg-[rgba(70,230,166,0.2)]",
+                    showDistribute ? "border-[rgba(70,230,166,0.6)] bg-[rgba(70,230,166,0.2)]" : "border-[rgba(70,230,166,0.35)] bg-[rgba(70,230,166,0.12)]"
+                  )}
                 >
-                  <span style={{ fontSize: "1rem" }}>↗</span>
+                  <span className="text-base">↗</span>
                   {showDistribute ? "Close" : "Distribute Brief"}
-                  <span style={{ marginLeft: "auto", fontSize: "0.7rem", opacity: 0.7 }}>{showDistribute ? "▲" : "▼"}</span>
+                  <span className="ml-auto text-[0.7rem] opacity-70">{showDistribute ? "▲" : "▼"}</span>
                 </button>
                 {showDistribute && <DistributePopover cluster={cluster} onClose={() => setShowDistribute(false)} />}
               </div>
@@ -839,27 +833,27 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
 
       {/* Tab: Evidence */}
       {activeTab === "evidence" && (
-        <div style={{ padding: "16px 18px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <div style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontSize: "0.6rem", color: "var(--muted-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4 }}>Evidence</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1.6rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.04em" }}>{cluster.evidence_count}</div>
-              <div style={{ fontSize: "0.65rem", color: "var(--muted)", marginTop: 2 }}>customer signals</div>
+        <div className="px-[18px] py-4">
+          <div className="mb-4 grid grid-cols-2 gap-2.5">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3.5 py-3">
+              <div className="mb-1 text-[0.6rem] uppercase tracking-[0.08em] text-[var(--muted-dim)]">Evidence</div>
+              <div className="font-mono text-[1.6rem] font-extrabold tracking-[-0.04em] text-white">{cluster.evidence_count}</div>
+              <div className="mt-0.5 text-[0.65rem] text-muted-foreground">customer signals</div>
             </div>
-            <div style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontSize: "0.6rem", color: "var(--muted-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4 }}>Confidence</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "1.6rem", fontWeight: 800, color, letterSpacing: "-0.04em" }}>{confPct}%</div>
-              <div style={{ fontSize: "0.65rem", color: "var(--muted)", marginTop: 2 }}>AI confidence</div>
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3.5 py-3">
+              <div className="mb-1 text-[0.6rem] uppercase tracking-[0.08em] text-[var(--muted-dim)]">Confidence</div>
+              <div className="font-mono text-[1.6rem] font-extrabold tracking-[-0.04em]" style={{ color }}>{confPct}%</div>
+              <div className="mt-0.5 text-[0.65rem] text-muted-foreground">AI confidence</div>
             </div>
           </div>
           {chips.length > 0 && (
             <>
-              <div style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>Source breakdown</div>
+              <div className="mb-2.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">Source breakdown</div>
               <SourceBreakdownChart cluster={cluster} />
             </>
           )}
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--muted)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>Confidence</div>
+          <div className="mt-3.5">
+            <div className="mb-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">Confidence</div>
             <ConfidenceBar value={cluster.confidence} />
           </div>
         </div>
@@ -867,21 +861,21 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
 
       {/* Tab: Business */}
       {activeTab === "business" && (
-        <div style={{ padding: "16px 18px" }}>
+        <div className="px-[18px] py-4">
           {cluster.customer_quote && (
-            <blockquote style={{ margin: "0 0 14px", padding: "12px 16px", background: "rgba(255,255,255,0.03)", borderLeft: `2px solid ${color}`, borderRadius: "0 8px 8px 0", fontSize: "0.82rem", color: "var(--muted-light)", lineHeight: 1.65, fontStyle: "italic" }}>
+            <blockquote className="mb-3.5 rounded-r-lg border-l-2 bg-white/[0.03] px-4 py-3 text-[0.82rem] italic leading-[1.65] text-[var(--muted-light)]" style={{ borderLeftColor: color }}>
               &ldquo;{cluster.customer_quote}&rdquo;
             </blockquote>
           )}
-          <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--muted-light)", lineHeight: 1.7 }}>{cluster.business_case}</p>
+          <p className="text-[0.82rem] leading-[1.7] text-[var(--muted-light)]">{cluster.business_case}</p>
         </div>
       )}
 
       {/* Tab: Decide */}
       {activeTab === "disposition" && (
-        <div style={{ padding: "16px 18px" }}>
-          <p style={{ fontSize: "0.72rem", color: "var(--muted)", marginBottom: 12, lineHeight: 1.55 }}>Approve to add to sprint backlog. Reject to dismiss. Distribute to notify your team.</p>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div className="px-[18px] py-4">
+          <p className="mb-3 text-[0.72rem] leading-[1.55] text-muted-foreground">Approve to add to sprint backlog. Reject to dismiss. Distribute to notify your team.</p>
+          <div className="mb-2.5 flex gap-2">
             <button className={`btn-approve ${approval === "approved" ? "approved" : ""}`} onClick={onApprove}>
               ✓ {approval === "approved" ? "Approved" : "Approve"}
             </button>
@@ -891,18 +885,15 @@ function ExecutionBrief({ cluster, approval, onApprove, onReject, onViewFull }: 
           </div>
 
           {/* View Full Brief / PRD */}
-          <button onClick={onViewFull} style={{ width: "100%", marginBottom: 8, padding: "9px 14px", borderRadius: 8, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)", color: "var(--accent-violet)", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all 0.12s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(167,139,250,0.12)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(167,139,250,0.06)"; }}
-          >
+          <button onClick={onViewFull} className="mb-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[rgba(167,139,250,0.2)] bg-[rgba(167,139,250,0.06)] px-3.5 py-[9px] text-[0.8rem] font-semibold text-[var(--accent-violet)] transition-all duration-[120ms] hover:bg-[rgba(167,139,250,0.12)]">
             🧠 Generate Intent Snapshot & PRD
           </button>
 
           {/* Distribute */}
-          <div style={{ position: "relative" as const }}>
-            <button onClick={() => setShowDistribute((v) => !v)} style={{ width: "100%", padding: "9px 14px", borderRadius: 8, background: showDistribute ? "rgba(249,115,22,0.08)" : "rgba(255,255,255,0.04)", border: `1px solid ${showDistribute ? "rgba(249,115,22,0.28)" : "var(--border)"}`, color: showDistribute ? "var(--accent)" : "var(--muted-light)", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, transition: "all 0.12s" }}>
+          <div className="relative">
+            <button onClick={() => setShowDistribute((v) => !v)} className={cn("flex w-full cursor-pointer items-center justify-center gap-[7px] rounded-lg border px-3.5 py-[9px] text-[0.8rem] font-semibold transition-all duration-[120ms]", showDistribute ? "border-[rgba(249,115,22,0.28)] bg-[rgba(249,115,22,0.08)] text-primary" : "bg-white/[0.04] text-[var(--muted-light)]")}>
               ↗ Distribute Brief
-              <span style={{ marginLeft: "auto", fontSize: "0.65rem", opacity: 0.6 }}>{showDistribute ? "▲" : "▼"}</span>
+              <span className="ml-auto text-[0.65rem] opacity-60">{showDistribute ? "▲" : "▼"}</span>
             </button>
             {showDistribute && <DistributePopover cluster={cluster} onClose={() => setShowDistribute(false)} />}
           </div>
@@ -935,66 +926,71 @@ function LoginGate({ onAuth }: { onAuth: () => void }) {
     }, 700);
   }
 
+  const inputClass = cn(
+    "h-auto w-full rounded-lg border bg-white/[0.04] px-3.5 py-2.5 text-[0.85rem] text-white",
+    error ? "border-[rgba(239,68,68,0.4)]" : "border-white/10"
+  );
+
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] p-6">
       {/* Top accent line */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.6) 30%, rgba(249,115,22,0.6) 70%, transparent 100%)" }} />
+      <div className="fixed inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,transparent_0%,rgba(249,115,22,0.6)_30%,rgba(249,115,22,0.6)_70%,transparent_100%)]" />
 
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 40 }}>
+      <div className="mb-10 flex items-center gap-2.5">
         <LogoMark />
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.02em", color: "#fff" }}>Observer</span>
+        <span className="font-mono text-[1.2rem] font-extrabold tracking-[-0.02em] text-white">Observer</span>
       </div>
 
       {/* Card */}
-      <div style={{ width: "100%", maxWidth: 380, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, padding: 32 }}>
-        <div style={{ marginBottom: 28, textAlign: "center" as const }}>
-          <div style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", color: "var(--accent)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>Demo Access</div>
-          <h2 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.025em" }}>Totefolk Dashboard</h2>
-          <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "var(--muted)" }}>Sign in to view the product intelligence demo</p>
+      <div className="w-full max-w-[380px] rounded-2xl border bg-card p-8">
+        <div className="mb-7 text-center">
+          <div className="mb-2 font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-primary">Demo Access</div>
+          <h2 className="text-[1.3rem] font-extrabold tracking-[-0.025em] text-white">Totefolk Dashboard</h2>
+          <p className="mt-1.5 text-[0.78rem] text-muted-foreground">Sign in to view the product intelligence demo</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" as const, gap: 14 }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
           <div>
-            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>Email</label>
-            <input
+            <Label className="mb-1.5 block font-mono text-[0.65rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">Email</Label>
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="hello@totefolk.com"
               required
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.1)"}`, color: "#fff", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit" }}
+              className={inputClass}
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", textTransform: "uppercase" as const, fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>Password</label>
-            <input
+            <Label className="mb-1.5 block font-mono text-[0.65rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">Password</Label>
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••"
               required
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.1)"}`, color: "#fff", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit" }}
+              className={inputClass}
             />
           </div>
 
           {error && (
-            <div style={{ fontSize: "0.75rem", color: "#f87171", padding: "8px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6 }}>
+            <div className="rounded-md border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-3 py-2 text-[0.75rem] text-[#f87171]">
               {error}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            style={{ marginTop: 4, width: "100%", padding: "12px 16px", borderRadius: 8, background: loading ? "rgba(249,115,22,0.5)" : "var(--accent)", border: "none", color: "#fff", fontSize: "0.88rem", fontWeight: 700, cursor: loading ? "default" : "pointer", transition: "opacity 0.15s", letterSpacing: "0.01em" }}
+            className="mt-1 h-auto w-full rounded-lg px-4 py-3 text-[0.88rem] font-bold tracking-[0.01em] text-white disabled:bg-primary/50 disabled:opacity-100"
           >
             {loading ? "Signing in…" : "Sign In →"}
-          </button>
+          </Button>
         </form>
 
-        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--border)", textAlign: "center" as const }}>
-          <p style={{ margin: 0, fontSize: "0.68rem", color: "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace" }}>
+        <div className="mt-[22px] border-t pt-[18px] text-center">
+          <p className="font-mono text-[0.68rem] text-[var(--muted-dim)]">
             Demo credentials provided by Observer
           </p>
         </div>
@@ -1035,57 +1031,57 @@ export default function ShowcasePage() {
     .sort((a, b) => sortBy === "evidence" ? b.evidence_count - a.evidence_count : sortBy === "confidence" ? b.confidence - a.confidence : b.severity - a.severity);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div className="min-h-screen bg-[var(--bg)]">
 
       {/* ── Demo Nav ─────────────────────────────────────────────────────────── */}
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(8,8,8,0.93)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.55) 30%, rgba(249,115,22,0.55) 70%, transparent 100%)" }} />
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", height: 50 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 9, marginRight: 14, flexShrink: 0 }}>
+      <div className="sticky top-0 z-50 border-b border-white/[0.07] bg-[rgba(8,8,8,0.93)] backdrop-blur-[20px]">
+        <div className="h-0.5 bg-[linear-gradient(90deg,transparent_0%,rgba(249,115,22,0.55)_30%,rgba(249,115,22,0.55)_70%,transparent_100%)]" />
+        <div className="mx-auto flex h-[50px] max-w-[1400px] items-center px-6">
+          <Link href="/" className="mr-3.5 flex shrink-0 items-center gap-[9px] no-underline">
             <LogoMark />
-            <span style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", fontStyle: "italic", letterSpacing: "-0.02em" }}>Observer</span>
+            <span className="text-[0.95rem] font-bold italic tracking-[-0.02em] text-white">Observer</span>
           </Link>
-          <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.1)", marginRight: 14 }} />
-          <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em", color: "var(--accent)", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>DEMO · Totefolk</span>
+          <div className="mr-3.5 h-4 w-px bg-white/10" />
+          <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">DEMO · Totefolk</span>
           {approvedCount > 0 && (
-            <span style={{ marginLeft: 12, padding: "2px 8px", borderRadius: 5, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: "0.62rem", fontWeight: 700, color: "#4ade80", fontFamily: "'JetBrains Mono', monospace" }}>{approvedCount} approved</span>
+            <Badge variant="outline" className="ml-3 rounded-[5px] border-[rgba(34,197,94,0.22)] bg-[rgba(34,197,94,0.1)] px-2 py-0.5 font-mono text-[0.62rem] font-bold text-[#4ade80]">{approvedCount} approved</Badge>
           )}
-          <div style={{ flex: 1 }} />
-          <Link href="/signup" style={{ textDecoration: "none", padding: "6px 14px", borderRadius: 8, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.25)", color: "var(--accent)", fontSize: "0.78rem", fontWeight: 600, flexShrink: 0 }}>
-            Use Observer for your product →
-          </Link>
+          <div className="flex-1" />
+          <Button asChild variant="ghost" className="h-auto shrink-0 rounded-lg border border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.1)] px-3.5 py-1.5 text-[0.78rem] font-semibold text-primary no-underline hover:bg-[rgba(249,115,22,0.1)] hover:text-primary">
+            <Link href="/signup">Use Observer for your product →</Link>
+          </Button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px 64px" }}>
+      <div className="mx-auto max-w-[1400px] px-6 pb-16 pt-7">
 
         {/* Page header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        <div className="mb-5 flex items-start justify-between">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <span style={{ fontSize: "0.95rem" }}>👜</span>
-              <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>Totefolk, Signals</h1>
+            <div className="mb-1 flex items-center gap-2.5">
+              <span className="text-[0.95rem]">👜</span>
+              <h1 className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-white">Totefolk, Signals</h1>
             </div>
-            <p style={{ margin: 0, color: "var(--muted-light)", fontSize: "0.86rem" }}>Clustered product intelligence from Email · Zendesk · Intercom · Reddit</p>
+            <p className="text-[0.86rem] text-[var(--muted-light)]">Clustered product intelligence from Email · Zendesk · Intercom · Reddit</p>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <div className="flex shrink-0 items-center gap-2">
             {["EMAIL", "ZENDESK", "INTERCOM", "REDDIT"].map((src) => (
-              <span key={src} style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.08em", color: "#22c55e", fontFamily: "'JetBrains Mono', monospace", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />{src}
-              </span>
+              <Badge key={src} variant="outline" className="gap-1 rounded-[4px] border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.08)] px-2 py-0.5 font-mono text-[0.6rem] font-bold tracking-[0.08em] text-[#22c55e]">
+                <span className="inline-block h-1 w-1 rounded-full bg-[#22c55e]" />{src}
+              </Badge>
             ))}
           </div>
         </div>
 
         {/* AI Insight Banner */}
         {showBanner && (
-          <div style={{ marginBottom: 14 }}>
+          <div className="mb-3.5">
             <AIInsightBanner clusters={TOTEFOLK_CLUSTERS} onClose={() => setShowBanner(false)} />
           </div>
         )}
 
         {/* Pipeline Stepper */}
-        <div style={{ marginBottom: 16 }}>
+        <div className="mb-4">
           <PipelineStepper />
         </div>
 
@@ -1093,19 +1089,19 @@ export default function ShowcasePage() {
         <StatusStrip />
 
         {/* Filter + sort bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 8, flexWrap: "wrap" as const }}>
-          <div style={{ display: "flex", gap: 4 }}>
+        <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-1">
             {(["all", "critical", "high", "medium"] as const).map((f) => (
               <button key={f} className={`filter-tab ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
                 {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-                {filterCounts[f] > 0 && <span style={{ marginLeft: 4, fontSize: "0.65rem", fontWeight: 700, color: filter === f ? "var(--accent)" : "var(--muted-dim)", fontFamily: "'JetBrains Mono', monospace" }}>{filterCounts[f]}</span>}
+                {filterCounts[f] > 0 && <span className={cn("ml-1 font-mono text-[0.65rem] font-bold", filter === f ? "text-primary" : "text-[var(--muted-dim)]")}>{filterCounts[f]}</span>}
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <span style={{ fontSize: "0.7rem", color: "var(--muted)", letterSpacing: "0.02em" }}>Sort:</span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[0.7rem] tracking-[0.02em] text-muted-foreground">Sort:</span>
             {(["severity", "evidence", "confidence"] as const).map((s) => (
-              <button key={s} onClick={() => setSortBy(s)} style={{ padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: "0.72rem", fontWeight: 500, background: sortBy === s ? "rgba(255,255,255,0.09)" : "none", color: sortBy === s ? "#fff" : "var(--muted)", transition: "all 0.12s" }}>
+              <button key={s} onClick={() => setSortBy(s)} className={cn("cursor-pointer rounded-md border-none px-2.5 py-1 text-[0.72rem] font-medium transition-all duration-[120ms]", sortBy === s ? "bg-white/[0.09] text-white" : "bg-transparent text-muted-foreground")}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
@@ -1113,13 +1109,13 @@ export default function ShowcasePage() {
         </div>
 
         {/* Two-column layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 16, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <div className="grid grid-cols-[1fr_400px] items-start gap-4">
+          <div className="flex flex-col gap-[11px]">
             {filtered.map((c, idx) => (
               <SignalCard key={c.id} cluster={c} selected={selected?.id === c.id} onClick={() => setSelected(c)} staggerIndex={idx} approval={approvals[c.id] ?? "pending"} />
             ))}
           </div>
-          <div style={{ position: "sticky", top: 66 }}>
+          <div className="sticky top-[66px]">
             <ExecutionBrief
               cluster={selected}
               approval={approvals[selected?.id] ?? "pending"}
@@ -1132,7 +1128,6 @@ export default function ShowcasePage() {
       </div>
 
       <IntentSnapshotModal cluster={selected} open={snapshotOpen} onClose={() => setSnapshotOpen(false)} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

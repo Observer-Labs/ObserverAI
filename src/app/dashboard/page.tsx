@@ -2,6 +2,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { IntentSnapshotModal } from "@/components/IntentSnapshotModal";
 import { severityLabel } from "@/lib/plans";
 import type { Cluster, Workspace, OutputConfig as _OutputConfig } from "@/lib/types";
@@ -137,8 +141,8 @@ function _ScoreRing({ score, size = 48 }: { score: number; size?: number }) {
   const sw = size === 48 ? 3.5 : 3;
 
   return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
         <circle cx={cx} cy={cx} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={sw} />
         <circle
           cx={cx} cy={cx} r={r}
@@ -148,17 +152,16 @@ function _ScoreRing({ score, size = 48 }: { score: number; size?: number }) {
           strokeDasharray={`${circ}`}
           strokeDashoffset={`${offset}`}
           strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }}
+          className="[transition:stroke-dashoffset_0.8s_cubic-bezier(0.4,0,0.2,1)]"
         />
       </svg>
-      <div style={{
-        position: "absolute", inset: 0,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: size === 48 ? "0.78rem" : "0.65rem",
-        fontWeight: 800, color,
-        fontFamily: "'JetBrains Mono', monospace",
-        letterSpacing: "-0.03em",
-      }}>
+      <div
+        className={cn(
+          "absolute inset-0 flex items-center justify-center font-['JetBrains_Mono',monospace] font-extrabold tracking-[-0.03em]",
+          size === 48 ? "text-[0.78rem]" : "text-[0.65rem]",
+        )}
+        style={{ color }}
+      >
         {score}
       </div>
     </div>
@@ -178,11 +181,7 @@ function _PipelineStepper({ signalCount, clusterCount }: { signalCount: number; 
   const activeIndex = clusterCount > 0 ? 1 : signalCount > 0 ? 0 : -1;
 
   return (
-    <div style={{
-      background: "var(--card)", border: "1px solid var(--border)",
-      borderRadius: 12, padding: "10px 18px",
-      display: "flex", alignItems: "center", gap: 0,
-    }}>
+    <div className="flex items-center gap-0 rounded-xl border bg-card px-[18px] py-2.5">
       {steps.map((step, i) => {
         const state = i < activeIndex ? "ps-done" : i === activeIndex ? "ps-active" : "ps-pending";
         const badgeState = i < activeIndex ? "done" : i === activeIndex ? "active" : "pending";
@@ -194,20 +193,13 @@ function _PipelineStepper({ signalCount, clusterCount }: { signalCount: number; 
               </span>
               {step.label}
               {step.count > 0 && (
-                <span style={{
-                  color: "var(--muted)", fontSize: "0.7rem",
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}>
+                <span className="font-['JetBrains_Mono',monospace] text-[0.7rem] text-muted-foreground">
                   ×{step.count}
                 </span>
               )}
             </div>
             {i < steps.length - 1 && (
-              <div style={{
-                flex: 1, height: 1,
-                background: "linear-gradient(90deg, var(--border), transparent)",
-                minWidth: 12, maxWidth: 36,
-              }} />
+              <div className="h-px min-w-[12px] max-w-[36px] flex-1 bg-gradient-to-r from-border to-transparent" />
             )}
           </React.Fragment>
         );
@@ -235,67 +227,52 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
 
   return (
     <div className="ai-insight-banner">
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+      <div className="flex items-start gap-3.5">
         {/* Brain icon */}
-        <div style={{
-          width: 40, height: 40, borderRadius: 10,
-          background: "rgba(249,115,22,0.1)",
-          border: "1px solid rgba(249,115,22,0.22)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0, fontSize: "1.1rem",
-        }}>🧠</div>
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-[rgba(249,115,22,0.22)] bg-[rgba(249,115,22,0.1)] text-[1.1rem]">🧠</div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <span style={{
-              fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.1em",
-              color: "var(--accent)", textTransform: "uppercase",
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
+        <div className="min-w-0 flex-1">
+          <div className="mb-[5px] flex items-center gap-2">
+            <span className="font-['JetBrains_Mono',monospace] text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">
               AI INSIGHT {idx + 1}/{insights.length}
             </span>
-            <span style={{
-              padding: "2px 7px", borderRadius: 4,
-              background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.18)",
-              fontSize: "0.62rem", fontWeight: 600, color: "var(--accent)",
-            }}>
+            <span className="rounded border border-[rgba(249,115,22,0.18)] bg-[rgba(249,115,22,0.1)] px-[7px] py-0.5 text-[0.62rem] font-semibold text-primary">
               {Math.round(current.confidence * 100)}% confidence
             </span>
           </div>
-          <p style={{ fontWeight: 600, fontSize: "0.92rem", color: "var(--foreground)", margin: "0 0 3px", lineHeight: 1.4 }}>
+          <p className="mb-[3px] text-[0.92rem] font-semibold leading-[1.4] text-foreground">
             {current.headline}
           </p>
-          <p style={{ color: "var(--muted-light)", fontSize: "0.81rem", margin: 0, lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          <p className="line-clamp-2 text-[0.81rem] leading-[1.55] text-[var(--muted-light)]">
             {current.detail}
           </p>
           {insights.length > 1 && (
-            <div style={{ display: "flex", gap: 4, marginTop: 10 }}>
+            <div className="mt-2.5 flex gap-1">
               {insights.map((_, i) => (
-                <button key={i} onClick={() => setIdx(i)} style={{
-                  width: i === idx ? 18 : 5, height: 5, borderRadius: 3,
-                  border: "none", cursor: "pointer", padding: 0,
-                  background: i === idx ? "var(--accent)" : "rgba(255,255,255,0.16)",
-                  transition: "all 0.2s",
-                }} />
+                <button
+                  key={i}
+                  onClick={() => setIdx(i)}
+                  className={cn(
+                    "h-[5px] cursor-pointer rounded-[3px] border-none p-0 transition-all duration-200",
+                    i === idx ? "w-[18px] bg-primary" : "w-[5px] bg-[rgba(255,255,255,0.16)]",
+                  )}
+                />
               ))}
             </div>
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div className="flex flex-shrink-0 items-center gap-1.5">
           {idx < insights.length - 1 && (
-            <button onClick={() => setIdx((i) => i + 1)} style={{
-              background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)",
-              borderRadius: 7, color: "var(--foreground)", cursor: "pointer",
-              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "1rem",
-            }}>›</button>
+            <button
+              onClick={() => setIdx((i) => i + 1)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[7px] border bg-[rgba(255,255,255,0.06)] text-base text-foreground"
+            >›</button>
           )}
-          <button onClick={onClose} style={{
-            background: "none", border: "none", color: "var(--muted-dim)",
-            cursor: "pointer", padding: "4px 6px", fontSize: "0.9rem",
-            borderRadius: 5, lineHeight: 1,
-          }}>✕</button>
+          <button
+            onClick={onClose}
+            className="cursor-pointer rounded-[5px] border-none bg-transparent px-1.5 py-1 text-[0.9rem] leading-none text-[var(--muted-dim)]"
+          >✕</button>
         </div>
       </div>
     </div>
@@ -320,30 +297,25 @@ function SignalCard({
 
   return (
     <div
-      className={`signal-card sev-${sev} ${selected ? "selected" : ""} ${staggerClass}`}
+      className={cn(
+        `signal-card sev-${sev} ${selected ? "selected" : ""} ${staggerClass}`,
+        "cursor-pointer pt-4 pr-[18px] pb-3.5 pl-5",
+      )}
       onClick={onClick}
-      style={{ padding: "16px 18px 14px 20px", cursor: "pointer" }}
     >
       {/* Title, visual hero */}
-      <h3 style={{
-        margin: "0 0 10px",
-        fontWeight: 700,
-        fontSize: "0.96rem",
-        lineHeight: 1.45,
-        color: "var(--foreground)",
-        letterSpacing: "-0.018em",
-      }}>
+      <h3 className="mb-2.5 text-[0.96rem] font-bold leading-[1.45] tracking-[-0.018em] text-foreground">
         {cluster.title}
       </h3>
 
       {/* Meta row, plain language */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="flex items-center gap-2.5">
         <span className={`badge badge-${sev}`}>{urgencyLabel(score)}</span>
-        <span style={{ fontSize: "0.78rem", color: "var(--muted-light)" }}>
-          <span style={{ color: "var(--foreground)", fontWeight: 600 }}>{cluster.evidence_count}</span> müşteri bahsetti
+        <span className="text-[0.78rem] text-[var(--muted-light)]">
+          <span className="font-semibold text-foreground">{cluster.evidence_count}</span> müşteri bahsetti
         </span>
         {chips.length > 0 && (
-          <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "var(--muted-dim)" }}>
+          <span className="ml-auto text-[0.72rem] text-[var(--muted-dim)]">
             {chips.slice(0, 2).map((c) => c.name).join(" · ")}
           </span>
         )}
@@ -364,17 +336,14 @@ function BriefSection({
 }) {
   return (
     <>
-      <div style={{ height: 1, background: "var(--border)", margin: "0 18px" }} />
-      <div style={{ padding: "14px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-          <div style={{
-            width: 2, height: 12, borderRadius: 1, flexShrink: 0,
-            background: accentColor || "rgba(255,255,255,0.14)",
-          }} />
-          <span style={{
-            fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.02em",
-            color: "var(--muted-light)",
-          }}>
+      <div className="mx-[18px] h-px bg-border" />
+      <div className="px-[18px] py-3.5">
+        <div className="mb-2.5 flex items-center gap-[7px]">
+          <div
+            className="h-3 w-[2px] flex-shrink-0 rounded-[1px]"
+            style={{ background: accentColor || "rgba(255,255,255,0.14)" }}
+          />
+          <span className="text-[0.7rem] font-bold tracking-[0.02em] text-[var(--muted-light)]">
             {label}
           </span>
         </div>
@@ -394,26 +363,18 @@ function _OutputButton({
   return (
     <a
       href={href}
-      style={{
-        display: "flex", alignItems: "center", gap: 7,
-        padding: "7px 10px", borderRadius: 7, textDecoration: "none",
-        border: `1px solid ${configured ? "rgba(34,197,94,0.22)" : "var(--border)"}`,
-        background: configured ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.02)",
-        color: configured ? "#4ade80" : "var(--muted)",
-        fontSize: "0.75rem", fontWeight: 600, flex: 1,
-        transition: "all 0.12s",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(249,115,22,0.07)"; e.currentTarget.style.borderColor = "rgba(249,115,22,0.25)"; e.currentTarget.style.color = "var(--accent)"; }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = configured ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.02)";
-        e.currentTarget.style.borderColor = configured ? "rgba(34,197,94,0.22)" : "var(--border)";
-        e.currentTarget.style.color = configured ? "#4ade80" : "var(--muted)";
-      }}
+      className={cn(
+        "flex flex-1 items-center gap-[7px] rounded-[7px] border px-2.5 py-[7px] text-[0.75rem] font-semibold no-underline transition-all duration-[120ms]",
+        configured
+          ? "border-[rgba(34,197,94,0.22)] bg-[rgba(34,197,94,0.05)] text-[#4ade80]"
+          : "bg-[rgba(255,255,255,0.02)] text-muted-foreground",
+        "hover:border-[rgba(249,115,22,0.25)] hover:bg-[rgba(249,115,22,0.07)] hover:text-primary",
+      )}
     >
-      <span style={{ fontSize: "0.85rem" }}>{icon}</span>
+      <span className="text-[0.85rem]">{icon}</span>
       <span>{label}</span>
-      {configured && <span style={{ marginLeft: "auto", fontSize: "0.62rem", opacity: 0.7 }}>↗</span>}
-      {!configured && <span style={{ marginLeft: "auto", fontSize: "0.62rem", opacity: 0.5 }}>Set up</span>}
+      {configured && <span className="ml-auto text-[0.62rem] opacity-70">↗</span>}
+      {!configured && <span className="ml-auto text-[0.62rem] opacity-50">Set up</span>}
     </a>
   );
 }
@@ -429,22 +390,9 @@ function ExecutionBrief({
 }) {
   if (!cluster) {
     return (
-      <div style={{
-        background: "var(--card)", border: "1px solid var(--border)",
-        borderRadius: 14, padding: 32,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        gap: 12, minHeight: 320,
-      }}>
-        <div style={{
-          width: 1, height: 40,
-          background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.08), transparent)",
-        }} />
-        <p style={{
-          color: "var(--muted-dim)", fontSize: "0.78rem", margin: 0,
-          textAlign: "center", maxWidth: 160, lineHeight: 1.65,
-          fontFamily: "'JetBrains Mono', monospace",
-        }}>
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[14px] border bg-card p-8">
+        <div className="h-10 w-px bg-gradient-to-b from-transparent via-[rgba(255,255,255,0.08)] to-transparent" />
+        <p className="max-w-[160px] text-center font-['JetBrains_Mono',monospace] text-[0.78rem] leading-[1.65] text-[var(--muted-dim)]">
           Bir sinyal seçin<br />özeti açmak için
         </p>
       </div>
@@ -455,22 +403,16 @@ function ExecutionBrief({
   const chips = sourceChips(cluster);
 
   return (
-    <div style={{
-      background: "var(--card)", border: "1px solid var(--border)",
-      borderRadius: 14, overflow: "hidden",
-    }}>
+    <div className="overflow-hidden rounded-[14px] border bg-card">
       {/* Title block, plain header */}
-      <div style={{ padding: "18px 18px 4px" }}>
-        <span className={`badge badge-${sev}`} style={{ marginBottom: 12, display: "inline-block" }}>
+      <div className="px-[18px] pt-[18px] pb-1">
+        <span className={`badge badge-${sev} mb-3 inline-block`}>
           {urgencyLabel(cluster.severity)}
         </span>
-        <h4 style={{
-          margin: "0 0 8px", fontSize: "1.05rem", fontWeight: 700,
-          color: "var(--foreground)", lineHeight: 1.4, letterSpacing: "-0.015em",
-        }}>
+        <h4 className="mb-2 text-[1.05rem] font-bold leading-[1.4] tracking-[-0.015em] text-foreground">
           {cluster.title}
         </h4>
-        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--muted)" }}>
+        <p className="text-[0.78rem] text-muted-foreground">
           {cluster.evidence_count} müşteri bahsetti
           {chips.length > 0 && <span> · {chips.slice(0, 3).map((c) => c.name).join(", ")}</span>}
         </p>
@@ -478,7 +420,7 @@ function ExecutionBrief({
 
       {/* What's happening */}
       <BriefSection label="Neler oluyor">
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted-light)", lineHeight: 1.65 }}>
+        <p className="text-[0.85rem] leading-[1.65] text-[var(--muted-light)]">
           {cluster.business_case || cluster.recommended_action || ","}
         </p>
       </BriefSection>
@@ -486,12 +428,8 @@ function ExecutionBrief({
       {/* What it's costing you */}
       {cluster.projected_impact && (
         <BriefSection label="Size maliyeti" accentColor="#f59e0b">
-          <div style={{
-            padding: "12px 14px", borderRadius: 8,
-            background: "rgba(245,158,11,0.06)",
-            border: "1px solid rgba(245,158,11,0.18)",
-          }}>
-            <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--foreground)", lineHeight: 1.4 }}>
+          <div className="rounded-lg border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.06)] px-3.5 py-3">
+            <div className="text-[0.92rem] font-bold leading-[1.4] text-foreground">
               💰 {cluster.projected_impact}
             </div>
           </div>
@@ -500,14 +438,14 @@ function ExecutionBrief({
 
       {/* What to do */}
       <BriefSection label="Ne yapmalı" accentColor="#22c55e">
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted-light)", lineHeight: 1.65 }}>
+        <p className="text-[0.85rem] leading-[1.65] text-[var(--muted-light)]">
           {cluster.recommended_action || ","}
         </p>
       </BriefSection>
 
       {/* Decision */}
       <BriefSection label="Kararınız">
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div className="mb-2.5 flex gap-2">
           <button
             className={`btn-approve ${approval === "approved" ? "approved" : ""}`}
             onClick={onApprove}
@@ -523,22 +461,7 @@ function ExecutionBrief({
         </div>
         <button
           onClick={onViewFull}
-          style={{
-            background: "none", border: "1px solid var(--border)",
-            borderRadius: 8, color: "var(--accent)",
-            fontSize: "0.8rem", fontWeight: 600, cursor: "pointer",
-            padding: "8px 14px", width: "100%",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "background 0.12s, border-color 0.12s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(249,115,22,0.06)";
-            e.currentTarget.style.borderColor = "rgba(249,115,22,0.28)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "none";
-            e.currentTarget.style.borderColor = "var(--border)";
-          }}
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border bg-transparent px-3.5 py-2 text-[0.8rem] font-semibold text-primary transition-colors duration-[120ms] hover:border-[rgba(249,115,22,0.28)] hover:bg-[rgba(249,115,22,0.06)]"
         >
           ↗ Detayları gör
         </button>
@@ -547,48 +470,44 @@ function ExecutionBrief({
       {/* Sent to your phone */}
       <BriefSection label="Telefonunuza gönderildi" accentColor="#22c55e">
         {/* WhatsApp preview, the actual message your team receives */}
-        <div style={{ background: "#0c1419", border: "1px solid rgba(37,211,102,0.18)", borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-            <span style={{ fontSize: "0.85rem" }}>💬</span>
-            <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#4ade80", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace" }}>WhatsApp · ekibinizin aldığı mesaj</span>
+        <div className="mb-3 rounded-xl border border-[rgba(37,211,102,0.18)] bg-[#0c1419] p-3">
+          <div className="mb-2.5 flex items-center gap-[7px]">
+            <span className="text-[0.85rem]">💬</span>
+            <span className="font-['JetBrains_Mono',monospace] text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#4ade80]">WhatsApp · ekibinizin aldığı mesaj</span>
           </div>
-          <div style={{ background: "#1f2c34", borderRadius: "4px 10px 10px 10px", padding: "10px 12px" }}>
-            <div style={{ color: sev === "critical" ? "#f87171" : sev === "high" ? "#fb923c" : "#fbbf24", fontWeight: 800, fontSize: "0.74rem", marginBottom: 5 }}>
+          <div className="rounded-[4px_10px_10px_10px] bg-[#1f2c34] px-3 py-2.5">
+            <div className={cn(
+              "mb-[5px] text-[0.74rem] font-extrabold",
+              sev === "critical" ? "text-[#f87171]" : sev === "high" ? "text-[#fb923c]" : "text-[#fbbf24]",
+            )}>
               {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {sev.toUpperCase()} · {cluster.severity}/100
             </div>
-            <div style={{ color: "#e9edef", fontSize: "0.78rem", lineHeight: 1.5, marginBottom: cluster.projected_impact ? 6 : 8, fontWeight: 600 }}>
+            <div className={cn(
+              "text-[0.78rem] font-semibold leading-[1.5] text-[#e9edef]",
+              cluster.projected_impact ? "mb-1.5" : "mb-2",
+            )}>
               {cluster.title}
             </div>
             {cluster.projected_impact && (
-              <div style={{ color: "#9fd9bf", fontSize: "0.72rem", marginBottom: 8 }}>💰 {cluster.projected_impact}</div>
+              <div className="mb-2 text-[0.72rem] text-[#9fd9bf]">💰 {cluster.projected_impact}</div>
             )}
-            <div style={{ color: "#8696a0", fontSize: "0.68rem", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 7 }}>
-              Yanıtla <span style={{ color: "#22c55e", fontWeight: 700 }}>1</span> detaylar ·{" "}
-              <span style={{ color: "#22c55e", fontWeight: 700 }}>2</span> hallettim ·{" "}
-              <span style={{ color: "#22c55e", fontWeight: 700 }}>3</span> geç
+            <div className="border-t border-[rgba(255,255,255,0.07)] pt-[7px] text-[0.68rem] text-[#8696a0]">
+              Yanıtla <span className="font-bold text-[#22c55e]">1</span> detaylar ·{" "}
+              <span className="font-bold text-[#22c55e]">2</span> hallettim ·{" "}
+              <span className="font-bold text-[#22c55e]">3</span> geç
             </div>
           </div>
         </div>
-        <p style={{ margin: "0 0 8px", fontSize: "0.72rem", color: "var(--muted)", lineHeight: 1.55 }}>
+        <p className="mb-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
           WhatsApp, Slack ve e-posta ile otomatik iletilir, ekibiniz giriş yapmadan hareket eder.
         </p>
         <Link
           href="/alerts"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "7px 12px", borderRadius: 7, textDecoration: "none",
-            border: "1px solid var(--border)",
-            background: "rgba(255,255,255,0.02)",
-            color: "var(--muted)",
-            fontSize: "0.75rem", fontWeight: 600,
-            transition: "all 0.12s",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(249,115,22,0.07)"; e.currentTarget.style.borderColor = "rgba(249,115,22,0.25)"; e.currentTarget.style.color = "var(--accent)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--muted)"; }}
+          className="inline-flex items-center gap-1.5 rounded-[7px] border bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[0.75rem] font-semibold text-muted-foreground no-underline transition-all duration-[120ms] hover:border-[rgba(249,115,22,0.25)] hover:bg-[rgba(249,115,22,0.07)] hover:text-primary"
         >
           <span>⚡</span>
           <span>Slack · E-posta · WhatsApp Ayarla</span>
-          <span style={{ marginLeft: 4, fontSize: "0.62rem", opacity: 0.5 }}>↗</span>
+          <span className="ml-1 text-[0.62rem] opacity-50">↗</span>
         </Link>
       </BriefSection>
     </div>
@@ -791,10 +710,9 @@ export default function DashboardPage() {
 
   if (!authChecked) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-        <div style={{ width: 38, height: 38, border: "3px solid rgba(249,115,22,0.15)", borderTopColor: "#f97316", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <p style={{ color: "var(--muted)", fontSize: "0.82rem" }}>Çalışma alanı yükleniyor...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)]">
+        <Loader2 className="h-[38px] w-[38px] animate-spin text-[#f97316]" />
+        <p className="text-[0.82rem] text-muted-foreground">Çalışma alanı yükleniyor...</p>
       </div>
     );
   }
@@ -803,66 +721,53 @@ export default function DashboardPage() {
     <div className="app-shell">
       {/* ── Plan banners ── */}
       {plan === "trial" && trialDays <= 7 && trialDays > 0 && (
-        <div style={{
-          background: "rgba(251,191,36,0.06)", borderBottom: "1px solid rgba(251,191,36,0.15)",
-          padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
-        }}>
-          <span style={{ color: "#fbbf24", fontSize: "0.82rem" }}>
+        <div className="flex items-center justify-center gap-3 border-b border-[rgba(251,191,36,0.15)] bg-[rgba(251,191,36,0.06)] px-6 py-2">
+          <span className="text-[0.82rem] text-[#fbbf24]">
             ⏳ Trial ends in <strong>{trialDays} day{trialDays !== 1 ? "s" : ""}</strong>
           </span>
-          <Link href="/settings/billing" style={{ color: "#fbbf24", fontWeight: 600, fontSize: "0.82rem", textDecoration: "underline" }}>
+          <Link href="/settings/billing" className="text-[0.82rem] font-semibold text-[#fbbf24] underline">
             Upgrade →
           </Link>
         </div>
       )}
       {(plan === "expired" || (plan === "trial" && trialDays === 0)) && (
-        <div style={{
-          background: "rgba(239,68,68,0.06)", borderBottom: "1px solid rgba(239,68,68,0.15)",
-          padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
-        }}>
-          <span style={{ color: "#f87171", fontSize: "0.82rem" }}>🚫 Trial ended ,</span>
-          <Link href="/settings/billing" style={{ color: "#f87171", fontWeight: 600, fontSize: "0.82rem", textDecoration: "underline" }}>
+        <div className="flex items-center justify-center gap-3 border-b border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.06)] px-6 py-2">
+          <span className="text-[0.82rem] text-[#f87171]">🚫 Trial ended ,</span>
+          <Link href="/settings/billing" className="text-[0.82rem] font-semibold text-[#f87171] underline">
             Upgrade to continue →
           </Link>
         </div>
       )}
       {polar_status === "past_due" && (
-        <div style={{
-          background: "rgba(239,68,68,0.06)", borderBottom: "1px solid rgba(239,68,68,0.15)",
-          padding: "8px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
-        }}>
-          <span style={{ color: "#f87171", fontSize: "0.82rem" }}>⚡ Payment failed ,</span>
-          <a href="/api/billing/portal" style={{ color: "#f87171", fontWeight: 600, fontSize: "0.82rem", textDecoration: "underline" }}>
+        <div className="flex items-center justify-center gap-3 border-b border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.06)] px-6 py-2">
+          <span className="text-[0.82rem] text-[#f87171]">⚡ Payment failed ,</span>
+          <a href="/api/billing/portal" className="text-[0.82rem] font-semibold text-[#f87171] underline">
             Update billing →
           </a>
         </div>
       )}
 
       {/* ── Main ── */}
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px" }}>
+      <div className="mx-auto max-w-[1400px] px-6 py-7">
 
         {/* Page header */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800, color: "var(--foreground)", letterSpacing: "-0.03em" }}>
+        <div className="mb-6">
+          <h1 className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-foreground">
             Sinyaller
           </h1>
-          <p style={{ margin: "3px 0 0", color: "var(--muted-light)", fontSize: "0.86rem" }}>
+          <p className="mt-[3px] text-[0.86rem] text-[var(--muted-light)]">
             Müşterilerinizin söyledikleri, önce neyi düzelteceğinize göre sıralanmış.
           </p>
         </div>
 
         {/* Upgrade prompt */}
         {upgradeRequired && (
-          <div style={{
-            padding: "13px 18px", borderRadius: 10,
-            background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)",
-            display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
-          }}>
+          <div className="mb-4 flex items-center gap-3 rounded-[10px] border border-[rgba(251,191,36,0.2)] bg-[rgba(251,191,36,0.05)] px-[18px] py-[13px]">
             <span>🔒</span>
-            <div style={{ flex: 1, color: "#fbbf24", fontSize: "0.875rem" }}>{upgradeMessage}</div>
-            <Link href="/settings/billing" className="btn-primary" style={{ textDecoration: "none", fontSize: "0.8rem", padding: "7px 16px" }}>
-              View plans →
-            </Link>
+            <div className="flex-1 text-sm text-[#fbbf24]">{upgradeMessage}</div>
+            <Button asChild className="h-auto rounded-lg px-4 py-[7px] text-[0.8rem] font-semibold tracking-[-0.01em]">
+              <Link href="/settings/billing">View plans →</Link>
+            </Button>
           </div>
         )}
 
@@ -870,32 +775,32 @@ export default function DashboardPage() {
           /* ── Skeleton state ── */
           <div>
             {/* Status strip skeleton */}
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, height: 38, marginBottom: 16, overflow: "hidden" }}>
-              <div className="skeleton" style={{ height: "100%" }} />
+            <div className="mb-4 h-[38px] overflow-hidden rounded-[10px] border bg-card">
+              <Skeleton className="h-full rounded-none" />
             </div>
             {/* Pipeline skeleton */}
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 18px", marginBottom: 16 }}>
-              <div className="skeleton" style={{ height: 26, borderRadius: 8 }} />
+            <div className="mb-4 rounded-xl border bg-card px-[18px] py-2.5">
+              <Skeleton className="h-[26px] rounded-lg" />
             </div>
             {/* Cards skeleton */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 16 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="grid grid-cols-[1fr_420px] gap-4">
+              <div className="flex flex-col gap-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", gap: 14, marginBottom: 12 }}>
-                      <div className="skeleton" style={{ width: 48, height: 48, borderRadius: "50%", flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div className="skeleton" style={{ width: "40%", height: 9, marginBottom: 8 }} />
-                        <div className="skeleton" style={{ width: "80%", height: 13 }} />
+                  <div key={i} className="rounded-[14px] border bg-card px-5 py-[18px]">
+                    <div className="mb-3 flex gap-3.5">
+                      <Skeleton className="h-12 w-12 flex-shrink-0 rounded-full" />
+                      <div className="flex-1">
+                        <Skeleton className="mb-2 h-[9px] w-[40%]" />
+                        <Skeleton className="h-[13px] w-[80%]" />
                       </div>
                     </div>
-                    <div className="skeleton" style={{ height: 9, marginBottom: 6 }} />
-                    <div className="skeleton" style={{ width: "75%", height: 9 }} />
+                    <Skeleton className="mb-1.5 h-[9px]" />
+                    <Skeleton className="h-[9px] w-[75%]" />
                   </div>
                 ))}
               </div>
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, height: 320 }}>
-                <div className="skeleton" style={{ height: "100%", borderRadius: 14 }} />
+              <div className="h-[320px] rounded-[14px] border bg-card">
+                <Skeleton className="h-full rounded-[14px]" />
               </div>
             </div>
           </div>
@@ -903,35 +808,37 @@ export default function DashboardPage() {
           <>
             {/* Sample-data banner */}
             {isSample && (
-              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 18px", marginBottom: 16, borderRadius: 10, background: "var(--muted-surface)", border: "1px solid var(--border)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "color-mix(in oklch, var(--foreground) 6%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", flexShrink: 0 }}>👋</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: "0.86rem", color: "var(--foreground)", fontWeight: 600 }}>Bu bir kafe için örnek veridir.</p>
-                  <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "var(--muted)" }}>Kendi verilerinizi görmek için Google Reviews, Getir veya POS&apos;unuzu bağlayın.</p>
+              <div className="mb-4 flex items-center gap-3.5 rounded-[10px] border bg-muted px-[18px] py-3">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] text-base">👋</div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.86rem] font-semibold text-foreground">Bu bir kafe için örnek veridir.</p>
+                  <p className="mt-0.5 text-[0.78rem] text-muted-foreground">Kendi verilerinizi görmek için Google Reviews, Getir veya POS&apos;unuzu bağlayın.</p>
                 </div>
-                <Link href="/sources" className="btn-primary" style={{ textDecoration: "none", fontSize: "0.82rem", padding: "8px 16px", flexShrink: 0, whiteSpace: "nowrap" }}>Kaynaklarınızı bağlayın →</Link>
+                <Button asChild className="h-auto flex-shrink-0 whitespace-nowrap rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
+                  <Link href="/sources">Kaynaklarınızı bağlayın →</Link>
+                </Button>
               </div>
             )}
 
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>
-                <h2 style={{ margin: 0, color: "var(--foreground)", fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-0.02em" }}>Dikkat gereken konular</h2>
-                <p style={{ margin: "3px 0 0", color: "var(--muted)", fontSize: "0.82rem" }}>
+                <h2 className="text-[1.15rem] font-bold tracking-[-0.02em] text-foreground">Dikkat gereken konular</h2>
+                <p className="mt-[3px] text-[0.82rem] text-muted-foreground">
                   Müşteri kanallarınızda {displayClusters.length} konu bulundu
-                  {isSample ? <span style={{ color: "var(--muted-dim)" }}> · örnek</span> : (lastRun && <span style={{ color: "var(--muted-dim)" }}> · güncellendi {timeSince(lastRun)}</span>)}
+                  {isSample ? <span className="text-[var(--muted-dim)]"> · örnek</span> : (lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>)}
                 </p>
               </div>
             </div>
 
             {/* Two-column */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: 16, alignItems: "start" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+            <div className="grid grid-cols-[1fr_400px] items-start gap-4">
+              <div className="flex flex-col gap-[11px]">
                 {displayClusters.map((c, idx) => (
                   <SignalCard key={c.id} cluster={c} selected={activeCluster?.id === c.id} onClick={() => setSelectedCluster(c)} staggerIndex={idx} />
                 ))}
               </div>
-              <div style={{ position: "sticky", top: 66 }}>
+              <div className="sticky top-[66px]">
                 <ExecutionBrief
                   cluster={activeCluster}
                   approval={activeCluster ? (approvals[activeCluster.id] ?? "pending") : "pending"}
@@ -956,32 +863,17 @@ export default function DashboardPage() {
         <div
           role="status"
           aria-live="polite"
-          style={{
-            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
-            background: toast.tone === "success" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-            border: `1px solid ${toast.tone === "success" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"}`,
-            color: toast.tone === "success" ? "#4ade80" : "#f87171",
-            padding: "10px 18px", borderRadius: 10, fontSize: "0.85rem", fontWeight: 600,
-            zIndex: 100, boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-            animation: "toast-in 0.18s cubic-bezier(0.4,0,0.2,1)",
-          }}
+          className={cn(
+            "fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-[10px] border px-[18px] py-2.5 text-[0.85rem] font-semibold shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-[8px]",
+            "animate-in fade-in slide-in-from-bottom-2 duration-[180ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+            toast.tone === "success"
+              ? "border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.12)] text-[#4ade80]"
+              : "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.12)] text-[#f87171]",
+          )}
         >
           {toast.msg}
         </div>
       )}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes ping {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 0.15; transform: scale(1.12); }
-        }
-        @keyframes toast-in {
-          from { opacity: 0; transform: translate(-50%, 8px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
-      `}</style>
     </div>
   );
 }
