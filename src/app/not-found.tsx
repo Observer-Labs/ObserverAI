@@ -1,149 +1,53 @@
 import Link from "next/link";
 import { getTranslations } from 'next-intl/server';
+import { Button } from "@/components/ui/button";
 
 export default async function NotFound() {
   const t = await getTranslations('errors');
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0b0c10",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        position: "relative",
-      }}
-    >
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse at top, rgba(249,115,22,0.06) 0%, transparent 60%)",
-        }}
-      />
+    <div className="relative flex min-h-screen items-center justify-center bg-[#0b0c10] p-6">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.06)_0%,transparent_60%)]" />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 480,
-          width: "100%",
-          textAlign: "center",
-        }}
-      >
+      <div className="relative z-[1] w-full max-w-[480px] text-center">
         {/* Brand mark */}
         <Link
           href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            textDecoration: "none",
-            marginBottom: 56,
-          }}
+          className="mb-14 inline-flex items-center gap-2.5 no-underline"
         >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 9,
-              background: "rgba(249,115,22,0.12)",
-              border: "1.5px solid rgba(249,115,22,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              fontWeight: 800,
-              color: "#f97316",
-              letterSpacing: "-0.04em",
-            }}
-          >
+          <div className="flex h-9 w-9 items-center justify-center rounded-[9px] border-[1.5px] border-[rgba(249,115,22,0.4)] bg-[rgba(249,115,22,0.12)] text-[20px] font-extrabold tracking-[-0.04em] text-[#f97316]">
             S
           </div>
-          <span
-            style={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: "1.05rem",
-              fontStyle: "italic",
-              letterSpacing: "-0.02em",
-            }}
-          >
+          <span className="text-[1.05rem] font-bold italic tracking-[-0.02em] text-white">
             Observer
           </span>
         </Link>
 
         {/* 404 huge */}
-        <div
-          style={{
-            fontSize: "clamp(7rem, 18vw, 11rem)",
-            fontWeight: 900,
-            lineHeight: 1,
-            letterSpacing: "-0.06em",
-            color: "rgba(249,115,22,0.18)",
-            fontFamily: "'JetBrains Mono', monospace",
-            marginBottom: 8,
-          }}
-        >
+        <div className="mb-2 font-mono text-[clamp(7rem,18vw,11rem)] leading-none font-black tracking-[-0.06em] text-[rgba(249,115,22,0.18)]">
           404
         </div>
 
-        <h1
-          style={{
-            color: "#fff",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            margin: "0 0 12px",
-            letterSpacing: "-0.02em",
-          }}
-        >
+        <h1 className="mb-3 text-2xl font-bold tracking-[-0.02em] text-white">
           {t('notFoundTitle')}
         </h1>
 
-        <p
-          style={{
-            color: "var(--muted-light, #9aa3b2)",
-            fontSize: "0.95rem",
-            lineHeight: 1.6,
-            margin: "0 0 36px",
-          }}
-        >
+        <p className="mb-9 text-[0.95rem] leading-[1.6] text-[var(--muted-light,#9aa3b2)]">
           {t('notFoundBody')}
         </p>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            href="/dashboard"
-            style={{
-              background: "#f97316",
-              color: "#0b0c10",
-              fontWeight: 700,
-              fontSize: "0.92rem",
-              padding: "11px 22px",
-              borderRadius: 9,
-              textDecoration: "none",
-              boxShadow: "0 2px 16px rgba(249,115,22,0.25)",
-            }}
+        <div className="flex flex-wrap justify-center gap-2.5">
+          <Button
+            asChild
+            className="h-auto rounded-[9px] bg-[#f97316] px-[22px] py-[11px] text-[0.92rem] font-bold text-[#0b0c10] shadow-[0_2px_16px_rgba(249,115,22,0.25)] hover:bg-[#f97316]/90"
           >
-            {t('backToDashboard')}
-          </Link>
-          <Link
-            href="/"
-            style={{
-              color: "var(--muted-light, #9aa3b2)",
-              fontSize: "0.92rem",
-              padding: "11px 18px",
-              borderRadius: 9,
-              textDecoration: "none",
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.02)",
-            }}
+            <Link href="/dashboard">{t('backToDashboard')}</Link>
+          </Button>
+          <Button
+            asChild
+            className="h-auto rounded-[9px] border border-white/10 bg-white/[0.02] px-[18px] py-[11px] text-[0.92rem] font-normal text-[var(--muted-light,#9aa3b2)] shadow-none hover:bg-white/[0.06] hover:text-[var(--muted-light,#9aa3b2)]"
           >
-            {t('home')}
-          </Link>
+            <Link href="/">{t('home')}</Link>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import type { Cluster, SprintItem } from "@/lib/types";
 
 // Fallback mock sprint data, shown when Jira is not connected
@@ -49,47 +50,68 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="grid grid-cols-2 gap-6">
         {/* Customer Demand */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--accent-green)" }} />
-            <h3 style={{ color: "white", fontWeight: 600, fontSize: "0.95rem", margin: 0 }}>Customer Demand</h3>
-            <span style={{ color: "var(--muted)", fontSize: "0.75rem" }}>What customers are asking for</span>
+          <div className="mb-4 flex items-center gap-2">
+            <div className="size-2.5 rounded-full bg-[var(--accent-green)]" />
+            <h3 className="text-[0.95rem] font-semibold text-white">Customer Demand</h3>
+            <span className="text-[0.75rem] text-muted-foreground">What customers are asking for</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {clusters.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 0", color: "var(--muted)", fontSize: "0.875rem" }}>No signals analyzed yet</div>
+              <div className="py-8 text-center text-[0.875rem] text-muted-foreground">No signals analyzed yet</div>
             ) : clusters.slice(0, 8).map((cluster) => {
               const alignment = getAlignmentScore(cluster);
               return (
                 <div
                   key={cluster.id}
-                  className="obs-card"
-                  style={{ padding: 16, cursor: "pointer" }}
+                  className="cursor-pointer rounded-[14px] border bg-card p-4 shadow-sm"
                   onClick={() => onOpenSnapshot(cluster)}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ color: "white", fontSize: "0.875rem", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>{cluster.title}</span>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <span style={{ fontSize: "0.7rem", color: cluster.severity >= 70 ? "var(--danger)" : cluster.severity >= 40 ? "var(--warning)" : "var(--accent-green)", background: cluster.severity >= 70 ? "rgba(255,92,122,0.15)" : cluster.severity >= 40 ? "rgba(255,209,102,0.15)" : "rgba(70,230,166,0.12)", padding: "2px 8px", borderRadius: 9999, fontWeight: 600 }}>
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <span className="mr-2 flex-1 truncate text-[0.875rem] font-medium text-white">{cluster.title}</span>
+                    <div className="flex shrink-0 gap-1.5">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[0.7rem] font-semibold",
+                          cluster.severity >= 70
+                            ? "bg-[rgba(255,92,122,0.15)] text-destructive"
+                            : cluster.severity >= 40
+                              ? "bg-[rgba(255,209,102,0.15)] text-[var(--warning)]"
+                              : "bg-[rgba(70,230,166,0.12)] text-[var(--accent-green)]"
+                        )}
+                      >
                         {cluster.severity}/100
                       </span>
                     </div>
                   </div>
 
                   {/* Gap visualization */}
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Sprint alignment</span>
-                      <span style={{ color: alignment < 30 ? "var(--danger)" : alignment < 60 ? "var(--warning)" : "var(--accent-green)", fontSize: "0.7rem", fontWeight: 600 }}>{alignment}%</span>
+                  <div className="mb-2">
+                    <div className="mb-1 flex justify-between">
+                      <span className="text-[0.7rem] text-muted-foreground">Sprint alignment</span>
+                      <span
+                        className={cn(
+                          "text-[0.7rem] font-semibold",
+                          alignment < 30 ? "text-destructive" : alignment < 60 ? "text-[var(--warning)]" : "text-[var(--accent-green)]"
+                        )}
+                      >
+                        {alignment}%
+                      </span>
                     </div>
-                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${alignment}%`, borderRadius: 3, background: alignment < 30 ? "var(--danger)" : alignment < 60 ? "var(--warning)" : "var(--accent-green)", transition: "width 0.6s ease" }} />
+                    <div className="h-1.5 overflow-hidden rounded-[3px] bg-[rgba(255,255,255,0.08)]">
+                      <div
+                        className={cn(
+                          "h-full rounded-[3px] [transition:width_0.6s_ease]",
+                          alignment < 30 ? "bg-destructive" : alignment < 60 ? "bg-[var(--warning)]" : "bg-[var(--accent-green)]"
+                        )}
+                        style={{ width: `${alignment}%` }}
+                      />
                     </div>
                   </div>
 
-                  <p style={{ color: "var(--muted)", fontSize: "0.75rem", lineHeight: 1.5, margin: 0 }}>
+                  <p className="text-[0.75rem] leading-[1.5] text-muted-foreground">
                     {cluster.evidence_count} signals · {cluster.source_breakdown.slack} Slack · {cluster.source_breakdown.email} Email
                     {cluster.source_breakdown.zendesk > 0 && ` · ${cluster.source_breakdown.zendesk} Zendesk`}
                     {cluster.source_breakdown.github > 0 && ` · ${cluster.source_breakdown.github} GitHub`}
@@ -103,20 +125,20 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
 
         {/* Current Sprint */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--accent-blue)" }} />
-            <h3 style={{ color: "white", fontWeight: 600, fontSize: "0.95rem", margin: 0 }}>Current Sprint</h3>
-            <span style={{ color: "var(--muted)", fontSize: "0.75rem" }}>What the team is building</span>
+          <div className="mb-4 flex items-center gap-2">
+            <div className="size-2.5 rounded-full bg-[var(--accent-blue)]" />
+            <h3 className="text-[0.95rem] font-semibold text-white">Current Sprint</h3>
+            <span className="text-[0.75rem] text-muted-foreground">What the team is building</span>
             {/* Live / Connect badge */}
             {jiraLoading ? (
-              <span style={{ marginLeft: "auto", fontSize: "0.68rem", color: "var(--muted)" }}>Loading…</span>
+              <span className="ml-auto text-[0.68rem] text-muted-foreground">Loading…</span>
             ) : jiraLive ? (
-              <span style={{ marginLeft: "auto", fontSize: "0.68rem", color: "var(--accent-green)", background: "rgba(70,230,166,0.1)", padding: "2px 8px", borderRadius: 9999, border: "1px solid rgba(70,230,166,0.2)", fontWeight: 600 }}>📋 Live from Jira ✓</span>
+              <span className="ml-auto rounded-full border border-[rgba(70,230,166,0.2)] bg-[rgba(70,230,166,0.1)] px-2 py-0.5 text-[0.68rem] font-semibold text-[var(--accent-green)]">📋 Live from Jira ✓</span>
             ) : (
-              <a href="/settings/integrations" style={{ marginLeft: "auto", fontSize: "0.68rem", color: "var(--accent-blue)", textDecoration: "none", whiteSpace: "nowrap" }}>Connect Jira →</a>
+              <a href="/settings/integrations" className="ml-auto whitespace-nowrap text-[0.68rem] text-[var(--accent-blue)] no-underline">Connect Jira →</a>
             )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {sprintItems.map((item) => {
               const hasDemand = clusters.some((c) => {
                 const cWords = c.title.toLowerCase().split(" ");
@@ -124,21 +146,21 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
                 return cWords.some((w) => w.length > 4 && iWords.includes(w));
               });
               return (
-                <div key={item.id} className="obs-card" style={{ padding: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ color: "white", fontSize: "0.875rem", fontWeight: 500, flex: 1 }}>{item.title}</span>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <div key={item.id} className="rounded-[14px] border bg-card p-4 shadow-sm">
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <span className="flex-1 text-[0.875rem] font-medium text-white">{item.title}</span>
+                    <div className="flex shrink-0 gap-1.5">
                       {item.priority && (
-                        <span style={{ fontSize: "0.7rem", color: "var(--accent-blue)", background: "rgba(110,168,255,0.1)", padding: "2px 8px", borderRadius: 9999 }}>{item.priority}</span>
+                        <span className="rounded-full bg-[rgba(110,168,255,0.1)] px-2 py-0.5 text-[0.7rem] text-[var(--accent-blue)]">{item.priority}</span>
                       )}
                       {item.category && (
-                        <span style={{ fontSize: "0.7rem", color: "var(--muted)", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 9999 }}>{item.category}</span>
+                        <span className="rounded-full bg-[rgba(255,255,255,0.06)] px-2 py-0.5 text-[0.7rem] text-muted-foreground">{item.category}</span>
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: hasDemand ? "var(--accent-green)" : "var(--danger)", flexShrink: 0 }} />
-                    <span style={{ color: hasDemand ? "var(--accent-green)" : "var(--danger)", fontSize: "0.75rem" }}>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("size-2 shrink-0 rounded-full", hasDemand ? "bg-[var(--accent-green)]" : "bg-destructive")} />
+                    <span className={cn("text-[0.75rem]", hasDemand ? "text-[var(--accent-green)]" : "text-destructive")}>
                       {hasDemand ? "Customer demand validated" : "No customer signal found"}
                     </span>
                   </div>
@@ -149,10 +171,10 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
 
           {/* Misalignment warning */}
           {clusters.length > 0 && (
-            <div style={{ marginTop: 20, padding: 20, borderRadius: 12, background: "rgba(255,92,122,0.06)", border: "1px solid rgba(255,92,122,0.2)" }}>
-              <h4 style={{ color: "var(--danger)", fontWeight: 600, fontSize: "0.875rem", marginBottom: 8 }}>⚠️ Execution Gap</h4>
-              <p style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.5, margin: 0 }}>
-                {clusters.filter((c) => getAlignmentScore(c) < 30).length} high-severity customer demands have no sprint coverage. Consider prioritizing: <strong style={{ color: "white" }}>{clusters[0]?.title}</strong>
+            <div className="mt-5 rounded-[12px] border border-[rgba(255,92,122,0.2)] bg-[rgba(255,92,122,0.06)] p-5">
+              <h4 className="mb-2 text-[0.875rem] font-semibold text-destructive">⚠️ Execution Gap</h4>
+              <p className="text-[0.8rem] leading-[1.5] text-muted-foreground">
+                {clusters.filter((c) => getAlignmentScore(c) < 30).length} high-severity customer demands have no sprint coverage. Consider prioritizing: <strong className="text-white">{clusters[0]?.title}</strong>
               </p>
             </div>
           )}

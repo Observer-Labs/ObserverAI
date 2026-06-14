@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabase-client";
 import { useTranslations } from 'next-intl';
+import { Loader2 } from "lucide-react";
 
 export default function AuthConfirmPage() {
   const t = useTranslations('auth');
@@ -83,37 +84,22 @@ export default function AuthConfirmPage() {
   }, []);
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0b0c10",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexDirection: "column",
-      gap: 16,
-    }}>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0b0c10]">
       {status === "loading" && (
         <>
-          <div style={{
-            width: 32, height: 32,
-            border: "3px solid rgba(255,255,255,0.1)",
-            borderTopColor: "var(--accent-green)",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-          }} />
-          <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>{t('confirmBody')}</p>
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-green)]" />
+          <p className="text-[0.9rem] text-muted-foreground">{t('confirmBody')}</p>
         </>
       )}
       {status === "success" && (
-        <p style={{ color: "var(--accent-green)", fontSize: "0.9rem" }}>{t('confirmTitle')}</p>
+        <p className="text-[0.9rem] text-[var(--accent-green)]">{t('confirmTitle')}</p>
       )}
       {status === "error" && (
-        <div style={{ textAlign: "center" }}>
-          <p style={{ color: "var(--danger)", fontSize: "0.9rem", marginBottom: 16 }}>{message || t('confirmError')}</p>
-          <a href="/login" style={{ color: "var(--accent-green)", fontSize: "0.875rem" }}>{t('backToSignIn')}</a>
+        <div className="text-center">
+          <p className="mb-4 text-[0.9rem] text-destructive">{message || t('confirmError')}</p>
+          <a href="/login" className="text-[0.875rem] text-[var(--accent-green)]">{t('backToSignIn')}</a>
         </div>
       )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

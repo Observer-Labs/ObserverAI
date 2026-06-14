@@ -1,4 +1,6 @@
 "use client";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import type { Severity, SignalSource } from "@/lib/types";
 
 interface BadgeProps {
@@ -7,11 +9,24 @@ interface BadgeProps {
 }
 
 export function SeverityBadge({ severity, className = "" }: BadgeProps) {
-  const cls =
-    severity === "high" ? "badge badge-high" :
-    severity === "medium" ? "badge badge-medium" :
-    "badge badge-low";
-  return <span className={`${cls} ${className}`}>{severity}</span>;
+  const variantClass =
+    severity === "high"
+      ? "border-[color-mix(in_oklch,var(--amber)_30%,transparent)] bg-[color-mix(in_oklch,var(--amber)_12%,transparent)] text-[oklch(0.55_0.14_70)]"
+      : severity === "medium"
+        ? "border-[color-mix(in_oklch,var(--sky)_30%,transparent)] bg-[color-mix(in_oklch,var(--sky)_12%,transparent)] text-[oklch(0.48_0.12_230)]"
+        : "border-border bg-muted text-muted-foreground";
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "rounded-[4px] px-2 py-[2px] text-[0.67rem] font-bold uppercase tracking-[0.06em]",
+        variantClass,
+        className
+      )}
+    >
+      {severity}
+    </Badge>
+  );
 }
 
 interface ConfidenceBarProps {
@@ -23,11 +38,14 @@ export function ConfidenceBar({ value, className = "" }: ConfidenceBarProps) {
   const pct = Math.round(value * 100);
   const color = value >= 0.7 ? "#46e6a6" : value >= 0.4 ? "#ffd166" : "#ff5c7a";
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="confidence-bar flex-1">
-        <div className="confidence-fill" style={{ width: `${pct}%`, background: color }} />
+    <div className={cn("flex items-center gap-2", className)}>
+      <div className="h-[3px] flex-1 overflow-hidden rounded-[2px] bg-[rgba(255,255,255,0.07)]">
+        <div
+          className="h-full rounded-[2px] [transition:width_0.8s_cubic-bezier(0.4,0,0.2,1)]"
+          style={{ width: `${pct}%`, background: color }}
+        />
       </div>
-      <span style={{ color: "var(--muted)", fontSize: "0.75rem", minWidth: 32 }}>{pct}%</span>
+      <span className="min-w-8 text-[0.75rem] text-muted-foreground">{pct}%</span>
     </div>
   );
 }
@@ -56,11 +74,12 @@ const sourceConfig: Record<SignalSource, { label: string; color: string; text: s
 export function SourcePill({ source, count }: SourcePillProps) {
   const cfg = sourceConfig[source] ?? { label: source, color: "#1a1a1a", text: "#9aa3b2", icon: "•" };
   return (
-    <span
-      className="source-pill"
+    <Badge
+      variant="outline"
+      className="gap-1 rounded-full px-[9px] py-[2px] text-[0.7rem] font-medium"
       style={{ background: `${cfg.color}cc`, color: cfg.text, border: `1px solid ${cfg.text}33` }}
     >
       {cfg.icon} {cfg.label}{count !== undefined ? ` (${count})` : ""}
-    </span>
+    </Badge>
   );
 }

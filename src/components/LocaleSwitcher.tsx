@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { setLocale } from '@/actions/locale';
 import type { Locale } from '@/i18n/config';
+import { cn } from '@/lib/utils';
 
 export default function LocaleSwitcher() {
   const locale = useLocale() as Locale;
@@ -19,26 +20,19 @@ export default function LocaleSwitcher() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+    <div className="flex items-center gap-0.5">
       {(['tr', 'en'] as Locale[]).map((loc) => (
         <button
           key={loc}
           onClick={() => handleChange(loc)}
           disabled={isPending}
-          style={{
-            padding: '4px 9px',
-            borderRadius: 6,
-            border: locale === loc ? '1px solid var(--border)' : '1px solid transparent',
-            background: locale === loc ? 'var(--muted-surface)' : 'transparent',
-            color: locale === loc ? 'var(--foreground)' : 'var(--muted-foreground)',
-            fontWeight: locale === loc ? 600 : 400,
-            fontSize: '0.72rem',
-            cursor: isPending ? 'wait' : 'pointer',
-            opacity: isPending ? 0.5 : 1,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            transition: 'all 0.15s',
-          }}
+          className={cn(
+            'rounded-[6px] border px-[9px] py-1 text-[0.72rem] tracking-[0.04em] uppercase transition-all',
+            isPending ? 'cursor-wait opacity-50' : 'cursor-pointer',
+            locale === loc
+              ? 'border-border bg-muted font-semibold text-foreground'
+              : 'border-transparent bg-transparent font-normal text-muted-foreground'
+          )}
         >
           {loc}
         </button>

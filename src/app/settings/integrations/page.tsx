@@ -2,6 +2,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import type { IntegrationsConfig } from "@/lib/types";
 
 interface WorkspaceMeta {
@@ -124,9 +132,8 @@ export default function IntegrationsPage() {
 
   if (!authChecked) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 40, height: 40, border: "3px solid rgba(70,230,166,0.2)", borderTopColor: "var(--accent-green)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-[var(--accent-green)]" />
       </div>
     );
   }
@@ -135,45 +142,53 @@ export default function IntegrationsPage() {
   const emailConnected = !!workspace.gmail_token;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)" }}>
+    <div className="min-h-screen bg-background">
       {/* Background */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: 0, left: 0, width: "50%", height: "40%", background: "radial-gradient(ellipse at top left, rgba(110,168,255,0.08) 0%, transparent 70%)" }} />
-        <div style={{ position: "absolute", top: 0, right: 0, width: "50%", height: "40%", background: "radial-gradient(ellipse at top right, rgba(167,139,250,0.07) 0%, transparent 70%)" }} />
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-0 left-0 h-[40%] w-1/2 bg-[radial-gradient(ellipse_at_top_left,rgba(110,168,255,0.08)_0%,transparent_70%)]" />
+        <div className="absolute top-0 right-0 h-[40%] w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgba(167,139,250,0.07)_0%,transparent_70%)]" />
       </div>
 
       {/* Top Bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 40, background: "rgba(11,12,16,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 24px", display: "flex", alignItems: "center", gap: 16, height: 60 }}>
-          <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="brand-dot" style={{ width: 22, height: 22 }} />
-            <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9rem" }}>Observer</span>
-          </Link>
-          <div style={{ width: 1, height: 24, background: "var(--border)" }} />
-          <span style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.9rem" }}>Integrations</span>
-          <div style={{ flex: 1 }} />
-          <Link href="/dashboard" className="btn-secondary" style={{ textDecoration: "none", fontSize: "0.8rem", padding: "6px 14px" }}>← Dashboard</Link>
-          <Link href="/settings/distribution" className="btn-secondary" style={{ textDecoration: "none", fontSize: "0.8rem", padding: "6px 14px" }}>Distribution</Link>
+      <div className="sticky top-0 z-40 border-b bg-[rgba(11,12,16,0.92)] backdrop-blur-[12px]">
+        <div className="mx-auto flex h-[60px] max-w-[1000px] items-center gap-4 px-6">
+          <Logo href="/" size={22} textSize="0.9rem" gap={8} />
+          <div className="h-6 w-px bg-border" />
+          <span className="text-[0.9rem] font-semibold text-foreground">Integrations</span>
+          <div className="flex-1" />
+          <Button asChild variant="outline" className="h-auto px-[14px] py-[6px] text-[0.8rem]">
+            <Link href="/dashboard">← Dashboard</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto px-[14px] py-[6px] text-[0.8rem]">
+            <Link href="/settings/distribution">Distribution</Link>
+          </Button>
         </div>
       </div>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ color: "var(--foreground)", fontWeight: 800, fontSize: "1.75rem", marginBottom: 8 }}>Observer Integrations</h1>
-          <p style={{ color: "var(--muted)", lineHeight: 1.6 }}>
+      <div className="relative z-[1] mx-auto max-w-[1000px] px-6 py-8">
+        <div className="mb-8">
+          <h1 className="mb-2 text-[1.75rem] font-extrabold text-foreground">Observer Integrations</h1>
+          <p className="leading-[1.6] text-muted-foreground">
             Connect your product data sources. Observer ingests signals automatically and surfaces intent gaps using Claude AI.
           </p>
         </div>
 
         {syncResult && (
-          <div style={{ marginBottom: 24, padding: "12px 20px", borderRadius: 12, background: syncResult.count >= 0 ? "rgba(70,230,166,0.1)" : "rgba(255,92,122,0.1)", border: `1px solid ${syncResult.count >= 0 ? "rgba(70,230,166,0.3)" : "rgba(255,92,122,0.3)"}`, color: syncResult.count >= 0 ? "var(--accent-green)" : "var(--danger)" }}>
+          <div
+            className={cn(
+              "mb-6 rounded-xl border px-5 py-3",
+              syncResult.count >= 0
+                ? "border-[rgba(70,230,166,0.3)] bg-[rgba(70,230,166,0.1)] text-[var(--accent-green)]"
+                : "border-[rgba(255,92,122,0.3)] bg-[rgba(255,92,122,0.1)] text-destructive"
+            )}
+          >
             {syncResult.count >= 0
               ? `✓ Synced ${syncResult.count} new signals from ${syncResult.source}`
               : `✗ Sync failed for ${syncResult.source}, check your credentials`}
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="flex flex-col gap-5">
 
           {/* ── Slack (OAuth source) ── */}
           <IntegrationCard
@@ -190,55 +205,54 @@ export default function IntegrationsPage() {
             badge={slackConnected ? "OAuth Connected" : undefined}
           >
             {!slackConnected ? (
-              <div style={{ marginBottom: 16 }}>
-                <a href={`/api/auth/slack?state=${workspace.id ?? ""}`} className="btn-primary"
-                  style={{ textDecoration: "none", display: "inline-flex" }}>
-                  ⚡ Connect with Slack
-                </a>
-                <p style={hintStyle}>You need to connect Slack via OAuth before enabling ingestion.</p>
+              <div className="mb-4">
+                <Button asChild>
+                  <a href={`/api/auth/slack?state=${workspace.id ?? ""}`}>⚡ Connect with Slack</a>
+                </Button>
+                <p className={hintClass}>You need to connect Slack via OAuth before enabling ingestion.</p>
               </div>
             ) : (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ color: "var(--accent-green)", fontSize: "0.8rem", fontWeight: 600 }}>✓ Slack workspace connected</span>
-                  <a href={`/api/auth/slack?state=${workspace.id ?? ""}`} style={{ color: "var(--muted)", fontSize: "0.78rem", textDecoration: "none" }}>Re-authenticate →</a>
+              <div className="mb-4">
+                <div className="mb-3 flex items-center gap-2.5">
+                  <span className="text-[0.8rem] font-semibold text-[var(--accent-green)]">✓ Slack workspace connected</span>
+                  <a href={`/api/auth/slack?state=${workspace.id ?? ""}`} className="text-[0.78rem] text-muted-foreground no-underline">Re-authenticate →</a>
                 </div>
                 {/* Channels */}
-                <label style={labelStyle}>Channels to monitor</label>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <input className="obs-input" placeholder="general or C0123ABCD" id="slack-ch-input" style={{ flex: 1 }} />
-                  <button className="btn-ghost" style={{ whiteSpace: "nowrap" }}
+                <Label className={labelClass}>Channels to monitor</Label>
+                <div className="mb-2 flex gap-2">
+                  <Input placeholder="general or C0123ABCD" id="slack-ch-input" className="flex-1" />
+                  <Button variant="ghost" className="whitespace-nowrap"
                     onClick={() => {
                       const inp = document.getElementById("slack-ch-input") as HTMLInputElement;
                       const v = inp?.value.trim();
                       if (v && !channels.includes(v)) { setChannels([...channels, v]); inp.value = ""; }
-                    }}>Add</button>
+                    }}>Add</Button>
                 </div>
                 {channels.length > 0 && (
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                  <div className="mb-3 flex flex-wrap gap-1.5">
                     {channels.map((ch) => (
-                      <div key={ch} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 9999, background: "rgba(70,230,166,0.1)", border: "1px solid rgba(70,230,166,0.25)", fontSize: "0.78rem", color: "var(--accent-green)" }}>
+                      <Badge key={ch} variant="outline" className="gap-[5px] rounded-full border-[rgba(70,230,166,0.25)] bg-[rgba(70,230,166,0.1)] px-2.5 py-[3px] text-[0.78rem] font-normal text-[var(--accent-green)]">
                         # {ch}
                         <button onClick={() => setChannels(channels.filter((c) => c !== ch))}
-                          style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
-                      </div>
+                          className="cursor-pointer border-0 bg-transparent p-0 leading-none text-muted-foreground">×</button>
+                      </Badge>
                     ))}
                   </div>
                 )}
               </div>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Days back</label>
-                <input className="obs-input" type="number" min={1} max={90} value={config.slack.max_age_days}
+                <Label className={labelClass}>Days back</Label>
+                <Input type="number" min={1} max={90} value={config.slack.max_age_days}
                   onChange={(e) => updateField("slack", "max_age_days", Number(e.target.value))} />
-                <p style={hintStyle}>Only pull messages from last N days</p>
+                <p className={hintClass}>Only pull messages from last N days</p>
               </div>
               <div>
-                <label style={labelStyle}>Keyword filter <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
-                <input className="obs-input" placeholder="bug, crash, feedback" value={config.slack.keyword_filter}
+                <Label className={labelClass}>Keyword filter <span className="text-[0.7rem] normal-case">(optional)</span></Label>
+                <Input placeholder="bug, crash, feedback" value={config.slack.keyword_filter}
                   onChange={(e) => updateField("slack", "keyword_filter", e.target.value)} />
-                <p style={hintStyle}>Comma-separated, empty = all messages</p>
+                <p className={hintClass}>Comma-separated, empty = all messages</p>
               </div>
             </div>
           </IntegrationCard>
@@ -258,31 +272,30 @@ export default function IntegrationsPage() {
             badge={emailConnected ? "OAuth Connected" : undefined}
           >
             {!emailConnected ? (
-              <div style={{ marginBottom: 16 }}>
-                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} className="btn-primary"
-                  style={{ textDecoration: "none", display: "inline-flex" }}>
-                  ✉️ Connect Gmail
-                </a>
-                <p style={hintStyle}>You need to connect Gmail via OAuth before enabling ingestion.</p>
+              <div className="mb-4">
+                <Button asChild>
+                  <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`}>✉️ Connect Gmail</a>
+                </Button>
+                <p className={hintClass}>You need to connect Gmail via OAuth before enabling ingestion.</p>
               </div>
             ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ color: "var(--accent-green)", fontSize: "0.8rem", fontWeight: 600 }}>✓ Gmail connected</span>
-                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} style={{ color: "var(--muted)", fontSize: "0.78rem", textDecoration: "none" }}>Re-authenticate →</a>
+              <div className="mb-4 flex items-center gap-2.5">
+                <span className="text-[0.8rem] font-semibold text-[var(--accent-green)]">✓ Gmail connected</span>
+                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} className="text-[0.78rem] text-muted-foreground no-underline">Re-authenticate →</a>
               </div>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Days back</label>
-                <input className="obs-input" type="number" min={1} max={90} value={config.email.max_age_days}
+                <Label className={labelClass}>Days back</Label>
+                <Input type="number" min={1} max={90} value={config.email.max_age_days}
                   onChange={(e) => updateField("email", "max_age_days", Number(e.target.value))} />
-                <p style={hintStyle}>Only pull emails from last N days</p>
+                <p className={hintClass}>Only pull emails from last N days</p>
               </div>
               <div>
-                <label style={labelStyle}>Sender domains <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
-                <input className="obs-input" placeholder="acmecorp.com, partner.io" value={config.email.sender_domains}
+                <Label className={labelClass}>Sender domains <span className="text-[0.7rem] normal-case">(optional)</span></Label>
+                <Input placeholder="acmecorp.com, partner.io" value={config.email.sender_domains}
                   onChange={(e) => updateField("email", "sender_domains", e.target.value)} />
-                <p style={hintStyle}>Comma-separated, empty = all senders</p>
+                <p className={hintClass}>Comma-separated, empty = all senders</p>
               </div>
             </div>
           </IntegrationCard>
@@ -300,38 +313,38 @@ export default function IntegrationsPage() {
             syncing={syncing === "zendesk"}
             saved={savedSource === "zendesk"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="mb-3 grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Subdomain</label>
-                <input className="obs-input" placeholder="yourcompany (without .zendesk.com)" value={config.zendesk.subdomain} onChange={(e) => updateField("zendesk", "subdomain", e.target.value)} />
+                <Label className={labelClass}>Subdomain</Label>
+                <Input placeholder="yourcompany (without .zendesk.com)" value={config.zendesk.subdomain} onChange={(e) => updateField("zendesk", "subdomain", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Email</label>
-                <input className="obs-input" placeholder="admin@yourcompany.com" value={config.zendesk.email} onChange={(e) => updateField("zendesk", "email", e.target.value)} />
+                <Label className={labelClass}>Email</Label>
+                <Input placeholder="admin@yourcompany.com" value={config.zendesk.email} onChange={(e) => updateField("zendesk", "email", e.target.value)} />
               </div>
-              <div style={{ gridColumn: "1/-1" }}>
-                <label style={labelStyle}>API Token</label>
-                <input className="obs-input" type="password" placeholder="Zendesk API token" value={config.zendesk.api_token} onChange={(e) => updateField("zendesk", "api_token", e.target.value)} />
-                <p style={hintStyle}>Admin Center → Apps & Integrations → Zendesk API → API token</p>
+              <div className="col-span-full">
+                <Label className={labelClass}>API Token</Label>
+                <Input type="password" placeholder="Zendesk API token" value={config.zendesk.api_token} onChange={(e) => updateField("zendesk", "api_token", e.target.value)} />
+                <p className={hintClass}>Admin Center → Apps & Integrations → Zendesk API → API token</p>
               </div>
             </div>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "start" }}>
+            <div className="border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
+              <div className="grid grid-cols-[1fr_auto] items-start gap-3">
                 <div>
-                  <label style={labelStyle}>Min priority</label>
-                  <select className="obs-input" value={config.zendesk.min_priority} onChange={(e) => updateField("zendesk", "min_priority", e.target.value)} style={{ width: "100%" }}>
+                  <Label className={labelClass}>Min priority</Label>
+                  <select className={cn(selectClass, "w-full")} value={config.zendesk.min_priority} onChange={(e) => updateField("zendesk", "min_priority", e.target.value)}>
                     <option value="low">Low (include all)</option>
                     <option value="normal">Normal and above</option>
                     <option value="high">High and above</option>
                     <option value="urgent">Urgent only</option>
                   </select>
                 </div>
-                <div style={{ paddingTop: 22 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" checked={config.zendesk.exclude_closed} onChange={(e) => updateField("zendesk", "exclude_closed", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
-                    <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Exclude closed tickets</span>
-                  </label>
+                <div className="pt-[22px]">
+                  <Label className="flex cursor-pointer items-center gap-2 font-normal">
+                    <input type="checkbox" checked={config.zendesk.exclude_closed} onChange={(e) => updateField("zendesk", "exclude_closed", e.target.checked)} className="accent-[var(--accent-green)]" />
+                    <span className="text-[0.8rem] text-muted-foreground">Exclude closed tickets</span>
+                  </Label>
                 </div>
               </div>
             </div>
@@ -350,17 +363,17 @@ export default function IntegrationsPage() {
             syncing={syncing === "intercom"}
             saved={savedSource === "intercom"}
           >
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Access Token</label>
-              <input className="obs-input" type="password" placeholder="Intercom access token" value={config.intercom.access_token} onChange={(e) => updateField("intercom", "access_token", e.target.value)} />
-              <p style={hintStyle}>Settings → Developers → Your app → Authentication → Access Token</p>
+            <div className="mb-3.5">
+              <Label className={labelClass}>Access Token</Label>
+              <Input type="password" placeholder="Intercom access token" value={config.intercom.access_token} onChange={(e) => updateField("intercom", "access_token", e.target.value)} />
+              <p className={hintClass}>Settings → Developers → Your app → Authentication → Access Token</p>
             </div>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <input type="checkbox" checked={config.intercom.open_only} onChange={(e) => updateField("intercom", "open_only", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
-                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Open conversations only (recommended)</span>
-              </label>
+            <div className="border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
+              <Label className="flex cursor-pointer items-center gap-2 font-normal">
+                <input type="checkbox" checked={config.intercom.open_only} onChange={(e) => updateField("intercom", "open_only", e.target.checked)} className="accent-[var(--accent-green)]" />
+                <span className="text-[0.8rem] text-muted-foreground">Open conversations only (recommended)</span>
+              </Label>
             </div>
           </IntegrationCard>
 
@@ -378,31 +391,31 @@ export default function IntegrationsPage() {
             saved={savedSource === "jira"}
             badge="Powers Execution Reality tab"
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="mb-3 grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Domain</label>
-                <input className="obs-input" placeholder="yourcompany.atlassian.net" value={config.jira.domain} onChange={(e) => updateField("jira", "domain", e.target.value)} />
+                <Label className={labelClass}>Domain</Label>
+                <Input placeholder="yourcompany.atlassian.net" value={config.jira.domain} onChange={(e) => updateField("jira", "domain", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Project Key</label>
-                <input className="obs-input" placeholder="PROJ" value={config.jira.project_key} onChange={(e) => updateField("jira", "project_key", e.target.value)} />
+                <Label className={labelClass}>Project Key</Label>
+                <Input placeholder="PROJ" value={config.jira.project_key} onChange={(e) => updateField("jira", "project_key", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Email</label>
-                <input className="obs-input" placeholder="admin@yourcompany.com" value={config.jira.email} onChange={(e) => updateField("jira", "email", e.target.value)} />
+                <Label className={labelClass}>Email</Label>
+                <Input placeholder="admin@yourcompany.com" value={config.jira.email} onChange={(e) => updateField("jira", "email", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>API Token</label>
-                <input className="obs-input" type="password" placeholder="Jira API token" value={config.jira.api_token} onChange={(e) => updateField("jira", "api_token", e.target.value)} />
+                <Label className={labelClass}>API Token</Label>
+                <Input type="password" placeholder="Jira API token" value={config.jira.api_token} onChange={(e) => updateField("jira", "api_token", e.target.value)} />
               </div>
             </div>
-            <p style={hintStyle}>id.atlassian.com → Security → Create and manage API tokens</p>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14, marginTop: 8 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
+            <p className={hintClass}>id.atlassian.com → Security → Create and manage API tokens</p>
+            <div className="mt-2 border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
+              <div className="mb-2.5 grid grid-cols-2 gap-3">
                 <div>
-                  <label style={labelStyle}>Min priority</label>
-                  <select className="obs-input" value={config.jira.min_priority} onChange={(e) => updateField("jira", "min_priority", e.target.value)} style={{ width: "100%" }}>
+                  <Label className={labelClass}>Min priority</Label>
+                  <select className={cn(selectClass, "w-full")} value={config.jira.min_priority} onChange={(e) => updateField("jira", "min_priority", e.target.value)}>
                     <option value="lowest">All (Lowest+)</option>
                     <option value="low">Low and above</option>
                     <option value="medium">Medium and above</option>
@@ -411,15 +424,15 @@ export default function IntegrationsPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Issue types <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
-                  <input className="obs-input" placeholder="Bug, Story, Epic" value={config.jira.issue_types} onChange={(e) => updateField("jira", "issue_types", e.target.value)} />
-                  <p style={hintStyle}>Comma-separated, empty = all types</p>
+                  <Label className={labelClass}>Issue types <span className="text-[0.7rem] normal-case">(optional)</span></Label>
+                  <Input placeholder="Bug, Story, Epic" value={config.jira.issue_types} onChange={(e) => updateField("jira", "issue_types", e.target.value)} />
+                  <p className={hintClass}>Comma-separated, empty = all types</p>
                 </div>
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <input type="checkbox" checked={config.jira.exclude_done} onChange={(e) => updateField("jira", "exclude_done", e.target.checked)} style={{ accentColor: "var(--accent-green)" }} />
-                <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Exclude Done / Closed / Resolved issues</span>
-              </label>
+              <Label className="flex cursor-pointer items-center gap-2 font-normal">
+                <input type="checkbox" checked={config.jira.exclude_done} onChange={(e) => updateField("jira", "exclude_done", e.target.checked)} className="accent-[var(--accent-green)]" />
+                <span className="text-[0.8rem] text-muted-foreground">Exclude Done / Closed / Resolved issues</span>
+              </Label>
             </div>
           </IntegrationCard>
 
@@ -436,23 +449,23 @@ export default function IntegrationsPage() {
             syncing={syncing === "appstore"}
             saved={savedSource === "appstore"}
           >
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>iOS App ID</label>
-              <input className="obs-input" placeholder="1234567890" value={config.appstore.app_id_ios} onChange={(e) => updateField("appstore", "app_id_ios", e.target.value)} />
-              <p style={hintStyle}>From App Store URL: apps.apple.com/app/id{"{ID}"}</p>
+            <div className="mb-3">
+              <Label className={labelClass}>iOS App ID</Label>
+              <Input placeholder="1234567890" value={config.appstore.app_id_ios} onChange={(e) => updateField("appstore", "app_id_ios", e.target.value)} />
+              <p className={hintClass}>From App Store URL: apps.apple.com/app/id{"{ID}"}</p>
             </div>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
+            <div className="border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
               <div>
-                <label style={labelStyle}>Max rating to ingest ≤</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <input className="obs-input" type="number" min={1} max={5} value={config.appstore.max_rating}
-                    onChange={(e) => updateField("appstore", "max_rating", Number(e.target.value))} style={{ width: 72 }} />
-                  <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                <Label className={labelClass}>Max rating to ingest ≤</Label>
+                <div className="flex items-center gap-3">
+                  <Input type="number" min={1} max={5} value={config.appstore.max_rating}
+                    onChange={(e) => updateField("appstore", "max_rating", Number(e.target.value))} className="w-[72px]" />
+                  <span className="text-[0.8rem] text-muted-foreground">
                     {"⭐".repeat(Math.min(5, config.appstore.max_rating || 3))} and below
                   </span>
                 </div>
-                <p style={hintStyle}>Only ingest reviews with this star rating or fewer. Default 3 surfaces negative and mixed reviews.</p>
+                <p className={hintClass}>Only ingest reviews with this star rating or fewer. Default 3 surfaces negative and mixed reviews.</p>
               </div>
             </div>
           </IntegrationCard>
@@ -470,35 +483,35 @@ export default function IntegrationsPage() {
             syncing={syncing === "github"}
             saved={savedSource === "github"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="mb-3 grid grid-cols-3 gap-3">
               <div>
-                <label style={labelStyle}>Owner</label>
-                <input className="obs-input" placeholder="myorg" value={config.github.owner} onChange={(e) => updateField("github", "owner", e.target.value)} />
+                <Label className={labelClass}>Owner</Label>
+                <Input placeholder="myorg" value={config.github.owner} onChange={(e) => updateField("github", "owner", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Repository</label>
-                <input className="obs-input" placeholder="my-repo" value={config.github.repo} onChange={(e) => updateField("github", "repo", e.target.value)} />
+                <Label className={labelClass}>Repository</Label>
+                <Input placeholder="my-repo" value={config.github.repo} onChange={(e) => updateField("github", "repo", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Personal Access Token</label>
-                <input className="obs-input" type="password" placeholder="github_pat_..." value={config.github.token} onChange={(e) => updateField("github", "token", e.target.value)} />
+                <Label className={labelClass}>Personal Access Token</Label>
+                <Input type="password" placeholder="github_pat_..." value={config.github.token} onChange={(e) => updateField("github", "token", e.target.value)} />
               </div>
             </div>
-            <p style={hintStyle}>Settings → Developer settings → Personal access tokens → Fine-grained (read:issues)</p>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14, marginTop: 8 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <p className={hintClass}>Settings → Developer settings → Personal access tokens → Fine-grained (read:issues)</p>
+            <div className="mt-2 border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={labelStyle}>Min reactions</label>
-                  <input className="obs-input" type="number" min={0} value={config.github.min_reactions}
+                  <Label className={labelClass}>Min reactions</Label>
+                  <Input type="number" min={0} value={config.github.min_reactions}
                     onChange={(e) => updateField("github", "min_reactions", Number(e.target.value))} />
-                  <p style={hintStyle}>Only issues with at least this many 👍 reactions</p>
+                  <p className={hintClass}>Only issues with at least this many 👍 reactions</p>
                 </div>
                 <div>
-                  <label style={labelStyle}>Label filter <span style={{ textTransform: "none", fontSize: "0.7rem" }}>(optional)</span></label>
-                  <input className="obs-input" placeholder="bug, enhancement, feedback" value={config.github.labels}
+                  <Label className={labelClass}>Label filter <span className="text-[0.7rem] normal-case">(optional)</span></Label>
+                  <Input placeholder="bug, enhancement, feedback" value={config.github.labels}
                     onChange={(e) => updateField("github", "labels", e.target.value)} />
-                  <p style={hintStyle}>Comma-separated, empty = all labels</p>
+                  <p className={hintClass}>Comma-separated, empty = all labels</p>
                 </div>
               </div>
             </div>
@@ -517,35 +530,35 @@ export default function IntegrationsPage() {
             syncing={syncing === "reddit"}
             saved={savedSource === "reddit"}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="mb-3 grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Client ID</label>
-                <input className="obs-input" placeholder="Reddit app client ID" value={config.reddit.client_id} onChange={(e) => updateField("reddit", "client_id", e.target.value)} />
+                <Label className={labelClass}>Client ID</Label>
+                <Input placeholder="Reddit app client ID" value={config.reddit.client_id} onChange={(e) => updateField("reddit", "client_id", e.target.value)} />
               </div>
               <div>
-                <label style={labelStyle}>Client Secret</label>
-                <input className="obs-input" type="password" placeholder="Reddit app client secret" value={config.reddit.client_secret} onChange={(e) => updateField("reddit", "client_secret", e.target.value)} />
+                <Label className={labelClass}>Client Secret</Label>
+                <Input type="password" placeholder="Reddit app client secret" value={config.reddit.client_secret} onChange={(e) => updateField("reddit", "client_secret", e.target.value)} />
               </div>
-              <div style={{ gridColumn: "1/-1" }}>
-                <label style={labelStyle}>Subreddits to monitor</label>
-                <input className="obs-input" placeholder="r/typescript, r/nextjs, r/yourproduct" value={config.reddit.subreddits} onChange={(e) => updateField("reddit", "subreddits", e.target.value)} />
-                <p style={hintStyle}>reddit.com/prefs/apps → Create App (script type) to get credentials</p>
+              <div className="col-span-full">
+                <Label className={labelClass}>Subreddits to monitor</Label>
+                <Input placeholder="r/typescript, r/nextjs, r/yourproduct" value={config.reddit.subreddits} onChange={(e) => updateField("reddit", "subreddits", e.target.value)} />
+                <p className={hintClass}>reddit.com/prefs/apps → Create App (script type) to get credentials</p>
               </div>
             </div>
-            <div style={{ borderTop: "1px solid var(--muted-surface)", paddingTop: 14 }}>
-              <p style={{ color: "var(--muted)", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Observer thresholds</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="border-t border-muted pt-3.5">
+              <p className={sectionTitleClass}>Observer thresholds</p>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={labelStyle}>Min upvotes</label>
-                  <input className="obs-input" type="number" min={0} value={config.reddit.min_score}
+                  <Label className={labelClass}>Min upvotes</Label>
+                  <Input type="number" min={0} value={config.reddit.min_score}
                     onChange={(e) => updateField("reddit", "min_score", Number(e.target.value))} />
-                  <p style={hintStyle}>Filters low-quality / throwaway posts</p>
+                  <p className={hintClass}>Filters low-quality / throwaway posts</p>
                 </div>
                 <div>
-                  <label style={labelStyle}>Min comments</label>
-                  <input className="obs-input" type="number" min={0} value={config.reddit.min_comments}
+                  <Label className={labelClass}>Min comments</Label>
+                  <Input type="number" min={0} value={config.reddit.min_comments}
                     onChange={(e) => updateField("reddit", "min_comments", Number(e.target.value))} />
-                  <p style={hintStyle}>Only posts with engagement</p>
+                  <p className={hintClass}>Only posts with engagement</p>
                 </div>
               </div>
             </div>
@@ -578,56 +591,58 @@ interface IntegrationCardProps {
 
 function IntegrationCard({ name, icon, color, description, enabled, lastSync, onToggle, onSave, onSync, saving, syncing, saved, badge, children }: IntegrationCardProps) {
   return (
-    <div className="obs-card" style={{ padding: 28, opacity: enabled ? 1 : 0.75, transition: "opacity 0.2s" }}>
+    <div className={cn("rounded-[14px] border bg-card p-7 shadow-sm transition-opacity duration-200", enabled ? "opacity-100" : "opacity-75")}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: `${color}15`, border: `1px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", flexShrink: 0 }}>
+      <div className="mb-5 flex items-start justify-between">
+        <div className="flex items-center gap-3.5">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border text-[1.4rem]"
+            style={{ background: `${color}15`, borderColor: `${color}30` }}
+          >
             {icon}
           </div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1rem" }}>{name}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-base font-bold text-foreground">{name}</span>
               {badge && (
-                <span style={{ fontSize: "0.65rem", color: color, background: `${color}15`, padding: "2px 8px", borderRadius: 9999, border: `1px solid ${color}30` }}>
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2 py-[2px] text-[0.65rem] font-normal"
+                  style={{ color, background: `${color}15`, borderColor: `${color}30` }}
+                >
                   {badge}
-                </span>
+                </Badge>
               )}
               {enabled && (
-                <span style={{ fontSize: "0.65rem", color: "var(--accent-green)", background: "rgba(70,230,166,0.1)", padding: "2px 8px", borderRadius: 9999, border: "1px solid rgba(70,230,166,0.25)" }}>
+                <Badge variant="outline" className="rounded-full border-[rgba(70,230,166,0.25)] bg-[rgba(70,230,166,0.1)] px-2 py-[2px] text-[0.65rem] font-normal text-[var(--accent-green)]">
                   Active
-                </span>
+                </Badge>
               )}
             </div>
-            <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: "4px 0 0", lineHeight: 1.4 }}>{description}</p>
+            <p className="mt-1 text-[0.8rem] leading-[1.4] text-muted-foreground">{description}</p>
           </div>
         </div>
         {/* Toggle */}
-        <button
-          onClick={() => onToggle(!enabled)}
-          style={{ width: 44, height: 24, borderRadius: 9999, background: enabled ? "var(--primary)" : "var(--border)", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" }}
-        >
-          <div style={{ position: "absolute", top: 3, left: enabled ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: enabled ? "var(--primary-foreground)" : "oklch(0.7 0.02 257)", transition: "left 0.2s" }} />
-        </button>
+        <Switch checked={enabled} onCheckedChange={onToggle} className="shrink-0" />
       </div>
 
       {/* Fields, only shown when enabled */}
       {enabled && (
-        <div style={{ marginBottom: 20 }}>
+        <div className="mb-5">
           {children}
         </div>
       )}
 
       {/* Footer actions */}
       {enabled && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <button className="btn-primary" onClick={onSave} disabled={saving} style={{ fontSize: "0.8rem", padding: "6px 16px" }}>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button onClick={onSave} disabled={saving} className="h-auto px-4 py-[6px] text-[0.8rem]">
             {saving ? "Saving…" : saved ? "✓ Saved" : "Save"}
-          </button>
-          <button className="btn-secondary" onClick={onSync} disabled={syncing} style={{ fontSize: "0.8rem", padding: "6px 16px" }}>
+          </Button>
+          <Button variant="outline" onClick={onSync} disabled={syncing} className="h-auto px-4 py-[6px] text-[0.8rem]">
             {syncing ? "Syncing…" : "↻ Sync Now"}
-          </button>
-          <span style={{ color: "var(--muted)", fontSize: "0.75rem", marginLeft: 4 }}>
+          </Button>
+          <span className="ml-1 text-[0.75rem] text-muted-foreground">
             Last synced: {formatLastSync(lastSync)}
           </span>
         </div>
@@ -636,10 +651,13 @@ function IntegrationCard({ name, icon, color, description, enabled, lastSync, on
   );
 }
 
-const labelStyle: React.CSSProperties = {
-  display: "block", color: "var(--muted)", fontSize: "0.75rem", fontWeight: 500, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em",
-};
+const labelClass =
+  "mb-1.5 block text-[0.75rem] font-medium uppercase tracking-[0.05em] text-muted-foreground";
 
-const hintStyle: React.CSSProperties = {
-  color: "var(--muted)", fontSize: "0.72rem", marginTop: 6, lineHeight: 1.4,
-};
+const hintClass = "mt-1.5 text-[0.72rem] leading-[1.4] text-muted-foreground";
+
+const sectionTitleClass =
+  "mb-2.5 text-[0.75rem] font-semibold uppercase tracking-[0.05em] text-muted-foreground";
+
+const selectClass =
+  "h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30";

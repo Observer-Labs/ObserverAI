@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Workspace } from "@/lib/types";
 import { useTranslations } from 'next-intl';
+import { cn } from "@/lib/utils";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const SOURCES_BY_VERTICAL: Record<string, Array<{ key: string; icon: string; label: string; desc: string; color: string; effort: string; recommended?: boolean; fields: Array<{ key: string; label: string; placeholder: string; type?: string }> }>> = {
   qsr: [
@@ -73,113 +78,132 @@ export default function OnboardingConnectPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px" }}>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-10">
 
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 48 }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--primary)" }} />
-        <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "1.05rem" }}>Observer</span>
+      <div className="mb-12">
+        <Logo size={28} textSize="1.05rem" gap={10} />
       </div>
 
       {/* Progress */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 40 }}>
+      <div className="mb-10 flex items-center gap-2">
         {[t('step1'), t('step2')].map((s, i) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-              background: i === 0 ? "rgba(34,197,94,0.15)" : "var(--primary)",
-              fontSize: "0.72rem", fontWeight: 700,
-              color: i === 0 ? "var(--success)" : "var(--primary-foreground)",
-            }}>{i === 0 ? "✓" : "2"}</div>
-            <span style={{ fontSize: "0.78rem", color: i === 1 ? "var(--foreground)" : "var(--muted-foreground)", fontWeight: i === 1 ? 600 : 400 }}>{s}</span>
-            {i < 1 && <div style={{ width: 24, height: 1, background: "var(--border)" }} />}
+          <div key={s} className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex size-[26px] items-center justify-center rounded-full text-[0.72rem] font-bold",
+                i === 0
+                  ? "bg-[rgba(34,197,94,0.15)] text-[var(--success)]"
+                  : "bg-primary text-primary-foreground"
+              )}
+            >{i === 0 ? "✓" : "2"}</div>
+            <span className={cn("text-[0.78rem]", i === 1 ? "font-semibold text-foreground" : "font-normal text-muted-foreground")}>{s}</span>
+            {i < 1 && <div className="h-px w-6 bg-border" />}
           </div>
         ))}
       </div>
 
-      <div style={{ width: "100%", maxWidth: 560 }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h1 style={{ color: "var(--foreground)", fontSize: "clamp(1.5rem, 3.5vw, 2rem)", fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 10px" }}>
+      <div className="w-full max-w-[560px]">
+        <div className="mb-8 text-center">
+          <h1 className="mt-0 mb-2.5 text-[clamp(1.5rem,3.5vw,2rem)] font-extrabold tracking-[-0.03em] text-foreground">
             {t('connectTitle')}
           </h1>
-          <p style={{ color: "#71717a", fontSize: "0.88rem", lineHeight: 1.65, margin: 0 }}>
+          <p className="m-0 text-[0.88rem] leading-[1.65] text-[#71717a]">
             Pick the easiest one to start. You can add more from Sources anytime.
           </p>
         </div>
 
         {/* Source cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+        <div className="mb-5 flex flex-col gap-2.5">
           {sources.map((src) => {
             const isSel = selected === src.key;
             return (
               <div key={src.key}>
                 <button
                   onClick={() => setSelected(isSel ? null : src.key)}
-                  style={{
-                    width: "100%", background: isSel ? `${src.color}0d` : "var(--card)",
-                    border: `1.5px solid ${isSel ? src.color : "var(--border)"}`,
-                    borderRadius: isSel && activeSrc?.fields.length ? "14px 14px 0 0" : "14px",
-                    padding: "16px 20px", cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", gap: 14, transition: "all 0.12s",
-                  }}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center gap-3.5 border-[1.5px] border-border bg-card px-5 py-4 text-left transition-all duration-[120ms]",
+                    isSel && activeSrc?.fields.length ? "rounded-t-[14px]" : "rounded-[14px]"
+                  )}
+                  style={isSel ? { background: `${src.color}0d`, borderColor: src.color } : undefined}
                 >
-                  <div style={{ width: 42, height: 42, borderRadius: 11, background: `${src.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", flexShrink: 0 }}>{src.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-                      <span style={{ color: isSel ? src.color : "var(--foreground)", fontWeight: 700, fontSize: "0.9rem" }}>{src.label}</span>
+                  <div
+                    className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] text-[1.3rem]"
+                    style={{ background: `${src.color}15` }}
+                  >{src.icon}</div>
+                  <div className="flex-1">
+                    <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                      <span
+                        className="text-[0.9rem] font-bold text-foreground"
+                        style={isSel ? { color: src.color } : undefined}
+                      >{src.label}</span>
                       {src.recommended && (
-                        <span style={{ fontSize: "0.58rem", fontWeight: 800, color: src.color, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "Menlo, monospace", background: `${src.color}12`, border: `1px solid ${src.color}30`, borderRadius: 999, padding: "2px 7px" }}>
+                        <span
+                          className="rounded-full border px-[7px] py-0.5 font-mono text-[0.58rem] font-extrabold tracking-[0.08em] uppercase"
+                          style={{ color: src.color, background: `${src.color}12`, borderColor: `${src.color}30` }}
+                        >
                           {t('recommendedBadge')}
                         </span>
                       )}
                     </div>
-                    <div style={{ color: "#71717a", fontSize: "0.75rem" }}>{src.desc}</div>
+                    <div className="text-[0.75rem] text-[#71717a]">{src.desc}</div>
                   </div>
-                  <div style={{ background: `${src.color}12`, border: `1px solid ${src.color}25`, borderRadius: 999, padding: "3px 10px", fontSize: "0.65rem", fontWeight: 700, color: src.color, fontFamily: "Menlo, monospace", whiteSpace: "nowrap" }}>
+                  <div
+                    className="rounded-full border px-2.5 py-[3px] font-mono text-[0.65rem] font-bold whitespace-nowrap"
+                    style={{ background: `${src.color}12`, borderColor: `${src.color}25`, color: src.color }}
+                  >
                     {src.effort === "OAuth" ? t('effortOAuth') : src.effort === "CSV" ? t('effortCsv') : src.effort}
                   </div>
-                  <div style={{ color: isSel ? src.color : "#52525b", fontSize: "1rem", flexShrink: 0 }}>{isSel ? "▼" : "▶"}</div>
+                  <div
+                    className="shrink-0 text-base text-[#52525b]"
+                    style={isSel ? { color: src.color } : undefined}
+                  >{isSel ? "▼" : "▶"}</div>
                 </button>
 
                 {/* Inline form */}
                 {isSel && activeSrc && activeSrc.fields.length > 0 && (
-                  <div style={{ background: "var(--muted-surface)", border: `1.5px solid ${src.color}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "20px 20px 16px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+                  <div
+                    className="rounded-b-[14px] border-[1.5px] border-t-0 bg-muted px-5 pt-5 pb-4"
+                    style={{ borderColor: src.color }}
+                  >
+                    <div className="mb-4 flex flex-col gap-3">
                       {activeSrc.fields.map((f) => (
                         <div key={f.key}>
-                          <label style={{ display: "block", color: "#71717a", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5, fontFamily: "Menlo, monospace" }}>{f.label}</label>
-                          <input
+                          <Label className="mb-[5px] font-mono text-[0.68rem] font-bold tracking-[0.1em] text-[#71717a] uppercase">{f.label}</Label>
+                          <Input
                             type={f.type ?? "text"}
                             placeholder={f.placeholder}
                             value={formValues[f.key] ?? ""}
                             onChange={(e) => setFormValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                            style={{ width: "100%", boxSizing: "border-box", background: "var(--muted-surface)", border: "1px solid var(--border)", borderRadius: 9, color: "var(--foreground)", padding: "9px 12px", fontSize: "0.875rem", outline: "none", fontFamily: "'Inter', sans-serif" }}
+                            className="h-auto rounded-[9px] border-border bg-muted px-3 py-[9px] text-sm shadow-none dark:bg-muted"
                           />
                         </div>
                       ))}
                     </div>
-                    <button
+                    <Button
                       onClick={handleConnect}
                       disabled={saving || done}
-                      style={{
-                        width: "100%", background: done ? "#22c55e" : src.color, color: "#fff", border: "none",
-                        borderRadius: 10, padding: "11px", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer",
-                      }}
+                      className="h-auto w-full rounded-[10px] py-[11px] text-sm font-bold text-white disabled:opacity-100"
+                      style={{ background: done ? "#22c55e" : src.color }}
                     >
                       {done ? "✓ Connected! Going to dashboard…" : saving ? t('connecting') : `${t('connectBtn')} ${src.label} →`}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {/* Email (OAuth) */}
                 {isSel && src.key === "email" && (
-                  <div style={{ background: "var(--muted-surface)", border: `1.5px solid ${src.color}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "16px 20px" }}>
-                    <button
+                  <div
+                    className="rounded-b-[14px] border-[1.5px] border-t-0 bg-muted px-5 py-4"
+                    style={{ borderColor: src.color }}
+                  >
+                    <Button
                       onClick={handleConnect}
-                      style={{ width: "100%", background: src.color, color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer" }}
+                      className="h-auto w-full rounded-[10px] py-[11px] text-sm font-bold text-white"
+                      style={{ background: src.color }}
                     >
                       Connect Gmail with Google →
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -188,27 +212,29 @@ export default function OnboardingConnectPage() {
         </div>
 
         {/* Demo data option */}
-        <div style={{ background: "var(--card)", border: "1px dashed var(--border)", borderRadius: 14, padding: "18px 20px", textAlign: "center" }}>
-          <div style={{ color: "#a1a1aa", fontSize: "0.82rem", marginBottom: 10 }}>
+        <div className="rounded-[14px] border border-dashed bg-card px-5 py-[18px] text-center">
+          <div className="mb-2.5 text-[0.82rem] text-[#a1a1aa]">
             Don&apos;t have credentials ready? See Observer in action with sample data.
           </div>
-          <button
+          <Button
+            variant="outline"
             onClick={handleDemoSeed}
             disabled={seeding}
-            style={{ background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.25)", color: "#f97316", borderRadius: 9, padding: "9px 22px", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
+            className="h-auto rounded-[9px] border-[rgba(249,115,22,0.25)] bg-[rgba(249,115,22,0.1)] px-[22px] py-[9px] text-[0.82rem] font-bold text-[#f97316] shadow-none hover:bg-[rgba(249,115,22,0.1)] hover:text-[#f97316]"
           >
             {seeding ? t('seedingDemo') : t('skipDemo')}
-          </button>
+          </Button>
         </div>
 
         {/* Skip */}
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button
+        <div className="mt-4 text-center">
+          <Button
+            variant="ghost"
             onClick={() => router.push("/dashboard")}
-            style={{ background: "none", border: "none", color: "#52525b", fontSize: "0.78rem", cursor: "pointer" }}
+            className="h-auto p-0 text-[0.78rem] font-normal text-[#52525b] hover:bg-transparent hover:text-[#52525b]"
           >
             Skip, go to dashboard
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabase-client";
+import { Button } from "@/components/ui/button";
 
 function GoogleGlyph() {
   return (
@@ -40,31 +42,23 @@ export default function GoogleButton({ label = "Continue with Google" }: { label
   };
 
   return (
-    <div style={{ width: "100%" }}>
-      <button
+    <div className="w-full">
+      <Button
         type="button"
+        variant="outline"
         onClick={handleClick}
         disabled={loading}
-        style={{
-          width: "100%",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-          padding: "11px 16px", borderRadius: 9,
-          background: "#fff", color: "#1f1f1f",
-          border: "1px solid rgba(255,255,255,0.15)",
-          fontSize: "0.9rem", fontWeight: 600, cursor: loading ? "default" : "pointer",
-          transition: "opacity 0.15s",
-          opacity: loading ? 0.7 : 1,
-        }}
+        className="h-auto w-full gap-2.5 rounded-[9px] border-white/15 bg-white px-4 py-[11px] text-[0.9rem] font-semibold text-[#1f1f1f] transition-opacity hover:bg-white hover:text-[#1f1f1f] disabled:opacity-70 [&_svg:not([class*='size-'])]:size-[18px]"
       >
         {loading ? (
-          <span style={{ display: "inline-block", width: 15, height: 15, border: "2px solid rgba(0,0,0,0.25)", borderTopColor: "#1f1f1f", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+          <Loader2 className="size-[15px] animate-spin text-[#1f1f1f]" />
         ) : (
           <GoogleGlyph />
         )}
         {loading ? "Redirecting…" : label}
-      </button>
+      </Button>
       {error && (
-        <p style={{ color: "var(--danger)", fontSize: "0.78rem", marginTop: 8, textAlign: "center" }}>{error}</p>
+        <p className="mt-2 text-center text-[0.78rem] text-destructive">{error}</p>
       )}
     </div>
   );
