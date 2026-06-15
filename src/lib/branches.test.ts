@@ -19,6 +19,10 @@ let branchLookup = { id: "branch-1", status: "active" };
 let branchCreate = { id: "branch-created", name: "Kadıköy", status: "active" };
 let branchUpdate = { id: "branch-1", name: "Moda", status: "active" };
 let branchWriteError: { code: string; message: string } | null = null;
+let branchRows: Array<{ id: string; name: string; status: "active" | "paused" }> = [
+  { id: "branch-1", name: "Moda", status: "active" },
+];
+let sourceRows: Array<{ branch_id: string; status: "connected" | "pending" | "error"; last_sync_at: string | null }> = [];
 
 function createQuery(table: string) {
   const call: QueryCall = { table, filters: [] };
@@ -67,6 +71,14 @@ function createQuery(table: string) {
         resolve({ data: [], error: null, count: activeBranchCount });
         return;
       }
+      if (table === "branches") {
+        resolve({ data: branchRows, error: null });
+        return;
+      }
+      if (table === "sources") {
+        resolve({ data: sourceRows, error: null });
+        return;
+      }
       resolve({ data: [{ id: `${table}-row` }], error: null });
     },
   };
@@ -97,6 +109,36 @@ describe("branch management helpers", () => {
     branchCreate = { id: "branch-created", name: "Kadıköy", status: "active" };
     branchUpdate = { id: "branch-1", name: "Moda", status: "active" };
     branchWriteError = null;
+    branchRows = [{ id: "branch-1", name: "Moda", status: "active" }];
+    sourceRows = [];
+  });
+
+  it("lists branches with source counts and latest sync", async () => {
+    branchRows = [
+      { id: "branch-1", name: "Moda", status: "active" },
+      { id: "branch-2", name: "Kadıköy", status: "paused" },
+    ];
+    sourceRows = [
+      { branch_id: "branch-1", status: "connected", last_sync_at: "2026-06-15T10:00:00.000Z" },
+      { branch_id: "branch-1", status: "pending", last_sync_at: "2026-06-15T12:00:00.000Z" },
+      { branch_id: "branch-2", status: "error", last_sync_at: null },
+    ];
+    const { listBranches } = await loadBranchesModule();
+
+    await expect(listBranches("workspace-1")).resolves.toMatchObject([
+      {
+        id: "branch-1",
+        source_count: 2,
+        connected_source_count: 1,
+        last_sync_at: "2026-06-15T12:00:00.000Z",
+      },
+      {
+        id: "branch-2",
+        source_count: 1,
+        connected_source_count: 0,
+        last_sync_at: null,
+      },
+    ]);
   });
 
   it("rejects branch creation when active branches reached branch_limit", async () => {

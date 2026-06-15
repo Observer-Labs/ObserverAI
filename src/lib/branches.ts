@@ -35,6 +35,18 @@ type SupabaseError = {
   message?: string;
 };
 
+type SourceSummary = {
+  branch_id: string;
+  status: "connected" | "pending" | "error";
+  last_sync_at: string | null;
+};
+
+export type BranchWithStats = Branch & {
+  source_count: number;
+  connected_source_count: number;
+  last_sync_at: string | null;
+};
+
 export class BranchValidationError extends Error {
   status = 400;
 }
@@ -212,14 +224,51 @@ async function assertCanActivateBranch(workspaceId: string, branchId: string) {
 }
 
 export async function listBranches(workspaceId: string) {
-  const { data, error } = await getSupabaseAdmin()
+  const [{ data, error }, { data: sources, error: sourcesError }] = await Promise.all([
+    getSupabaseAdmin()
     .from("branches")
     .select("*")
     .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true }),
+    getSupabaseAdmin()
+      .from("sources")
+      .select("branch_id, status, last_sync_at")
+      .eq("workspace_id", workspaceId),
+  ]);
 
   if (error) throw error;
-  return data ?? [];
+  if (sourcesError) throw sourcesError;
+
+  const sourceStats = new Map<string, {
+    source_count: number;
+    connected_source_count: number;
+    last_sync_at: string | null;
+  }>();
+
+  for (const source of (sources ?? []) as SourceSummary[]) {
+    const current = sourceStats.get(source.branch_id) ?? {
+      source_count: 0,
+      connected_source_count: 0,
+      last_sync_at: null,
+    };
+
+    current.source_count += 1;
+    if (source.status === "connected") current.connected_source_count += 1;
+    if (
+      source.last_sync_at &&
+      (!current.last_sync_at || new Date(source.last_sync_at).getTime() > new Date(current.last_sync_at).getTime())
+    ) {
+      current.last_sync_at = source.last_sync_at;
+    }
+    sourceStats.set(source.branch_id, current);
+  }
+
+  return ((data ?? []) as Branch[]).map((branch): BranchWithStats => ({
+    ...branch,
+    source_count: sourceStats.get(branch.id)?.source_count ?? 0,
+    connected_source_count: sourceStats.get(branch.id)?.connected_source_count ?? 0,
+    last_sync_at: sourceStats.get(branch.id)?.last_sync_at ?? null,
+  }));
 }
 
 export async function createBranch(workspaceId: string, input: BranchInput) {

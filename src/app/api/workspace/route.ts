@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("workspaces")
-    .select("id, name, plan, trial_ends_at, analysis_count, analysis_count_reset_at, polar_status, polar_renews_at, slack_team_id, slack_monitored_channels, slack_token, slack_bot_token, gmail_token, whatsapp_config, distribution_config, integrations_config, output_config")
+    .select("id, name, plan, branch_limit, trial_ends_at, analysis_count, analysis_count_reset_at, polar_status, polar_renews_at, slack_team_id, slack_monitored_channels, slack_token, slack_bot_token, gmail_token, whatsapp_config, distribution_config, integrations_config, output_config")
     .eq("id", workspaceId)
     .single();
 
