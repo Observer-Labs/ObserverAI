@@ -28,6 +28,17 @@
 5. Faz kapanisinda bir kez `npm run verify` (build dahil) calistir.
 6. Hala cozemedigin hata kalirsa DUR ve sadece o hatayi raporla.
 
+### UI gelistirme kurali
+- Yeni UI yazarken gecmis Design Update ile kurulan mevcut UI sistemine bagli kal:
+  shadcn/ui + Radix tabanli bilesenler, Tailwind utility yapisi, kanonik
+  `Logo`/`SiteHeader`, mevcut Button/Card/Badge/Input/Dialog/Table kaliplari,
+  dashboard/settings sayfa dili ve Sora display font. Yeni bir tasarim dili veya
+  UI kutuphanesi ekleme; once mevcut `components/ui`, sayfa pattern'leri ve
+  `globals.css` token/utility'lerini kullan.
+- Branch/Settings/Dashboard gibi yeni ekranlar mevcut app estetik sistemiyle
+  ayni gorunmeli; pazarlama sayfasi gibi degil, operasyonel urun arayuzu gibi
+  yogun, okunabilir ve sakin olmali.
+
 ### Oturum/is bitisi
 - `LAST_UPDATES.md`'nin en ustune yeni bir girdi ekle (format asagida).
 - "AKTIF AJAN" satirini "yok" yap (isi biraktin).
