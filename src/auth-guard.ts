@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PREVIEW_AUTH_COOKIE, getPreviewWorkspaceIdFromCookie } from "@/lib/preview-auth";
 
 function getSupabaseCookiePrefix() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,6 +15,11 @@ function getSupabaseCookiePrefix() {
 }
 
 export function proxy(req: NextRequest) {
+  const previewWorkspaceId = getPreviewWorkspaceIdFromCookie(
+    req.cookies.get(PREVIEW_AUTH_COOKIE)?.value,
+  );
+  if (previewWorkspaceId) return NextResponse.next();
+
   const cookiePrefix = getSupabaseCookiePrefix();
   // Check for Supabase session cookie, it may be stored as a single cookie or chunked
   // Don't try to parse/validate the value here; real auth validation happens in API routes
@@ -29,4 +35,3 @@ export function proxy(req: NextRequest) {
   }
   return NextResponse.next();
 }
-

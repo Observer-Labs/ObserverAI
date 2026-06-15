@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { PREVIEW_AUTH_COOKIE, getPreviewWorkspaceIdFromCookie } from "@/lib/preview-auth";
 
 /**
  * GET /api/auth/session
@@ -18,6 +19,20 @@ import { getSupabaseAdmin } from "@/lib/supabase";
  */
 export async function GET() {
   const cookieStore = await cookies();
+  const previewWorkspaceId = getPreviewWorkspaceIdFromCookie(
+    cookieStore.get(PREVIEW_AUTH_COOKIE)?.value,
+  );
+  if (previewWorkspaceId) {
+    return NextResponse.json({
+      user: {
+        id: "preview-user",
+        email: "preview@example.com",
+        displayName: "Observer Preview",
+      },
+      workspaceId: previewWorkspaceId,
+    });
+  }
+
   const supabaseUser = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
