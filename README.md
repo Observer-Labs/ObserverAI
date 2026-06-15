@@ -175,9 +175,9 @@ Full schema in `supabase/migrations/001_initial_schema.sql`.
 
 ## Deploying to Vercel
 
-Current deployment model: **manual Vercel CLI deploy**.
+Current deployment model: **GitHub to Vercel auto-deploy from `main`**, with manual Vercel CLI deploy still available when needed.
 
-The local checkout is linked to the Vercel project `observer-ai-s-projects/observer`. GitHub push access exists, but GitHub-to-Vercel auto-deploy has not been confirmed from repo deployment or webhook records. If auto-deploy is desired later, connect the Vercel project to `Observer-Labs/signal` in Vercel Git Settings and test a `main` push.
+The local checkout is linked to the Vercel project `observer-ai-s-projects/observer`. The active GitHub repository is `Observer-Labs/ObserverAI`; pushes to `main` are expected to trigger Vercel production deployments.
 
 ```bash
 npm run verify
