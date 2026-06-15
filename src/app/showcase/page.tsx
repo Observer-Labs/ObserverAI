@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const TOTEFOLK_CLUSTERS: Cluster[] = [
   {
-    id: "tf-1", workspace_id: "demo",
+    id: "tf-1", workspace_id: "demo", branch_id: "demo-branch",
     title: "No restock alerts, sold-out buyers are leaving and never returning",
     severity: 85, severity_label: "high", confidence: 0.89, evidence_count: 38,
     source_breakdown: { email: 18, zendesk: 12, intercom: 8, reddit: 0, appstore: 0, googleplay: 0, googleanalytics: 0, slack: 0, whatsapp: 0, jira: 0, github: 0,
@@ -28,7 +28,7 @@ const TOTEFOLK_CLUSTERS: Cluster[] = [
     status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
-    id: "tf-2", workspace_id: "demo",
+    id: "tf-2", workspace_id: "demo", branch_id: "demo-branch",
     title: "Shipping timeline expectations are killing first-time conversion",
     severity: 76, severity_label: "high", confidence: 0.83, evidence_count: 29,
     source_breakdown: { zendesk: 14, email: 9, intercom: 6, reddit: 0, appstore: 0, googleplay: 0, googleanalytics: 0, slack: 0, whatsapp: 0, jira: 0, github: 0,
@@ -40,7 +40,7 @@ const TOTEFOLK_CLUSTERS: Cluster[] = [
     status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
-    id: "tf-3", workspace_id: "demo",
+    id: "tf-3", workspace_id: "demo", branch_id: "demo-branch",
     title: "Product story isn't converting skeptics, premium price needs visual proof",
     severity: 64, severity_label: "high", confidence: 0.76, evidence_count: 22,
     source_breakdown: { reddit: 11, email: 7, intercom: 4, zendesk: 0, appstore: 0, googleplay: 0, googleanalytics: 0, slack: 0, whatsapp: 0, jira: 0, github: 0,
@@ -52,7 +52,7 @@ const TOTEFOLK_CLUSTERS: Cluster[] = [
     status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
-    id: "tf-4", workspace_id: "demo",
+    id: "tf-4", workspace_id: "demo", branch_id: "demo-branch",
     title: "No-return policy is generating active negative word-of-mouth on Reddit",
     severity: 57, severity_label: "medium", confidence: 0.71, evidence_count: 17,
     source_breakdown: { reddit: 10, email: 5, zendesk: 2, appstore: 0, googleplay: 0, googleanalytics: 0, slack: 0, whatsapp: 0, intercom: 0, jira: 0, github: 0,
@@ -64,7 +64,7 @@ const TOTEFOLK_CLUSTERS: Cluster[] = [
     status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   },
   {
-    id: "tf-5", workspace_id: "demo",
+    id: "tf-5", workspace_id: "demo", branch_id: "demo-branch",
     title: "Mobile checkout abandonment is 40% higher than desktop",
     severity: 43, severity_label: "medium", confidence: 0.64, evidence_count: 11,
     source_breakdown: { intercom: 6, email: 3, zendesk: 2, reddit: 0, appstore: 0, googleplay: 0, googleanalytics: 0, slack: 0, whatsapp: 0, jira: 0, github: 0,

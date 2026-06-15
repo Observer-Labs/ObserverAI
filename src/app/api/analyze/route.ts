@@ -11,13 +11,16 @@ import { sendEmailBrief } from "@/lib/email";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
 import type { Cluster } from "@/lib/types";
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   let wid: string;
   try {
     wid = await getAuthenticatedWorkspaceId();
   } catch {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
+
+  const body = await req.json().catch(() => ({})) as { branch_id?: string };
+  const branchId = body.branch_id;
 
   // ─── Plan gate ───────────────────────────────────────────────────────────────
   const workspace = await getWorkspace(wid);
@@ -53,7 +56,7 @@ export async function POST(_req: NextRequest) {
 
   // Get pending signals, cap to plan's signalsPerRun to bound Claude cost
   const limits = getPlanLimits(planStatus.plan);
-  const allSignals = await getPendingSignals(wid);
+  const allSignals = await getPendingSignals(wid, 500, branchId);
   const signals = allSignals.slice(0, limits.signalsPerRun);
   const signalsCapped = allSignals.length > signals.length;
 
@@ -73,6 +76,7 @@ export async function POST(_req: NextRequest) {
   // Map to cluster format, severity_label sourced from plans.ts (single source of truth)
   const clusters = results.map((r) => ({
     workspace_id: wid,
+    branch_id: branchId ?? signals[0]?.branch_id,
     title: r.title,
     severity: r.severity,
     severity_label: severityLabel(r.severity),
@@ -167,7 +171,7 @@ export async function POST(_req: NextRequest) {
   });
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   let workspaceId: string;
   try {
     workspaceId = await getAuthenticatedWorkspaceId();
@@ -175,11 +179,17 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabaseAdmin
+  const branchId = req.nextUrl.searchParams.get("branch_id");
+
+  let query = supabaseAdmin
     .from("clusters")
     .select("*")
     .eq("workspace_id", workspaceId)
     .order("severity", { ascending: false });
+
+  if (branchId) query = query.eq("branch_id", branchId);
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ clusters: data });

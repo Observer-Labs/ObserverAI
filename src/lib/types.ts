@@ -3,7 +3,10 @@ export type SignalSource =
   | "zendesk" | "intercom" | "jira"
   | "appstore" | "googleplay" | "googleanalytics"
   | "github" | "reddit"
-  | "shopify" | "trustpilot";
+  | "shopify" | "trustpilot"
+  | "googlereviews" | "google_reviews"
+  | "getir" | "yemeksepeti" | "trendyol"
+  | "pos" | "ga4" | "gmail" | "csv";
 
 export type VerticalType = "saas" | "ecommerce" | "qsr" | "retail" | "auto";
 export type DataCategory = "voice" | "pos" | "analytics" | "social";
@@ -16,12 +19,17 @@ export type DeliveryStatus = "sent" | "failed" | "pending";
 export interface Signal {
   id: string;
   workspace_id: string;
+  branch_id: string;
+  source_id?: string | null;
+  source_type?: string | null;
   source: SignalSource;
   channel: string;
   sender?: string;
   content: string;
   timestamp: string;
   sentiment?: "positive" | "negative" | "neutral";
+  metric_name?: string | null;
+  metric_value?: number | null;
   tags?: string[];
   reviewed: boolean;
   created_at: string;
@@ -46,6 +54,7 @@ export interface SourceBreakdown {
 export interface Cluster {
   id: string;
   workspace_id: string;
+  branch_id: string;
   title: string;
   severity: number; // 0-100
   severity_label: Severity;
@@ -54,8 +63,11 @@ export interface Cluster {
   source_breakdown: SourceBreakdown;
   business_case: string;
   recommended_action: string;
+  root_cause?: string;
   customer_quote?: string;
   projected_impact?: string; // e.g. "~$12k MRR at risk" or "~18% conversion uplift"
+  metric_delta?: number;
+  correlation_id?: string | null;
   vertical?: VerticalType;
   status: ClusterStatus;
   created_at: string;
@@ -65,11 +77,63 @@ export interface Cluster {
 export interface Delivery {
   id: string;
   cluster_id: string;
+  branch_id: string;
   channel: DeliveryChannel;
   recipient: string;
   sent_at: string;
   status: DeliveryStatus;
+  decision?: "approved" | "dismissed" | "pending";
   response?: string;
+}
+
+export interface Branch {
+  id: string;
+  workspace_id: string;
+  name: string;
+  brand?: string | null;
+  district?: string | null;
+  city?: string | null;
+  timezone: string;
+  baseline_metrics: Record<string, unknown>;
+  status: "active" | "paused";
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface Source {
+  id: string;
+  workspace_id: string;
+  branch_id: string;
+  type: SignalSource;
+  display_name: string;
+  status: "connected" | "pending" | "error";
+  config: Record<string, unknown>;
+  credentials?: Record<string, unknown> | null;
+  last_sync_at?: string | null;
+  created_at: string;
+}
+
+export interface Correlation {
+  id: string;
+  workspace_id: string;
+  branch_id: string;
+  window_start: string;
+  window_end: string;
+  primary_metric?: string | null;
+  correlated_signal_ids: string[];
+  hypothesis?: string | null;
+  confidence: number;
+  created_at: string;
+}
+
+export interface TokenUsage {
+  id: string;
+  workspace_id: string;
+  branch_id?: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  cost: number;
+  created_at: string;
 }
 
 // ─── Integration Configs ──────────────────────────────────────────────────────
@@ -292,7 +356,8 @@ export interface Workspace {
   output_config?: OutputConfig;
   created_at: string;
   // ─── Billing ───────────────────────────────────────────────────────────────
-  plan?: "trial" | "pro" | "past_due" | "cancelled" | "expired";
+  plan?: "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro" | "past_due" | "cancelled" | "expired";
+  branch_limit?: number | null;
   trial_ends_at?: string;
   polar_subscription_id?: string;
   polar_customer_id?: string;

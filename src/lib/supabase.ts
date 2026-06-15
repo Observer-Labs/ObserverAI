@@ -69,27 +69,70 @@ export async function getWorkspace(workspaceId: string) {
   return data;
 }
 
+export async function getDefaultBranchId(workspaceId: string): Promise<string> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: existing, error: existingError } = await supabase
+    .from("branches")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("status", "active")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  if (existing?.id) return existing.id as string;
+
+  const { data: created, error: createError } = await supabase
+    .from("branches")
+    .insert({
+      workspace_id: workspaceId,
+      name: "Ana Şube",
+      timezone: "Europe/Istanbul",
+      status: "active",
+    })
+    .select("id")
+    .single();
+
+  if (createError) throw createError;
+  return created.id as string;
+}
+
 // Helper to insert signals in bulk
 export async function insertSignals(
-  signals: Omit<import("./types").Signal, "id" | "created_at">[]
+  signals: Array<Omit<import("./types").Signal, "id" | "created_at" | "branch_id"> & { branch_id?: string }>
 ) {
+  if (signals.length === 0) return [];
+  const workspaceId = signals[0].workspace_id;
+  const fallbackBranchId = await getDefaultBranchId(workspaceId);
+  const rows = signals.map((signal) => ({
+    ...signal,
+    branch_id: signal.branch_id ?? fallbackBranchId,
+    source_type: signal.source_type ?? signal.source,
+  }));
+
   const { data, error } = await getSupabaseAdmin()
     .from("signals")
-    .insert(signals)
+    .insert(rows)
     .select();
   if (error) throw error;
   return data;
 }
 
 // Helper to get unanalyzed signals for a workspace
-export async function getPendingSignals(workspaceId: string, limit = 500) {
-  const { data, error } = await getSupabaseAdmin()
+export async function getPendingSignals(workspaceId: string, limit = 500, branchId?: string) {
+  let query = getSupabaseAdmin()
     .from("signals")
     .select("*")
     .eq("workspace_id", workspaceId)
     .eq("reviewed", false)
     .order("timestamp", { ascending: false })
     .limit(limit);
+
+  if (branchId) query = query.eq("branch_id", branchId);
+
+  const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
 }
@@ -97,31 +140,51 @@ export async function getPendingSignals(workspaceId: string, limit = 500) {
 // Helper to upsert clusters, replaces active clusters for the workspace so
 // repeated analysis runs don't pile up. Approved/dismissed clusters are kept.
 export async function upsertClusters(
-  clusters: Omit<import("./types").Cluster, "id" | "created_at" | "updated_at">[]
+  clusters: Array<Omit<import("./types").Cluster, "id" | "created_at" | "updated_at" | "branch_id"> & { branch_id?: string }>
 ) {
   if (clusters.length === 0) return [];
   const workspaceId = clusters[0].workspace_id;
+  const fallbackBranchId = await getDefaultBranchId(workspaceId);
+  const branchId = clusters[0].branch_id ?? fallbackBranchId;
+  const rows = clusters.map((cluster) => ({
+    ...cluster,
+    branch_id: cluster.branch_id ?? branchId,
+  }));
 
   // Remove previous active clusters so we don't accumulate duplicates
   await getSupabaseAdmin()
     .from("clusters")
     .delete()
     .eq("workspace_id", workspaceId)
+    .eq("branch_id", branchId)
     .eq("status", "active");
 
   const { data, error } = await getSupabaseAdmin()
     .from("clusters")
-    .insert(clusters)
+    .insert(rows)
     .select();
   if (error) throw error;
   return data;
 }
 
 // Helper to log a delivery
-export async function logDelivery(delivery: Omit<import("./types").Delivery, "id">) {
+export async function logDelivery(
+  delivery: Omit<import("./types").Delivery, "id" | "branch_id"> & { branch_id?: string }
+) {
+  let branchId = delivery.branch_id;
+  if (!branchId) {
+    const { data, error } = await getSupabaseAdmin()
+      .from("clusters")
+      .select("branch_id")
+      .eq("id", delivery.cluster_id)
+      .single();
+    if (error) throw error;
+    branchId = data.branch_id as string;
+  }
+
   const { data, error } = await getSupabaseAdmin()
     .from("deliveries")
-    .insert(delivery)
+    .insert({ ...delivery, branch_id: branchId })
     .select()
     .single();
   if (error) throw error;
