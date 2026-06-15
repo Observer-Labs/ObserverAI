@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const siteUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const siteUrl = new URL(req.url).origin;
 
   if (!code) {
     return NextResponse.redirect(`${siteUrl}/login?error=auth_callback_error`);
