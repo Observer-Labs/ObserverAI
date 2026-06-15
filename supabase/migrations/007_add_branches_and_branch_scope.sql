@@ -296,3 +296,16 @@ CREATE POLICY "token_usage_via_workspace" ON token_usage
   FOR ALL USING (
     is_workspace_member(workspace_id)
   );
+
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  workspaces,
+  workspace_members,
+  branches,
+  sources,
+  signals,
+  clusters,
+  deliveries,
+  correlations,
+  token_usage
+TO authenticated;

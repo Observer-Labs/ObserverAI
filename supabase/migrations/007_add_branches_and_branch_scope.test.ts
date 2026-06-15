@@ -50,4 +50,23 @@ describe("007 branch-scoped foundation migration", () => {
       expect(migration).toContain(`CREATE POLICY "${policy}"`);
     }
   });
+
+  it("grants authenticated role access required for RLS evaluation", () => {
+    expect(migration).toContain("GRANT USAGE ON SCHEMA public TO authenticated");
+    expect(migration).toContain("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE");
+    for (const table of [
+      "workspaces",
+      "workspace_members",
+      "branches",
+      "sources",
+      "signals",
+      "clusters",
+      "deliveries",
+      "correlations",
+      "token_usage",
+    ]) {
+      expect(migration).toMatch(new RegExp(`\\b${table}\\b`));
+    }
+    expect(migration).toContain("TO authenticated");
+  });
 });
