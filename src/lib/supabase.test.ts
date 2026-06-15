@@ -6,6 +6,7 @@ type QueryCall = {
   insertPayload?: unknown;
   updatePayload?: unknown;
   filters: Array<[column: string, value: unknown]>;
+  negativeFilters: Array<[column: string, value: unknown]>;
 };
 
 const calls: QueryCall[] = [];
@@ -23,13 +24,17 @@ let clusterLookupResult: { data: { branch_id: string }; error: Error | null } = 
 };
 
 function createQuery(table: string) {
-  const call: QueryCall = { table, filters: [] };
+  const call: QueryCall = { table, filters: [], negativeFilters: [] };
   calls.push(call);
 
   const query = {
     select: vi.fn(() => query),
     eq: vi.fn((column: string, value: unknown) => {
       call.filters.push([column, value]);
+      return query;
+    }),
+    neq: vi.fn((column: string, value: unknown) => {
+      call.negativeFilters.push([column, value]);
       return query;
     }),
     order: vi.fn(() => query),
@@ -207,7 +212,7 @@ describe("branch-scoped Supabase helpers", () => {
     });
   });
 
-  it("filters pending signals by branch when branch_id is provided", async () => {
+  it("filters pending signals by branch and excludes demo by default", async () => {
     const { getPendingSignals } = await loadSupabaseModule();
 
     await getPendingSignals("workspace-1", 25, "branch-1");
@@ -219,6 +224,23 @@ describe("branch-scoped Supabase helpers", () => {
         ["reviewed", false],
         ["branch_id", "branch-1"],
       ],
+      negativeFilters: [["channel", "demo"]],
+    });
+  });
+
+  it("includes demo pending signals only when explicitly requested", async () => {
+    const { getPendingSignals } = await loadSupabaseModule();
+
+    await getPendingSignals("workspace-1", 25, "branch-1", { includeDemo: true });
+
+    expect(calls[0]).toMatchObject({
+      table: "signals",
+      filters: [
+        ["workspace_id", "workspace-1"],
+        ["reviewed", false],
+        ["branch_id", "branch-1"],
+      ],
+      negativeFilters: [],
     });
   });
 });

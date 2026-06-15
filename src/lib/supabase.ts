@@ -120,8 +120,14 @@ export async function insertSignals(
   return data;
 }
 
-// Helper to get unanalyzed signals for a workspace
-export async function getPendingSignals(workspaceId: string, limit = 500, branchId?: string) {
+// Helper to get unanalyzed signals for a workspace.
+// Demo signals are opt-in only so stale seeded data never drives the default dashboard.
+export async function getPendingSignals(
+  workspaceId: string,
+  limit = 500,
+  branchId?: string,
+  options: { includeDemo?: boolean } = {},
+) {
   let query = getSupabaseAdmin()
     .from("signals")
     .select("*")
@@ -131,6 +137,7 @@ export async function getPendingSignals(workspaceId: string, limit = 500, branch
     .limit(limit);
 
   if (branchId) query = query.eq("branch_id", branchId);
+  if (!options.includeDemo) query = query.neq("channel", "demo");
 
   const { data, error } = await query;
   if (error) throw error;

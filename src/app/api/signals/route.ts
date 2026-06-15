@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const source = searchParams.get("source");
   const branchId = searchParams.get("branch_id");
+  const includeDemo = searchParams.get("include_demo") === "true";
   const limit = Number(searchParams.get("limit") ?? 100);
   const offset = Number(searchParams.get("offset") ?? 0);
 
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest) {
 
   if (source) query = query.eq("source", source);
   if (branchId) query = query.eq("branch_id", branchId);
+  if (!includeDemo) query = query.neq("channel", "demo");
 
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

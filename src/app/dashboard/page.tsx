@@ -523,7 +523,7 @@ export default function DashboardPage() {
   const [sortBy, _setSortBy] = useState<"severity"|"evidence"|"confidence">("severity");
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
-  const [_demoSeeded, setDemoSeeded] = useState(false);
+  const [showingDemo, setShowingDemo] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
 
   // Auth
@@ -539,8 +539,8 @@ export default function DashboardPage() {
 
   }, [router]);
 
-  const fetchClusters = useCallback(async () => {
-    const res = await fetch("/api/analyze");
+  const fetchClusters = useCallback(async (includeDemo = showingDemo) => {
+    const res = await fetch(`/api/analyze${includeDemo ? "?include_demo=true" : ""}`);
     if (res.status === 401) { router.push("/login"); return; }
     const data = await res.json();
     const fetched: Cluster[] = data.clusters ?? [];
@@ -557,15 +557,16 @@ export default function DashboardPage() {
     setApprovals((prev) => ({ ...persistedApprovals, ...prev })); // keep optimistic local wins
 
     if (fetched.length > 0 && !selectedCluster) setSelectedCluster(fetched[0]);
+    if (fetched.length === 0) setSelectedCluster(null);
     setLoadingClusters(false);
-  }, [router, selectedCluster]);
+  }, [router, selectedCluster, showingDemo]);
 
-  const fetchSignalCount = useCallback(async () => {
-    const res = await fetch("/api/signals?limit=1");
+  const fetchSignalCount = useCallback(async (includeDemo = showingDemo) => {
+    const res = await fetch(`/api/signals?limit=1${includeDemo ? "&include_demo=true" : ""}`);
     if (!res.ok) return;
     const data = await res.json();
     setSignalCount(data.total ?? 0);
-  }, []);
+  }, [showingDemo]);
 
   useEffect(() => {
     if (authChecked) { fetchClusters(); fetchSignalCount(); }
@@ -582,23 +583,27 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked, loadingClusters, clusters.length, signalCount, analyzing]);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (includeDemo = showingDemo) => {
     setAnalyzing(true);
     setUpgradeRequired(false);
     try {
-      // Trigger all 8 active ingest sources in parallel (each skips gracefully if not configured)
-      await Promise.allSettled([
-        fetch("/api/ingest/appstore",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/email",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/reddit",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/zendesk",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/slack",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/intercom",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/jira",      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/github",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-      ]);
+      if (!includeDemo) {
+        // Trigger active ingest sources in parallel. Each skips gracefully if not configured.
+        await Promise.allSettled([
+          fetch("/api/ingest/appstore",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/email",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/reddit",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/zendesk",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/slack",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/intercom",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/jira",      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/github",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        ]);
+      }
       const analyzeRes = await fetch("/api/analyze", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ include_demo: includeDemo }),
       });
       if (analyzeRes.status === 402) {
         const data = await analyzeRes.json();
@@ -606,8 +611,14 @@ export default function DashboardPage() {
         setUpgradeMessage(data.error ?? "Upgrade required");
         return;
       }
-      await fetchClusters();
-      await fetchSignalCount();
+      if (analyzeRes.status === 409) {
+        setShowingDemo(false);
+        await fetchClusters(false);
+        await fetchSignalCount(false);
+        return;
+      }
+      await fetchClusters(includeDemo);
+      await fetchSignalCount(includeDemo);
       setLastRun(new Date());
     } finally {
       setAnalyzing(false);
@@ -619,10 +630,9 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/seed-demo", { method: "POST" });
       if (res.ok) {
-        setDemoSeeded(true);
-        await fetchSignalCount();
-        // Auto-run analysis after seeding so user sees results immediately
-        await runAnalysis();
+        setShowingDemo(true);
+        await fetchSignalCount(true);
+        await runAnalysis(true);
       }
     } finally {
       setSeedingDemo(false);
