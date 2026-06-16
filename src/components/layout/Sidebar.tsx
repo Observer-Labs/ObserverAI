@@ -5,14 +5,13 @@ import { supabaseClient } from "@/lib/supabase-client";
 import { useTranslations } from 'next-intl';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { LogoMark } from "@/components/Logo";
-import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   sourceCount?: number;
   signalCount?: number;
   userInitials?: string;
   workspaceName?: string;
-  plan?: "trial" | "pro" | "past_due" | "expired" | "no_plan";
+  plan?: "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro" | "past_due" | "expired" | "no_plan";
   runsLeft?: number;
   trialDaysLeft?: number;
 }
@@ -68,6 +67,16 @@ function SignOutIcon() {
   );
 }
 
+function planLabel(plan: SidebarProps["plan"]) {
+  if (plan === "starter") return "Starter";
+  if (plan === "growth") return "Growth";
+  if (plan === "scale") return "Scale";
+  if (plan === "enterprise") return "Enterprise";
+  if (plan === "pro") return "Pro";
+  if (plan === "trial") return "Trial";
+  return null;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Sidebar({
@@ -76,8 +85,6 @@ export default function Sidebar({
   userInitials = "?",
   workspaceName,
   plan,
-  runsLeft,
-  trialDaysLeft,
 }: SidebarProps) {
   const t = useTranslations('nav');
   const tSidebar = useTranslations('sidebar');
@@ -135,21 +142,13 @@ export default function Sidebar({
           <LocaleSwitcher />
         </div>
         {/* Plan pill */}
-        {plan === "trial" && typeof runsLeft === "number" && (
+        {planLabel(plan) && (
           <Link
             href="/settings/billing"
-            className={cn(
-              "sidebar-plan",
-              runsLeft <= 2
-                ? "border-[color-mix(in_oklch,var(--amber)_35%,transparent)]! bg-[color-mix(in_oklch,var(--amber)_12%,transparent)] text-[oklch(0.55_0.14_70)]"
-                : "border-border! bg-muted text-foreground"
-            )}
+            className="sidebar-plan border-border! bg-muted text-foreground"
           >
-            <span className="font-bold">{runsLeft}</span>
-            <span className="opacity-65">{tSidebar('runsLeftSuffix')}</span>
-            {typeof trialDaysLeft === "number" && trialDaysLeft <= 7 && (
-              <><span className="opacity-40">·</span><span>{trialDaysLeft}d</span></>
-            )}
+            <span className="font-bold uppercase">{planLabel(plan)}</span>
+            {plan !== "trial" && <span className="opacity-65">{tSidebar('proActive')}</span>}
           </Link>
         )}
         {plan === "expired" && (

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { Workspace } from "@/lib/types";
 
 const TRIAL_LIMIT = 10;
+const PAID_PLANS = ["starter", "growth", "scale", "enterprise", "pro"] as const;
 
 function daysLeft(isoDate?: string): number {
   if (!isoDate) return 0;
@@ -19,6 +20,15 @@ function daysLeft(isoDate?: string): number {
 function fmtDate(isoDate?: string): string {
   if (!isoDate) return ",";
   return new Date(isoDate).toLocaleDateString("tr-TR", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function planLabel(plan?: string): string {
+  if (plan === "starter") return "Starter";
+  if (plan === "growth") return "Growth";
+  if (plan === "scale") return "Scale";
+  if (plan === "enterprise") return "Enterprise";
+  if (plan === "pro") return "Pro";
+  return "Trial";
 }
 
 export default function BillingPage() {
@@ -85,7 +95,8 @@ export default function BillingPage() {
     },
   ];
 
-  const isActive = plan === "pro" && workspace?.polar_status === "active";
+  const isPaidPlan = PAID_PLANS.includes(plan as (typeof PAID_PLANS)[number]);
+  const isActive = isPaidPlan && workspace?.polar_status === "active";
   const isPastDue = workspace?.polar_status === "past_due";
   const isCancelled = plan === "cancelled" || workspace?.polar_status === "cancelled";
   const isExpired = plan === "expired";
@@ -94,7 +105,7 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 border-b bg-[rgba(11,12,16,0.92)] backdrop-blur-[12px]">
+      <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-[12px]">
         <div className="mx-auto flex h-16 max-w-[900px] items-center gap-4 px-6">
           <Logo href="/dashboard" size={22} textSize="0.9rem" gap={10} />
           <div className="h-7 w-px bg-border" />
@@ -147,12 +158,12 @@ export default function BillingPage() {
             )}
             {isActive && (
               <Badge variant="outline" className="rounded-full border-[rgba(70,230,166,0.25)] bg-[rgba(70,230,166,0.12)] px-3 py-[3px] text-[0.75rem] font-bold text-[var(--accent-green)]">
-                PRO · ACTIVE
+                {planLabel(plan).toUpperCase()} · ACTIVE
               </Badge>
             )}
             {isPastDue && (
               <Badge variant="outline" className="rounded-full border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.12)] px-3 py-[3px] text-[0.75rem] font-bold text-[#ffd166]">
-                PRO · PAST DUE
+                {planLabel(plan).toUpperCase()} · PAST DUE
               </Badge>
             )}
             {(isCancelled || isExpired) && (
