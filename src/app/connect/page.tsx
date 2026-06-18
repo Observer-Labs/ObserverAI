@@ -2,7 +2,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { parseCsvHeaders } from "@/lib/csv-ingest";
 import type { IntegrationsConfig } from "@/lib/types";
+import type { CsvColumnMapping } from "@/lib/csv-ingest";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +70,47 @@ interface CsvImportResult {
   skipped: number;
   duplicateRows: number;
   existingDuplicates: number;
+}
+
+type CsvMappingField = keyof CsvColumnMapping;
+
+const CSV_MAPPING_FIELDS: { key: CsvMappingField; label: string; helper: string }[] = [
+  { key: "content", label: "Content", helper: "Review, complaint, email, or note text" },
+  { key: "timestamp", label: "Timestamp", helper: "Date/time for the row" },
+  { key: "channel", label: "Channel", helper: "Google, POS, delivery, survey" },
+  { key: "sender", label: "Sender", helper: "Customer, reviewer, or terminal name" },
+  { key: "sentiment", label: "Sentiment", helper: "positive, neutral, negative" },
+  { key: "metric_name", label: "Metric name", helper: "order_count, sales, prep_time_avg" },
+  { key: "metric_value", label: "Metric value", helper: "Numeric metric value" },
+];
+
+const CSV_AUTO_VALUE = "__auto__";
+
+function normalizeCsvHeaderForGuess(value: string) {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function guessCsvMapping(headers: string[]): CsvColumnMapping {
+  const normalizedHeaders = headers.map((header) => ({
+    original: header,
+    normalized: normalizeCsvHeaderForGuess(header),
+  }));
+
+  const pick = (candidates: string[]) => normalizedHeaders.find((header) => candidates.includes(header.normalized))?.original;
+
+  return {
+    content: pick(["content", "message", "text", "comment", "review", "description", "body"]),
+    timestamp: pick(["timestamp", "created_at", "date", "time", "when", "created_local"]),
+    channel: pick(["channel", "platform", "source"]),
+    sender: pick(["sender", "customer", "name", "author", "guest"]),
+    sentiment: pick(["sentiment", "tone", "score_label"]),
+    metric_name: pick(["metric_name", "metric", "kpi"]),
+    metric_value: pick(["metric_value", "value", "amount", "count", "reading"]),
+  };
+}
+
+function compactCsvMapping(mapping: CsvColumnMapping) {
+  return Object.fromEntries(Object.entries(mapping).filter(([, value]) => value)) as CsvColumnMapping;
 }
 
 // ── Source definitions ────────────────────────────────────────────────────────
@@ -313,10 +356,22 @@ function ConnectPageContent() {
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [csvName, setCsvName] = useState("Manual CSV upload");
+  const [csvFileName, setCsvFileName] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvMapping, setCsvMapping] = useState<CsvColumnMapping>({});
   const [csvImporting, setCsvImporting] = useState(false);
+  const [csvFileLoading, setCsvFileLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const headers = parseCsvHeaders(csvText);
+    setCsvHeaders(headers);
+    if (headers.length === 0) {
+      setCsvMapping({});
+    }
+  }, [csvText]);
 
   const loadWorkspace = useCallback(async () => {
     try {
@@ -422,6 +477,7 @@ function ConnectPageContent() {
           branch_id: selectedBranchId,
           display_name: csvName,
           csv_text: csvText,
+          mapping: compactCsvMapping(csvMapping),
         }),
       });
       const data = await res.json().catch(() => ({})) as Partial<CsvImportResult> & { error?: string };
@@ -437,10 +493,53 @@ function ConnectPageContent() {
         existingDuplicates: data.existingDuplicates ?? 0,
       });
       setCsvText("");
+      setCsvFileName("");
+      setCsvMapping({});
       await loadWorkspace();
     } finally {
       setCsvImporting(false);
     }
+  }
+
+  async function handleCsvFileChange(file: File | undefined) {
+    if (!file) return;
+
+    setCsvFileLoading(true);
+    setCsvError(null);
+    setCsvResult(null);
+
+    try {
+      const text = await file.text();
+      const headers = parseCsvHeaders(text);
+      setCsvFileName(file.name);
+      setCsvText(text);
+      setCsvMapping(guessCsvMapping(headers));
+      if (csvName === "Manual CSV upload") {
+        setCsvName(file.name.replace(/\.[^.]+$/, "") || "CSV upload");
+      }
+    } catch {
+      setCsvError("Could not read the selected CSV file.");
+    } finally {
+      setCsvFileLoading(false);
+    }
+  }
+
+  function updateCsvText(value: string) {
+    setCsvText(value);
+    setCsvResult(null);
+    setCsvError(null);
+  }
+
+  function updateCsvMapping(field: CsvMappingField, value: string) {
+    setCsvMapping((current) => {
+      const next = { ...current };
+      if (value === CSV_AUTO_VALUE) {
+        delete next[field];
+      } else {
+        next[field] = value;
+      }
+      return next;
+    });
   }
 
   const connectedCount = getConnectedCount(workspace);
@@ -544,8 +643,25 @@ function ConnectPageContent() {
                   className="h-auto rounded-[7px] bg-background px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem]"
                 />
               </div>
+              <div>
+                <Label htmlFor="csv-file" className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                  CSV file
+                </Label>
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(event) => void handleCsvFileChange(event.currentTarget.files?.[0])}
+                  className="h-auto rounded-[7px] bg-background px-3 py-[9px] text-[0.82rem] shadow-none file:mr-3 file:rounded-md file:bg-muted file:px-2.5 file:py-1.5 file:text-[0.75rem] file:font-bold md:text-[0.82rem]"
+                />
+                {(csvFileName || csvFileLoading) && (
+                  <div className="mt-2 text-[0.72rem] text-muted-foreground">
+                    {csvFileLoading ? "Reading file..." : `Loaded ${csvFileName}`}
+                  </div>
+                )}
+              </div>
               <div className="rounded-lg border bg-muted px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
-                Expected headers: <span className="font-mono text-foreground">timestamp, channel, sender, content</span>. Metrics can use <span className="font-mono text-foreground">metric_name, metric_value</span>.
+                Auto-detected headers still work: <span className="font-mono text-foreground">timestamp, channel, sender, content</span>. Use mapping for exports with different column names.
               </div>
             </div>
 
@@ -553,10 +669,60 @@ function ConnectPageContent() {
               <Label htmlFor="csv-text" className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                 CSV rows for {selectedBranch?.name ?? "selected branch"}
               </Label>
+              {csvHeaders.length > 0 && (
+                <div className="rounded-lg border bg-muted/55 p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                        Column mapping
+                      </div>
+                      <div className="mt-1 text-[0.72rem] text-muted-foreground">
+                        {csvHeaders.length} header{csvHeaders.length === 1 ? "" : "s"} detected. Leave a field on auto when the header already matches Observer defaults.
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCsvMapping(guessCsvMapping(csvHeaders))}
+                      className="h-auto rounded-lg px-3 py-2 text-[0.75rem] font-bold"
+                    >
+                      Detect columns
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {CSV_MAPPING_FIELDS.map((field) => (
+                      <div key={field.key} className="space-y-1.5">
+                        <Label className="text-[0.72rem] font-semibold text-foreground">
+                          {field.label}
+                        </Label>
+                        <Select
+                          value={csvMapping[field.key] ?? CSV_AUTO_VALUE}
+                          onValueChange={(value) => updateCsvMapping(field.key, value)}
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background text-[0.78rem]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={CSV_AUTO_VALUE}>Auto / not mapped</SelectItem>
+                            {csvHeaders.map((header) => (
+                              <SelectItem key={`${field.key}-${header}`} value={header}>
+                                {header}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="text-[0.68rem] leading-[1.4] text-muted-foreground">
+                          {field.helper}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <textarea
                 id="csv-text"
                 value={csvText}
-                onChange={(event) => setCsvText(event.target.value)}
+                onChange={(event) => updateCsvText(event.target.value)}
                 rows={8}
                 placeholder={"timestamp,channel,sender,content\n2026-06-18T08:00:00Z,review,Aylin,Queue was too slow\n2026-06-18T09:00:00Z,pos,POS Terminal,,order_count,42"}
                 className="min-h-[190px] w-full resize-y rounded-lg border bg-background px-3 py-3 font-mono text-[0.78rem] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
