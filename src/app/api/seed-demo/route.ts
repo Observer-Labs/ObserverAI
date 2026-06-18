@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin, insertSignals } from "@/lib/supabase";
+import type { SignalSource } from "@/lib/types";
 
 /**
  * POST /api/seed-demo
@@ -73,7 +74,7 @@ export async function POST() {
 
   const rows = signals.map((s) => ({
     workspace_id: workspaceId,
-    source: s.source,
+    source: s.source as SignalSource,
     channel: s.channel,
     sender: s.sender,
     content: s.content,
@@ -81,10 +82,7 @@ export async function POST() {
     reviewed: false,
   }));
 
-  const { error } = await supabase.from("signals").insert(rows);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await insertSignals(rows);
 
   return NextResponse.json({
     ok: true,

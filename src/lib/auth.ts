@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabaseAdmin } from "./supabase";
+import { PREVIEW_AUTH_COOKIE, getPreviewWorkspaceIdFromCookie } from "./preview-auth";
 
 /**
  * Server-side helper for API routes.
@@ -13,6 +14,12 @@ import { getSupabaseAdmin } from "./supabase";
  *     because the secret is rotated server-side and never exposed to clients.
  */
 export async function getAuthenticatedWorkspaceId(): Promise<string> {
+  const cookieStore = await cookies();
+  const previewWorkspaceId = getPreviewWorkspaceIdFromCookie(
+    cookieStore.get(PREVIEW_AUTH_COOKIE)?.value,
+  );
+  if (previewWorkspaceId) return previewWorkspaceId;
+
   // ── Path 1: Cron secret bypass ──────────────────────────────────────────────
   const hdrs = await headers();
   const cronSecret = hdrs.get("x-cron-secret");
@@ -33,7 +40,6 @@ export async function getAuthenticatedWorkspaceId(): Promise<string> {
   }
 
   // ── Path 2: Cookie auth (default) ───────────────────────────────────────────
-  const cookieStore = await cookies();
   const supabaseUser = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

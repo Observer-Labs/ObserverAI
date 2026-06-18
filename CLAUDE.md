@@ -28,6 +28,20 @@
 5. Faz kapanisinda bir kez `npm run verify` (build dahil) calistir.
 6. Hala cozemedigin hata kalirsa DUR ve sadece o hatayi raporla.
 
+### App UI gelistirme kurali
+- App/product UI yazarken shadcn/ui + Tailwind sistemine bagli kal. shadcn'in
+  gerektirdigi Radix, class-variance-authority, clsx, tailwind-merge,
+  lucide-react ve tw-animate-css gibi yardimci paketler bu sistemin parcasi
+  sayilir.
+- GSAP app icinde yalnizca kucuk, premium hissi veren mikro animasyonlar ve
+  yuklenme gecisleri icin kullanilabilir. Farkli UI component kutuphaneleri,
+  ayri tasarim dili veya app icinde yeni UI framework'u ekleme.
+- Branch/Settings/Dashboard gibi app ekranlari mevcut app estetik sistemiyle
+  ayni gorunmeli; pazarlama/landing sayfasi gibi degil, operasyonel urun
+  arayuzu gibi yogun, okunabilir ve sakin olmali.
+- Landing/marketing tarafinda kullanilan gorsel/animasyon kararlar bu kuralin
+  kapsami disindadir; bu kural ozellikle app/product deneyimi icindir.
+
 ### Oturum/is bitisi
 - `LAST_UPDATES.md`'nin en ustune yeni bir girdi ekle (format asagida).
 - "AKTIF AJAN" satirini "yok" yap (isi biraktin).

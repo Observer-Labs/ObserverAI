@@ -79,56 +79,6 @@ function sourceChips(cluster: Cluster): Array<{ name: string; count: number }> {
     .map(([name, count]) => ({ name, count }));
 }
 
-// ── Sample café/restaurant insights (shown when a workspace has no real data) ──
-// Lets the dashboard demonstrate the product instantly, no setup or AI cost.
-const now = Date.now();
-const SAMPLE_CLUSTERS: Cluster[] = [
-  {
-    id: "sample-1", workspace_id: "sample",
-    title: "Kadıköy şubenizde hafta sonu yavaş servis",
-    severity: 88, severity_label: "high", confidence: 0.9, evidence_count: 14,
-    source_breakdown: { "Google Reviews": 9, "Getir": 5 } as unknown as Cluster["source_breakdown"],
-    business_case: "Cumartesi ve Pazar sabahları bekleme süreleri 18 dakikayı aşıyor. Bu hafta 14 müşteri şikayet etti — geçen haftanın neredeyse iki katı.",
-    recommended_action: "Hafta sonu 8–11 arası vardiyaya bir kişi daha ekleyin; yoğunluk başlamadan önce bardak ve kapakları önceden hazırlayın.",
-    customer_quote: "18 dakika bekledim, siparişim unutuldu. Hafta sonu sabahları berbat.",
-    projected_impact: "Hafta sonu sabah geliri tehlikede",
-    status: "active", created_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString(),
-  },
-  {
-    id: "sample-2", workspace_id: "sample",
-    title: "Gece geç saatlerde soğuk yemek teslimatı",
-    severity: 72, severity_label: "high", confidence: 0.84, evidence_count: 11,
-    source_breakdown: { "Yemeksepeti": 7, "Getir": 4 } as unknown as Cluster["source_breakdown"],
-    business_case: "Cuma ve Cumartesi geceleri saat 21:00'den sonra soğuk yemek şikayetleri üçe katlandı; neredeyse tamamı bir saati aşan teslimatlardan kaynaklanıyor.",
-    recommended_action: "Akşam kurye teslim sürecini gözden geçirin; yemek teslimattan önce beklemeyecek şekilde mutfak zamanlamasını ayarlayın.",
-    customer_quote: "Yemek soğuk geldi, 70 dakika sürdü. Üçüncü kez geç geliyor.",
-    projected_impact: "Hafta sonu gece tekrar siparişleri düşüyor",
-    status: "active", created_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString(),
-  },
-  {
-    id: "sample-3", workspace_id: "sample",
-    title: "Yoğun saatlerde yanlış ve eksik siparişler",
-    severity: 54, severity_label: "medium", confidence: 0.78, evidence_count: 6,
-    source_breakdown: { "Yemeksepeti": 4, "Google Reviews": 2 } as unknown as Cluster["source_breakdown"],
-    business_case: "Yoğun saatlerde sipariş hataları artıyor: yanlış ürünler, eksik içecekler ve özel notlar (yulaf sütü, şekersiz) göz ardı ediliyor.",
-    recommended_action: "Yoğun saatlerde siparişler müşteriye verilmeden önce 10 saniyelik çift kontrol uygulayın.",
-    customer_quote: "Yanlış sipariş geldi, içecek eksik. Kontrol edilmiyor galiba.",
-    projected_impact: "İade talepleri yavaş yavaş artıyor",
-    status: "active", created_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString(),
-  },
-  {
-    id: "sample-4", workspace_id: "sample",
-    title: "Öğleden sonra müzik biraz yüksek",
-    severity: 31, severity_label: "low", confidence: 0.62, evidence_count: 3,
-    source_breakdown: { "Google Reviews": 3 } as unknown as Cluster["source_breakdown"],
-    business_case: "Son yorumlarda birkaç müşteri, öğleden sonra müziğin yüksek olduğu için çalışmak veya sohbet etmenin zorlaştığını belirtiyor.",
-    recommended_action: "Hafta içi 14:00–17:00 arası sesi bir tık kısın.",
-    customer_quote: "Kahve güzel ama müzik biraz yüksekti öğleden sonra.",
-    projected_impact: "Küçük konfor sorunu, kolay kazanım",
-    status: "active", created_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString(),
-  },
-];
-
 // ── Score Ring (SVG arc) ──────────────────────────────────────────────────────
 
 function _ScoreRing({ score, size = 48 }: { score: number; size?: number }) {
@@ -572,8 +522,8 @@ export default function DashboardPage() {
   const [severityFilter, _setSeverityFilter] = useState<"all"|"critical"|"high"|"medium"|"low">("all");
   const [sortBy, _setSortBy] = useState<"severity"|"evidence"|"confidence">("severity");
   const [lastRun, setLastRun] = useState<Date | null>(null);
-  const [_seedingDemo, setSeedingDemo] = useState(false);
-  const [_demoSeeded, setDemoSeeded] = useState(false);
+  const [seedingDemo, setSeedingDemo] = useState(false);
+  const [showingDemo, setShowingDemo] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
 
   // Auth
@@ -589,8 +539,8 @@ export default function DashboardPage() {
 
   }, [router]);
 
-  const fetchClusters = useCallback(async () => {
-    const res = await fetch("/api/analyze");
+  const fetchClusters = useCallback(async (includeDemo = showingDemo) => {
+    const res = await fetch(`/api/analyze${includeDemo ? "?include_demo=true" : ""}`);
     if (res.status === 401) { router.push("/login"); return; }
     const data = await res.json();
     const fetched: Cluster[] = data.clusters ?? [];
@@ -607,15 +557,16 @@ export default function DashboardPage() {
     setApprovals((prev) => ({ ...persistedApprovals, ...prev })); // keep optimistic local wins
 
     if (fetched.length > 0 && !selectedCluster) setSelectedCluster(fetched[0]);
+    if (fetched.length === 0) setSelectedCluster(null);
     setLoadingClusters(false);
-  }, [router, selectedCluster]);
+  }, [router, selectedCluster, showingDemo]);
 
-  const fetchSignalCount = useCallback(async () => {
-    const res = await fetch("/api/signals?limit=1");
+  const fetchSignalCount = useCallback(async (includeDemo = showingDemo) => {
+    const res = await fetch(`/api/signals?limit=1${includeDemo ? "&include_demo=true" : ""}`);
     if (!res.ok) return;
     const data = await res.json();
     setSignalCount(data.total ?? 0);
-  }, []);
+  }, [showingDemo]);
 
   useEffect(() => {
     if (authChecked) { fetchClusters(); fetchSignalCount(); }
@@ -632,23 +583,27 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked, loadingClusters, clusters.length, signalCount, analyzing]);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (includeDemo = showingDemo) => {
     setAnalyzing(true);
     setUpgradeRequired(false);
     try {
-      // Trigger all 8 active ingest sources in parallel (each skips gracefully if not configured)
-      await Promise.allSettled([
-        fetch("/api/ingest/appstore",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/email",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/reddit",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/zendesk",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/slack",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/intercom",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/jira",      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-        fetch("/api/ingest/github",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
-      ]);
+      if (!includeDemo) {
+        // Trigger active ingest sources in parallel. Each skips gracefully if not configured.
+        await Promise.allSettled([
+          fetch("/api/ingest/appstore",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/email",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/reddit",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/zendesk",   { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/slack",     { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/intercom",  { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/jira",      { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+          fetch("/api/ingest/github",    { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+        ]);
+      }
       const analyzeRes = await fetch("/api/analyze", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ include_demo: includeDemo }),
       });
       if (analyzeRes.status === 402) {
         const data = await analyzeRes.json();
@@ -656,8 +611,14 @@ export default function DashboardPage() {
         setUpgradeMessage(data.error ?? "Upgrade required");
         return;
       }
-      await fetchClusters();
-      await fetchSignalCount();
+      if (analyzeRes.status === 409) {
+        setShowingDemo(false);
+        await fetchClusters(false);
+        await fetchSignalCount(false);
+        return;
+      }
+      await fetchClusters(includeDemo);
+      await fetchSignalCount(includeDemo);
       setLastRun(new Date());
     } finally {
       setAnalyzing(false);
@@ -669,10 +630,9 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/seed-demo", { method: "POST" });
       if (res.ok) {
-        setDemoSeeded(true);
-        await fetchSignalCount();
-        // Auto-run analysis after seeding so user sees results immediately
-        await runAnalysis();
+        setShowingDemo(true);
+        await fetchSignalCount(true);
+        await runAnalysis(true);
       }
     } finally {
       setSeedingDemo(false);
@@ -690,11 +650,7 @@ export default function DashboardPage() {
       return b.severity - a.severity; // default: severity
     });
 
-  // Prototype: whenever there are no real insights yet, show café sample data
-  // so the dashboard ALWAYS demonstrates the product. Analysis runs in the
-  // background (never blocks) and swaps in real insights when ready.
-  const isSample = clusters.length === 0;
-  const displayClusters = isSample ? SAMPLE_CLUSTERS : filteredClusters;
+  const displayClusters = filteredClusters;
   const activeCluster = selectedCluster ?? displayClusters[0] ?? null;
 
   const plan = workspace?.plan ?? "trial";
@@ -806,48 +762,58 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Sample-data banner */}
-            {isSample && (
-              <div className="mb-4 flex items-center gap-3.5 rounded-[10px] border bg-muted px-[18px] py-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] text-base">👋</div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[0.86rem] font-semibold text-foreground">Bu bir kafe için örnek veridir.</p>
-                  <p className="mt-0.5 text-[0.78rem] text-muted-foreground">Kendi verilerinizi görmek için Google Reviews, Getir veya POS&apos;unuzu bağlayın.</p>
-                </div>
-                <Button asChild className="h-auto flex-shrink-0 whitespace-nowrap rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
-                  <Link href="/sources">Kaynaklarınızı bağlayın →</Link>
-                </Button>
-              </div>
-            )}
-
             {/* Header */}
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>
                 <h2 className="text-[1.15rem] font-bold tracking-[-0.02em] text-foreground">Dikkat gereken konular</h2>
                 <p className="mt-[3px] text-[0.82rem] text-muted-foreground">
                   Müşteri kanallarınızda {displayClusters.length} konu bulundu
-                  {isSample ? <span className="text-[var(--muted-dim)]"> · örnek</span> : (lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>)}
+                  {lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>}
                 </p>
               </div>
             </div>
 
-            {/* Two-column */}
-            <div className="grid grid-cols-[1fr_400px] items-start gap-4">
-              <div className="flex flex-col gap-[11px]">
-                {displayClusters.map((c, idx) => (
-                  <SignalCard key={c.id} cluster={c} selected={activeCluster?.id === c.id} onClick={() => setSelectedCluster(c)} staggerIndex={idx} />
-                ))}
+            {displayClusters.length === 0 ? (
+              <div className="rounded-[14px] border bg-card px-6 py-8">
+                <div className="max-w-[620px]">
+                  <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz gerçek içgörü yok.</p>
+                  <p className="mt-2 text-[0.86rem] leading-[1.6] text-muted-foreground">
+                    İlk kaynak bağlandığında Observer gelen sinyalleri analiz eder. Hazır veriniz yoksa demo veriyi açıkça yükleyip akışı deneyebilirsiniz.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Button asChild className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
+                      <Link href="/sources">Kaynak bağla →</Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={seedingDemo}
+                      onClick={_loadDemoData}
+                      className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]"
+                    >
+                      {seedingDemo ? "Demo veriler yükleniyor..." : "Demo veriyle dene"}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="sticky top-[66px]">
-                <ExecutionBrief
-                  cluster={activeCluster}
-                  approval={activeCluster ? (approvals[activeCluster.id] ?? "pending") : "pending"}
-                  onApprove={() => { if (!activeCluster) return; if (activeCluster.id.startsWith("sample-")) { setApprovals((a) => ({ ...a, [activeCluster.id]: "approved" })); } else { decideCluster(activeCluster.id, "approve"); } }}
-                  onReject={() => { if (!activeCluster) return; if (activeCluster.id.startsWith("sample-")) { setApprovals((a) => ({ ...a, [activeCluster.id]: "rejected" })); } else { decideCluster(activeCluster.id, "reject"); } }}
-                  onViewFull={() => setSnapshotOpen(true)}
-                />
+            ) : (
+              <div className="grid grid-cols-[1fr_400px] items-start gap-4">
+                <div className="flex flex-col gap-[11px]">
+                  {displayClusters.map((c, idx) => (
+                    <SignalCard key={c.id} cluster={c} selected={activeCluster?.id === c.id} onClick={() => setSelectedCluster(c)} staggerIndex={idx} />
+                  ))}
+                </div>
+                <div className="sticky top-[66px]">
+                  <ExecutionBrief
+                    cluster={activeCluster}
+                    approval={activeCluster ? (approvals[activeCluster.id] ?? "pending") : "pending"}
+                    onApprove={() => { if (!activeCluster) return; decideCluster(activeCluster.id, "approve"); }}
+                    onReject={() => { if (!activeCluster) return; decideCluster(activeCluster.id, "reject"); }}
+                    onViewFull={() => setSnapshotOpen(true)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>

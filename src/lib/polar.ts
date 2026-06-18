@@ -1,5 +1,5 @@
 import type { Workspace } from "./types";
-import { PLANS, PAST_DUE_GRACE_MS, getPlanLimits } from "./plans";
+import { PLANS, PAST_DUE_GRACE_MS, getPlanLimits, type PlanKey } from "./plans";
 
 // ─── Plan status gate ─────────────────────────────────────────────────────────
 
@@ -9,8 +9,10 @@ export interface PlanStatus {
   daysLeft?: number;
   runsLeft?: number;
   /** Plan key for callers that need to look up limits (e.g. rate limiter). */
-  plan: "trial" | "pro" | "past_due" | "expired" | "no_plan";
+  plan: PlanKey | "past_due" | "expired" | "no_plan";
 }
+
+const paidPlans: PlanKey[] = ["starter", "growth", "scale", "enterprise", "pro"];
 
 /**
  * Determines whether a workspace is allowed to run an analysis.
@@ -44,16 +46,17 @@ export function getPlanStatus(workspace: Workspace): PlanStatus {
     };
   }
 
-  if (plan === "pro" || plan === "past_due") {
+  if (paidPlans.includes(plan as PlanKey) || plan === "past_due") {
     const status = workspace.polar_status;
+    const paidPlan = paidPlans.includes(plan as PlanKey) ? (plan as PlanKey) : "pro";
 
     if (status === "active") {
-      const limits = getPlanLimits("pro");
+      const limits = getPlanLimits(paidPlan);
       const count = workspace.analysis_count ?? 0;
       return {
         allowed: true,
         runsLeft: Math.max(0, limits.runsPerPeriod - count),
-        plan: "pro",
+        plan: paidPlan,
       };
     }
 

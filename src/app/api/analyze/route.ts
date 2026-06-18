@@ -11,12 +11,37 @@ import { sendEmailBrief } from "@/lib/email";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
 import type { Cluster } from "@/lib/types";
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   let wid: string;
   try {
     wid = await getAuthenticatedWorkspaceId();
   } catch {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({})) as { branch_id?: string; include_demo?: boolean };
+  const branchId = body.branch_id;
+  const includeDemo = body.include_demo === true;
+
+  if (includeDemo) {
+    let realSignalsQuery = supabaseAdmin
+      .from("signals")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", wid)
+      .neq("channel", "demo");
+
+    if (branchId) realSignalsQuery = realSignalsQuery.eq("branch_id", branchId);
+
+    const { count: realSignalCount, error: realSignalCountError } = await realSignalsQuery;
+    if (realSignalCountError) {
+      return NextResponse.json({ error: realSignalCountError.message }, { status: 500 });
+    }
+    if ((realSignalCount ?? 0) > 0) {
+      return NextResponse.json(
+        { error: "Demo data is only available when no real signals exist." },
+        { status: 409 },
+      );
+    }
   }
 
   // ─── Plan gate ───────────────────────────────────────────────────────────────
@@ -53,7 +78,7 @@ export async function POST(_req: NextRequest) {
 
   // Get pending signals, cap to plan's signalsPerRun to bound Claude cost
   const limits = getPlanLimits(planStatus.plan);
-  const allSignals = await getPendingSignals(wid);
+  const allSignals = await getPendingSignals(wid, 500, branchId, { includeDemo });
   const signals = allSignals.slice(0, limits.signalsPerRun);
   const signalsCapped = allSignals.length > signals.length;
 
@@ -73,6 +98,7 @@ export async function POST(_req: NextRequest) {
   // Map to cluster format, severity_label sourced from plans.ts (single source of truth)
   const clusters = results.map((r) => ({
     workspace_id: wid,
+    branch_id: branchId ?? signals[0]?.branch_id,
     title: r.title,
     severity: r.severity,
     severity_label: severityLabel(r.severity),
@@ -91,12 +117,18 @@ export async function POST(_req: NextRequest) {
   // Increment usage counter
   await incrementAnalysisCount(wid);
 
-  // Mark signals as reviewed
-  await supabaseAdmin
+  // Mark only the signal class used in this run as reviewed.
+  let reviewedQuery = supabaseAdmin
     .from("signals")
     .update({ reviewed: true })
     .eq("workspace_id", wid)
     .eq("reviewed", false);
+
+  reviewedQuery = includeDemo
+    ? reviewedQuery.eq("channel", "demo")
+    : reviewedQuery.neq("channel", "demo");
+
+  await reviewedQuery;
 
   // Auto-distribute if enabled, call libraries directly (not via HTTP, which lacks auth cookies)
   try {
@@ -167,7 +199,7 @@ export async function POST(_req: NextRequest) {
   });
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   let workspaceId: string;
   try {
     workspaceId = await getAuthenticatedWorkspaceId();
@@ -175,11 +207,37 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabaseAdmin
+  const branchId = req.nextUrl.searchParams.get("branch_id");
+  const includeDemo = req.nextUrl.searchParams.get("include_demo") === "true";
+
+  if (!includeDemo) {
+    let realSignalsQuery = supabaseAdmin
+      .from("signals")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
+      .neq("channel", "demo");
+
+    if (branchId) realSignalsQuery = realSignalsQuery.eq("branch_id", branchId);
+
+    const { count: realSignalCount, error: realSignalCountError } = await realSignalsQuery;
+    if (realSignalCountError) {
+      return NextResponse.json({ error: realSignalCountError.message }, { status: 500 });
+    }
+
+    if ((realSignalCount ?? 0) === 0) {
+      return NextResponse.json({ clusters: [] });
+    }
+  }
+
+  let query = supabaseAdmin
     .from("clusters")
     .select("*")
     .eq("workspace_id", workspaceId)
     .order("severity", { ascending: false });
+
+  if (branchId) query = query.eq("branch_id", branchId);
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ clusters: data });

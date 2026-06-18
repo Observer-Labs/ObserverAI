@@ -55,7 +55,7 @@ interface SourcePillProps {
   count?: number;
 }
 
-const sourceConfig: Record<SignalSource, { label: string; color: string; text: string; icon: string }> = {
+const sourceConfig: Partial<Record<SignalSource, { label: string; color: string; text: string; icon: string }>> = {
   slack:           { label: "Slack",            color: "#4A154B", text: "#e879f9", icon: "⚡" },
   email:           { label: "Email",            color: "#1a3a5c", text: "#6ea8ff", icon: "✉️" },
   whatsapp:        { label: "WhatsApp",         color: "#0a3d23", text: "#46e6a6", icon: "💬" },
@@ -69,6 +69,15 @@ const sourceConfig: Record<SignalSource, { label: string; color: string; text: s
   reddit:          { label: "Reddit",           color: "#2d1200", text: "#ff4500", icon: "👾" },
   shopify:         { label: "Shopify",          color: "#1a2e1a", text: "#96bf48", icon: "🛍️" },
   trustpilot:      { label: "Trustpilot",       color: "#002f2f", text: "#00b67a", icon: "⭐" },
+  googlereviews:   { label: "Google Reviews",   color: "#1a2f1a", text: "#34a853", icon: "★" },
+  google_reviews:  { label: "Google Reviews",   color: "#1a2f1a", text: "#34a853", icon: "★" },
+  getir:           { label: "Getir",            color: "#22124d", text: "#c7b7ff", icon: "•" },
+  yemeksepeti:     { label: "Yemeksepeti",      color: "#3a1010", text: "#ff6b6b", icon: "•" },
+  trendyol:        { label: "Trendyol Go",      color: "#3a1d00", text: "#ff8a00", icon: "•" },
+  pos:             { label: "POS",              color: "#10251f", text: "#46e6a6", icon: "•" },
+  ga4:             { label: "GA4",              color: "#1a1a2d", text: "#818cf8", icon: "📊" },
+  gmail:           { label: "Gmail",            color: "#2d1111", text: "#ea4335", icon: "✉️" },
+  csv:             { label: "CSV",              color: "#182235", text: "#93c5fd", icon: "•" },
 };
 
 export function SourcePill({ source, count }: SourcePillProps) {

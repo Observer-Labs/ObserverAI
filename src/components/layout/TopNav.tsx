@@ -10,7 +10,7 @@ interface TopNavProps {
   signalCount?: number;
   userInitials?: string;
   /** Plan tier, drives the trial counter pill. */
-  plan?: "trial" | "pro" | "past_due" | "expired" | "no_plan";
+  plan?: "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro" | "past_due" | "expired" | "no_plan";
   runsLeft?: number;
   trialDaysLeft?: number;
 }
@@ -116,7 +116,7 @@ export default function TopNav({
   };
 
   return (
-    <div className="sticky top-0 z-50 border-b border-white/[0.07] bg-[rgba(8,8,8,0.93)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)]">
+    <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)]">
       {/* Orange accent line at top */}
       <div className="h-0.5 bg-[linear-gradient(90deg,transparent_0%,rgba(249,115,22,0.55)_30%,rgba(249,115,22,0.55)_70%,transparent_100%)]" />
 
@@ -125,13 +125,13 @@ export default function TopNav({
         {/* ── Logo ── */}
         <Link href="/dashboard" className="mr-4 flex shrink-0 items-center gap-[9px] no-underline">
           <LogoMark />
-          <span className="text-[0.95rem] font-bold italic tracking-[-0.02em] text-white">
+          <span className="text-[0.95rem] font-bold italic tracking-[-0.02em] text-foreground">
             Observer
           </span>
         </Link>
 
         {/* Separator */}
-        <div className="mr-3.5 h-4 w-px shrink-0 bg-white/10" />
+        <div className="mr-3.5 h-4 w-px shrink-0 bg-border" />
 
         {/* ── Nav tabs ── */}
         {navItems.map((item) => (
@@ -153,7 +153,7 @@ export default function TopNav({
 
           {/* Stats counter pill */}
           {(sourceCount > 0 || signalCount > 0) && (
-            <div className="flex items-center gap-2 rounded-[20px] border border-white/[0.07] bg-white/[0.04] px-2.5 py-[3px]">
+            <div className="flex items-center gap-2 rounded-[20px] border bg-muted px-2.5 py-[3px]">
               {sourceCount > 0 && (
                 <span className="font-mono text-[0.72rem] font-medium text-[var(--muted-light)]">
                   <span className="text-primary">{sourceCount}</span>
@@ -161,7 +161,7 @@ export default function TopNav({
                 </span>
               )}
               {sourceCount > 0 && signalCount > 0 && (
-                <div className="h-2.5 w-px bg-white/[0.12]" />
+                <div className="h-2.5 w-px bg-border" />
               )}
               {signalCount > 0 && (
                 <span className="font-mono text-[0.72rem] font-medium text-[var(--muted-light)]">
@@ -220,7 +220,7 @@ export default function TopNav({
           <Link
             href="/settings"
             title="Settings"
-            className="flex items-center rounded-[7px] p-[5px] text-[var(--muted-dim)] transition-colors duration-[120ms] hover:bg-white/[0.06] hover:text-white"
+            className="flex items-center rounded-[7px] p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
             <GearIcon />
           </Link>
@@ -229,7 +229,7 @@ export default function TopNav({
           <button
             onClick={handleSignOut}
             title="Sign out"
-            className="flex cursor-pointer items-center rounded-[7px] border-none bg-transparent p-[5px] text-[var(--muted-dim)] transition-colors duration-[120ms] hover:bg-white/[0.06] hover:text-white"
+            className="flex cursor-pointer items-center rounded-[7px] border-none bg-transparent p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
             <SignOutIcon />
           </button>

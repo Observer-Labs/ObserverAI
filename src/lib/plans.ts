@@ -7,7 +7,7 @@
  * If you need a new plan, add it to PLANS and PlanKey will pick it up.
  */
 
-export type PlanKey = "trial" | "pro";
+export type PlanKey = "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro";
 
 export interface PlanLimits {
   /** Total analysis runs allowed in the billing period (lifetime for trial, monthly for paid). */
@@ -35,6 +35,34 @@ export const PLANS: Record<PlanKey, PlanLimits> = {
     signalsPerRun: 5000,
     claudeBudgetUsd: 50.0,
     rateLimit: { calls: 60, windowMs: 60 * 60 * 1000 }, // 60 / hour
+    trialDays: 0,
+  },
+  starter: {
+    runsPerPeriod: 1000,
+    signalsPerRun: 5000,
+    claudeBudgetUsd: 50.0,
+    rateLimit: { calls: 60, windowMs: 60 * 60 * 1000 },
+    trialDays: 0,
+  },
+  growth: {
+    runsPerPeriod: 1000,
+    signalsPerRun: 5000,
+    claudeBudgetUsd: 50.0,
+    rateLimit: { calls: 60, windowMs: 60 * 60 * 1000 },
+    trialDays: 0,
+  },
+  scale: {
+    runsPerPeriod: 1000,
+    signalsPerRun: 5000,
+    claudeBudgetUsd: 50.0,
+    rateLimit: { calls: 60, windowMs: 60 * 60 * 1000 },
+    trialDays: 0,
+  },
+  enterprise: {
+    runsPerPeriod: 1000,
+    signalsPerRun: 5000,
+    claudeBudgetUsd: 50.0,
+    rateLimit: { calls: 60, windowMs: 60 * 60 * 1000 },
     trialDays: 0,
   },
 };
@@ -68,7 +96,15 @@ export function severityLabel(score: number): SeverityLabel {
  * (legacy rows) or unknown, we always return a valid PlanLimits.
  */
 export function getPlanLimits(plan: string | null | undefined): PlanLimits {
-  if (plan === "pro") return PLANS.pro;
+  if (
+    plan === "pro" ||
+    plan === "starter" ||
+    plan === "growth" ||
+    plan === "scale" ||
+    plan === "enterprise"
+  ) {
+    return PLANS[plan];
+  }
   return PLANS.trial;
 }
 

@@ -269,6 +269,7 @@ export default function SettingsPage() {
 
             {/* Quick links */}
             {[
+              { href: "/settings/branches", label: "Branches", icon: "🏬" },
               { href: "/connect", label: "Sources", icon: "🌐" },
               { href: "/settings/distribution", label: "Distribution", icon: "📡" },
               { href: "/delivery-log", label: "Delivery Log", icon: "📋" },
