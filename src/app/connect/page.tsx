@@ -544,7 +544,7 @@ function ConnectPageContent() {
 
   const connectedCount = getConnectedCount(workspace);
   const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
-  const csvSources = sources.filter((source) => source.type === "csv");
+  const csvSources = sources.filter((source) => source.type === "csv" && source.branch_id === selectedBranchId);
 
   if (loading) {
     return (
@@ -607,7 +607,7 @@ function ConnectPageContent() {
                 </CardDescription>
               </div>
               <div className="rounded-lg border bg-muted px-3 py-2 font-mono text-[0.7rem] font-semibold text-muted-foreground">
-                {csvSources.length} CSV source{csvSources.length === 1 ? "" : "s"}
+                {csvSources.length} CSV source{csvSources.length === 1 ? "" : "s"} for branch
               </div>
             </div>
           </CardHeader>
