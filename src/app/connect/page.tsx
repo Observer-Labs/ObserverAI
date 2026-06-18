@@ -5,8 +5,17 @@ import { Suspense } from "react";
 import type { IntegrationsConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,6 +46,28 @@ interface Workspace {
   slack_token?: string;
   integrations_config?: IntegrationsConfig;
   distribution_config?: Record<string, unknown>;
+}
+
+interface BranchRow {
+  id: string;
+  name: string;
+  status: "active" | "paused";
+}
+
+interface SourceRow {
+  id: string;
+  branch_id: string;
+  type: string;
+  display_name: string;
+  status: "connected" | "pending" | "error";
+  last_sync_at: string | null;
+}
+
+interface CsvImportResult {
+  ingested: number;
+  skipped: number;
+  duplicateRows: number;
+  existingDuplicates: number;
 }
 
 // ── Source definitions ────────────────────────────────────────────────────────
@@ -254,6 +285,9 @@ function getConnectedCount(workspace: Workspace | null): number {
 function ConnectPageContent() {
   const router = useRouter();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const [sources, setSources] = useState<SourceRow[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ActiveSourceKey | null>(null);
   const [formValues, setFormValues] = useState<Record<ActiveSourceKey, Record<string, unknown>>>({
@@ -278,15 +312,36 @@ function ConnectPageContent() {
   const [saving, setSaving] = useState(false);
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [csvName, setCsvName] = useState("Manual CSV upload");
+  const [csvText, setCsvText] = useState("");
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
 
   const loadWorkspace = useCallback(async () => {
     try {
-      const res = await fetch("/api/workspace");
+      const [res, branchesRes, sourcesRes] = await Promise.all([
+        fetch("/api/workspace"),
+        fetch("/api/branches"),
+        fetch("/api/sources"),
+      ]);
       if (res.status === 401) { router.push("/login"); return; }
       if (!res.ok) return;
       const { workspace: data } = await res.json() as { workspace: Workspace };
       if (!data) return;
       setWorkspace(data);
+
+      if (branchesRes.ok) {
+        const branchesData = await branchesRes.json() as { branches?: BranchRow[] };
+        const activeBranches = (branchesData.branches ?? []).filter((branch) => branch.status === "active");
+        setBranches(activeBranches);
+        setSelectedBranchId((current) => current || activeBranches[0]?.id || "");
+      }
+
+      if (sourcesRes.ok) {
+        const sourcesData = await sourcesRes.json() as { sources?: SourceRow[] };
+        setSources(sourcesData.sources ?? []);
+      }
 
       // Hydrate form values from saved config
       const ic = data.integrations_config;
@@ -354,7 +409,43 @@ function ConnectPageContent() {
     }
   }
 
+  async function importCsv() {
+    setCsvImporting(true);
+    setCsvError(null);
+    setCsvResult(null);
+
+    try {
+      const res = await fetch("/api/ingest/csv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branch_id: selectedBranchId,
+          display_name: csvName,
+          csv_text: csvText,
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as Partial<CsvImportResult> & { error?: string };
+      if (!res.ok) {
+        setCsvError(data.error ?? "CSV import failed");
+        return;
+      }
+
+      setCsvResult({
+        ingested: data.ingested ?? 0,
+        skipped: data.skipped ?? 0,
+        duplicateRows: data.duplicateRows ?? 0,
+        existingDuplicates: data.existingDuplicates ?? 0,
+      });
+      setCsvText("");
+      await loadWorkspace();
+    } finally {
+      setCsvImporting(false);
+    }
+  }
+
   const connectedCount = getConnectedCount(workspace);
+  const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
+  const csvSources = sources.filter((source) => source.type === "csv");
 
   if (loading) {
     return (
@@ -404,6 +495,97 @@ function ConnectPageContent() {
             )}
           </div>
         </div>
+
+        <Card className="mb-8 gap-0 rounded-xl py-0">
+          <CardHeader className="border-b px-5 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-[1rem] font-extrabold tracking-[-0.02em]">
+                  Universal CSV
+                </CardTitle>
+                <CardDescription className="mt-1 text-[0.82rem] leading-[1.55]">
+                  POS export, delivery comments, manual issue lists, or survey rows. Choose a branch, paste CSV, and import real signals.
+                </CardDescription>
+              </div>
+              <div className="rounded-lg border bg-muted px-3 py-2 font-mono text-[0.7rem] font-semibold text-muted-foreground">
+                {csvSources.length} CSV source{csvSources.length === 1 ? "" : "s"}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 px-5 py-5 lg:grid-cols-[260px_1fr]">
+            <div className="flex flex-col gap-4">
+              <div>
+                <Label className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                  Branch
+                </Label>
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} disabled={branches.length === 0}>
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="csv-name" className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                  Source name
+                </Label>
+                <Input
+                  id="csv-name"
+                  value={csvName}
+                  onChange={(event) => setCsvName(event.target.value)}
+                  className="h-auto rounded-[7px] bg-background px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem]"
+                />
+              </div>
+              <div className="rounded-lg border bg-muted px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                Expected headers: <span className="font-mono text-foreground">timestamp, channel, sender, content</span>. Metrics can use <span className="font-mono text-foreground">metric_name, metric_value</span>.
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="csv-text" className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                CSV rows for {selectedBranch?.name ?? "selected branch"}
+              </Label>
+              <textarea
+                id="csv-text"
+                value={csvText}
+                onChange={(event) => setCsvText(event.target.value)}
+                rows={8}
+                placeholder={"timestamp,channel,sender,content\n2026-06-18T08:00:00Z,review,Aylin,Queue was too slow\n2026-06-18T09:00:00Z,pos,POS Terminal,,order_count,42"}
+                className="min-h-[190px] w-full resize-y rounded-lg border bg-background px-3 py-3 font-mono text-[0.78rem] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-[0.75rem] text-muted-foreground">
+                  {branches.length === 0 ? "Create a branch first." : "Rows with no content or metric are skipped safely."}
+                </div>
+                <Button
+                  onClick={importCsv}
+                  disabled={csvImporting || !selectedBranchId || !csvText.trim()}
+                  className="h-auto rounded-lg px-4 py-2.5 text-[0.82rem] font-bold"
+                >
+                  {csvImporting ? "Importing..." : "Import CSV"}
+                </Button>
+              </div>
+              {csvError && (
+                <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.78rem] text-destructive">
+                  {csvError}
+                </div>
+              )}
+              {csvResult && (
+                <div className="rounded-lg border border-[color-mix(in_oklch,var(--success)_30%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-3 py-2 text-[0.78rem] text-[var(--success)]">
+                  Imported {csvResult.ingested} signal{csvResult.ingested === 1 ? "" : "s"}. Skipped {csvResult.skipped}; duplicates in file {csvResult.duplicateRows}; already existing {csvResult.existingDuplicates}.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ── Active Sources Grid + Detail ── */}
         <div className={cn("mb-12 grid items-start gap-5", selected ? "grid-cols-[340px_1fr]" : "grid-cols-1")}>
