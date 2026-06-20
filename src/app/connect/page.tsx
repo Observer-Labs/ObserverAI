@@ -228,16 +228,24 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
     { key: "business_name", label: "Google'daki işletme adınız", placeholder: "örn. Kronotrop · Kadıköy", hint: "Google Haritalar'da göründüğü şekilde işletme adını girin. Yorumları otomatik çekeceğiz." },
   ],
   getir: [
-    { key: "store_id", label: "Getir'deki mağaza adı veya kimliği", placeholder: "örn. Coffee Lab · Beşiktaş", hint: "Getir iş ortağı panelinizde görünen mağaza adı." },
+    { key: "restaurant_id", label: "Getir restoran kimliği", placeholder: "örn. restoran-123", hint: "Getir iş ortağı panelindeki restoran kimliği. API anahtarları daha sonra güvenli credential adımında alınır." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
   yemeksepeti: [
-    { key: "restaurant_id", label: "Yemeksepeti'ndeki restoran adı veya kimliği", placeholder: "örn. Burger House · Moda", hint: "Yemeksepeti'nde görünen restoran adınız." },
+    { key: "vendor_id", label: "Yemeksepeti vendor kimliği", placeholder: "örn. vendor-123", hint: "Partner/integration erişimi onaylandığında kullanılacak satıcı kimliği." },
+    { key: "store_id", label: "Restoran / store kimliği", placeholder: "örn. store-456", hint: "Şube eşlemesi için kullanılacak güvenli mağaza kimliği." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük operasyon verisi taransın." },
   ],
   trendyol: [
-    { key: "store_id", label: "Trendyol Go'daki mağaza adı veya kimliği", placeholder: "örn. Pizza Roma · Şişli", hint: "Trendyol Go'da görünen mağaza adınız." },
+    { key: "supplier_id", label: "Trendyol supplier ID", placeholder: "örn. supplier-123", hint: "Satıcı panelindeki entegrasyon bilgilerinde görünür. API key/secret burada tutulmaz." },
+    { key: "store_id", label: "Store ID", placeholder: "örn. store-456", hint: "Restoran yorum endpoint'i için kullanılacak şube/store kimliği." },
+    { key: "delivery_type", label: "Teslimat tipi", placeholder: "GO", hint: "Trendyol Go operasyon türünü ayırmak için güvenli metadata." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
   pos: [
-    { key: "note", label: "Nasıl bağlanılır", placeholder: "", type: "textarea", hint: "Günlük şube satışlarını POS sisteminizden CSV olarak dışa aktarın ve yükleyin (yakında hazır). Şimdilik örnek veriler nasıl görüneceğini gösteriyor." },
+    { key: "system_name", label: "POS sistemi", placeholder: "örn. Simpra, Micros, Logo", hint: "Şube satışlarını hangi sistemden alacağımızı belirtir." },
+    { key: "sync_mode", label: "Bağlantı tipi", placeholder: "csv", hint: "MVP için csv veya partner_api gibi güvenli metadata." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "30", type: "number", hint: "İlk import/senkronizasyon penceresi." },
   ],
   appstore: [
     { key: "app_id_ios",  label: "iOS App Kimliği (App Store)", placeholder: "örn. 123456789", hint: "App Store Connect → Uygulama Bilgileri bölümünden bulabilirsiniz." },
@@ -259,9 +267,8 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
   googleanalytics: [
     { key: "property_id",           label: "GA4 Mülk Kimliği",               placeholder: "123456789", hint: "Google Analytics → Yönetici → Mülk → Mülk ayrıntıları bölümünde bulunur." },
-    { key: "service_account_email", label: "Servis Hesabı E-postası",         placeholder: "signal@your-project.iam.gserviceaccount.com", hint: "Bu e-postayı GA4 Yönetici → Hesap → Hesap Erişim Yönetimi'nde İzleyici olarak ekleyin." },
-    { key: "service_account_key",   label: "Servis Hesabı Anahtarı (JSON)",  placeholder: '{"type":"service_account",...}', type: "textarea", hint: "Google Cloud → IAM → Servis Hesapları'ndan alınan JSON anahtarı. analyticsdata.readonly iznine ihtiyaç duyar." },
     { key: "event_filter",          label: "Etkinlik Filtresi (isteğe bağlı)", placeholder: "page_view, purchase, sign_up", hint: "Virgülle ayrılmış etkinlik adları. Tüm etkinlikleri izlemek için boş bırakın." },
+    { key: "sync_window_days",      label: "Geriye dönük süre (gün)",         placeholder: "30", type: "number", hint: "İlk senkronizasyonda kaç günlük GA4 metriği taransın." },
   ],
   email: [
     { key: "sender_domains", label: "Gönderici Alan Adı Filtresi", placeholder: "sirketiniz.com, marka.io", hint: "Virgülle ayrılmış alan adları. Tüm gelen e-postaları yakalamak için boş bırakın." },
@@ -319,8 +326,66 @@ function ingestRoute(key: ActiveSourceKey): string {
   return `/api/ingest/${key}`;
 }
 
-function getConnectedCount(workspace: Workspace | null): number {
-  return ACTIVE_SOURCES.filter((s) => isConnected(s.key, workspace)).length;
+const BRANCH_SOURCE_TYPES = new Set<ActiveSourceKey>([
+  "googlereviews",
+  "getir",
+  "yemeksepeti",
+  "trendyol",
+  "pos",
+  "googleanalytics",
+]);
+
+const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
+  googlereviews: ["business_name", "location_id", "sync_window_days"],
+  getir: ["restaurant_id", "restaurant_ids", "sync_window_days"],
+  yemeksepeti: ["vendor_id", "store_id", "sync_window_days"],
+  trendyol: ["supplier_id", "store_id", "delivery_type", "sync_window_days"],
+  pos: ["system_name", "sync_mode", "sync_window_days"],
+  googleanalytics: ["property_id", "event_filter", "sync_window_days"],
+};
+
+function isBranchSourceKey(key: ActiveSourceKey) {
+  return BRANCH_SOURCE_TYPES.has(key);
+}
+
+function sourceRecordType(key: ActiveSourceKey) {
+  return key;
+}
+
+function branchSourceForKey(sources: SourceRow[], branchId: string, key: ActiveSourceKey) {
+  return sources.find((source) => source.branch_id === branchId && source.type === sourceRecordType(key));
+}
+
+function isSourceAvailable(
+  key: ActiveSourceKey,
+  workspace: Workspace | null,
+  sources: SourceRow[],
+  branchId: string,
+) {
+  if (isBranchSourceKey(key)) return Boolean(branchSourceForKey(sources, branchId, key));
+  return isConnected(key, workspace);
+}
+
+function getAvailableCount(
+  workspace: Workspace | null,
+  sources: SourceRow[],
+  branchId: string,
+) {
+  return ACTIVE_SOURCES.filter((source) => isSourceAvailable(source.key, workspace, sources, branchId)).length;
+}
+
+function compactSourceConfig(key: ActiveSourceKey, values: Record<string, unknown>) {
+  const allowed = SOURCE_CONFIG_ALLOWLIST[key] ?? [];
+  const output: Record<string, unknown> = {};
+
+  for (const field of allowed) {
+    const value = values[field];
+    if (typeof value === "string" && value.trim()) output[field] = value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) output[field] = value;
+    if (Array.isArray(value) && value.every((item) => typeof item === "string")) output[field] = value;
+  }
+
+  return output;
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
@@ -364,6 +429,7 @@ function ConnectPageContent() {
   const [csvFileLoading, setCsvFileLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [sourceSaveError, setSourceSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -419,7 +485,37 @@ function ConnectPageContent() {
 
   async function saveSource(key: ActiveSourceKey) {
     setSaving(true);
+    setSourceSaveError(null);
     try {
+      if (isBranchSourceKey(key)) {
+        if (!selectedBranchId) {
+          setSourceSaveError("Select a branch before creating a source.");
+          return;
+        }
+
+        const sourceDefinition = ACTIVE_SOURCES.find((source) => source.key === key);
+        const res = await fetch("/api/sources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            branch_id: selectedBranchId,
+            type: sourceRecordType(key),
+            display_name: sourceDefinition?.label ?? key,
+            config: compactSourceConfig(key, formValues[key]),
+          }),
+        });
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        if (!res.ok) {
+          setSourceSaveError(data.error ?? "Source could not be saved.");
+          return;
+        }
+
+        setSavedKey(key);
+        setTimeout(() => setSavedKey(null), 2500);
+        await loadWorkspace();
+        return;
+      }
+
       const values = { ...formValues[key], enabled: true };
       // Merge new values into existing integrations_config so other sources aren't wiped
       const mergedConfig = { ...(workspace?.integrations_config ?? {}), [key]: values };
@@ -542,7 +638,7 @@ function ConnectPageContent() {
     });
   }
 
-  const connectedCount = getConnectedCount(workspace);
+  const connectedCount = getAvailableCount(workspace, sources, selectedBranchId);
   const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
   const csvSources = sources.filter((source) => source.type === "csv" && source.branch_id === selectedBranchId);
 
@@ -573,7 +669,7 @@ function ConnectPageContent() {
             <div className="flex items-center gap-2 rounded-[20px] border bg-card px-3 py-1.5">
               <div className="flex gap-[3px]">
                 {ACTIVE_SOURCES.map((s) => (
-                  <div key={s.key} className={cn("size-1.5 rounded-full", isConnected(s.key, workspace) ? "bg-[#22c55e]" : "bg-border")} />
+                  <div key={s.key} className={cn("size-1.5 rounded-full", isSourceAvailable(s.key, workspace, sources, selectedBranchId) ? "bg-[#22c55e]" : "bg-border")} />
                 ))}
               </div>
               <span className={cn("font-mono text-[0.7rem] font-bold", connectedCount > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
@@ -761,8 +857,14 @@ function ConnectPageContent() {
             <div className="mb-1 font-mono text-[0.6rem] font-bold tracking-[0.12em] text-[var(--muted-dim)] uppercase">
               Aktif Kaynaklar
             </div>
+            {selectedBranch && (
+              <div className="text-[0.72rem] text-muted-foreground">
+                Selected branch: <span className="font-semibold text-foreground">{selectedBranch.name}</span>
+              </div>
+            )}
             {ACTIVE_SOURCES.map((source) => {
-              const connected = isConnected(source.key, workspace);
+              const sourceRecord = branchSourceForKey(sources, selectedBranchId, source.key);
+              const connected = isSourceAvailable(source.key, workspace, sources, selectedBranchId);
               const isActive = selected === source.key;
               return (
                 <button
@@ -792,7 +894,7 @@ function ConnectPageContent() {
                     {connected ? (
                       <span className="flex items-center gap-1 font-mono text-[0.65rem] font-bold text-[#4ade80]">
                         <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                        LIVE
+                        {sourceRecord?.status === "pending" ? "PENDING" : "LIVE"}
                       </span>
                     ) : (
                       <span className={cn("leading-none font-semibold", isActive ? "text-base text-primary" : "text-[0.65rem] text-[var(--muted-dim)]")}>
@@ -808,7 +910,8 @@ function ConnectPageContent() {
           {/* Config Panel */}
           {selected && (() => {
             const src = ACTIVE_SOURCES.find((s) => s.key === selected)!;
-            const connected = isConnected(selected, workspace);
+            const selectedSourceRecord = branchSourceForKey(sources, selectedBranchId, selected);
+            const connected = isSourceAvailable(selected, workspace, sources, selectedBranchId);
             const fields = SOURCE_FIELDS[selected];
             return (
               <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
@@ -824,7 +927,7 @@ function ConnectPageContent() {
                   {connected && (
                     <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
                       <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                      Bağlı
+                      {selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
                     </span>
                   )}
                 </div>
@@ -878,6 +981,16 @@ function ConnectPageContent() {
                     <div className="flex flex-col gap-[18px]">
                       {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
                     </div>
+                    {isBranchSourceKey(selected) && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                        This step stores only branch mapping metadata. API keys, OAuth grants, and service account files are handled in a separate credential step and are not saved here.
+                      </div>
+                    )}
+                    {sourceSaveError && (
+                      <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
+                        {sourceSaveError}
+                      </div>
+                    )}
                     <div className="mt-6 flex gap-2.5">
                       <Button
                         onClick={() => saveSource(selected)}
@@ -893,7 +1006,7 @@ function ConnectPageContent() {
                       >
                         {savedKey === selected ? "✓ Kaydedildi" : saving ? "Kaydediliyor…" : connected ? "Güncelle" : "Bağlan"}
                       </Button>
-                      {connected && (
+                      {connected && !isBranchSourceKey(selected) && (
                         <Button
                           variant="outline"
                           onClick={() => disconnectSource(selected)}

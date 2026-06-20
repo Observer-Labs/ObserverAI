@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type QueryOperation = "insert";
+type QueryOperation = "insert" | "update";
 
 type QueryCall = {
   table: string;
   operation?: QueryOperation;
   selected?: string;
   insertPayload?: Record<string, unknown>;
+  updatePayload?: Record<string, unknown>;
   filters: Array<[column: string, value: unknown]>;
 };
 
@@ -17,6 +18,7 @@ let branchLookup: { id: string; status: "active" | "paused" } | null = {
 };
 let branchError: Error | null = null;
 let sourceError: Error | null = null;
+let existingSource: { id: string } | null = null;
 
 function createQuery(table: string) {
   const call: QueryCall = { table, filters: [] };
@@ -36,6 +38,18 @@ function createQuery(table: string) {
       call.insertPayload = payload;
       return query;
     }),
+    update: vi.fn((payload: Record<string, unknown>) => {
+      call.operation = "update";
+      call.updatePayload = payload;
+      return query;
+    }),
+    maybeSingle: vi.fn(async () => {
+      if (table === "sources") {
+        return { data: existingSource, error: null };
+      }
+
+      return { data: null, error: null };
+    }),
     single: vi.fn(async () => {
       if (table === "branches") {
         return { data: branchLookup, error: branchError };
@@ -48,6 +62,18 @@ function createQuery(table: string) {
             id: "source-1",
             created_at: "2026-06-20T00:00:00.000Z",
             ...call.insertPayload,
+          },
+          error: null,
+        };
+      }
+
+      if (table === "sources" && call.operation === "update") {
+        if (sourceError) return { data: null, error: sourceError };
+        return {
+          data: {
+            id: existingSource?.id ?? "source-existing",
+            created_at: "2026-06-20T00:00:00.000Z",
+            ...call.updatePayload,
           },
           error: null,
         };
@@ -80,6 +106,7 @@ describe("source record helpers", () => {
     branchLookup = { id: "branch-1", status: "active" };
     branchError = null;
     sourceError = null;
+    existingSource = null;
   });
 
   it("sanitizes Trendyol source config and keeps delivery sources pending", async () => {
@@ -142,6 +169,66 @@ describe("source record helpers", () => {
     });
   });
 
+  it("sanitizes GA4 config and rejects service account key fields", async () => {
+    const { parseSourceInput, SourceValidationError } = await loadSourceRecordsModule();
+
+    expect(parseSourceInput({
+      branch_id: "branch-1",
+      type: "googleanalytics",
+      display_name: "GA4 Website",
+      config: {
+        property_id: " property-1 ",
+        event_filter: "purchase, page_view",
+        service_account_email: "viewer@example.com",
+      },
+    }).config).toEqual({
+      property_id: "property-1",
+      event_filter: "purchase, page_view",
+    });
+
+    expect(() => parseSourceInput({
+      branch_id: "branch-1",
+      type: "ga4",
+      display_name: "GA4 Website",
+      config: {
+        property_id: "property-1",
+        service_account_key: "placeholder",
+      },
+    })).toThrow(SourceValidationError);
+  });
+
+  it("sanitizes Google Reviews and POS setup fields", async () => {
+    const { parseSourceInput } = await loadSourceRecordsModule();
+
+    expect(parseSourceInput({
+      branch_id: "branch-1",
+      type: "googlereviews",
+      display_name: "Google Reviews",
+      config: {
+        business_name: " Coffee Lab ",
+        sync_window_days: 30,
+        admin_email: "owner@example.com",
+      },
+    }).config).toEqual({
+      business_name: "Coffee Lab",
+      sync_window_days: 30,
+    });
+
+    expect(parseSourceInput({
+      branch_id: "branch-1",
+      type: "pos",
+      display_name: "POS",
+      config: {
+        system_name: " Simpra ",
+        sync_mode: "csv",
+        raw_export: "drop-me",
+      },
+    }).config).toEqual({
+      system_name: "Simpra",
+      sync_mode: "csv",
+    });
+  });
+
   it("creates CSV sources as connected manual upload records", async () => {
     const { parseSourceInput } = await loadSourceRecordsModule();
 
@@ -200,6 +287,44 @@ describe("source record helpers", () => {
       },
       credentials: null,
     });
+  });
+
+  it("updates an existing source record instead of inserting a duplicate", async () => {
+    existingSource = { id: "source-existing" };
+    const { createSourceRecord } = await loadSourceRecordsModule();
+
+    await expect(createSourceRecord("workspace-1", {
+      branch_id: "branch-1",
+      type: "trendyol",
+      display_name: "Trendyol Go",
+      config: {
+        supplier_id: "supplier-1",
+        store_id: "store-1",
+      },
+    })).resolves.toMatchObject({
+      id: "source-existing",
+      status: "pending",
+      credentials: null,
+      config: {
+        supplier_id: "supplier-1",
+        store_id: "store-1",
+      },
+    });
+
+    expect(calls.some((call) => call.table === "sources" && call.operation === "insert")).toBe(false);
+    const updateCall = calls.find((call) => call.table === "sources" && call.operation === "update");
+    expect(updateCall?.updatePayload).toEqual({
+      status: "pending",
+      config: {
+        supplier_id: "supplier-1",
+        store_id: "store-1",
+      },
+      credentials: null,
+    });
+    expect(updateCall?.filters).toEqual([
+      ["id", "source-existing"],
+      ["workspace_id", "workspace-1"],
+    ]);
   });
 
   it("rejects source creation for paused branches", async () => {

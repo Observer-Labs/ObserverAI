@@ -3,6 +3,9 @@ import { getSupabaseAdmin } from "./supabase";
 import type { SignalSource, Source } from "./types";
 
 const YEMEKSEPETI_CONFIG_FIELDS = new Set(["vendor_id", "store_id", "sync_window_days"]);
+const GOOGLE_REVIEWS_CONFIG_FIELDS = new Set(["business_name", "location_id", "sync_window_days"]);
+const GA4_CONFIG_FIELDS = new Set(["property_id", "event_filter", "sync_window_days"]);
+const POS_CONFIG_FIELDS = new Set(["system_name", "sync_mode", "sync_window_days"]);
 
 export class SourceValidationError extends Error {
   status = 400;
@@ -22,8 +25,36 @@ export interface CreateSourceInput {
 export async function createSourceRecord(workspaceId: string, input: CreateSourceInput): Promise<Source> {
   const parsed = parseSourceInput(input);
   await ensureActiveBranch(workspaceId, parsed.branch_id);
+  const supabase = getSupabaseAdmin();
+  const { data: existing, error: existingError } = await supabase
+    .from("sources")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("branch_id", parsed.branch_id)
+    .eq("type", parsed.type)
+    .eq("display_name", parsed.display_name)
+    .maybeSingle();
 
-  const { data, error } = await getSupabaseAdmin()
+  if (existingError) throw existingError;
+
+  if ((existing as { id?: string } | null)?.id) {
+    const { data, error } = await supabase
+      .from("sources")
+      .update({
+        status: parsed.status,
+        config: parsed.config,
+        credentials: null,
+      })
+      .eq("id", (existing as { id: string }).id)
+      .eq("workspace_id", workspaceId)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data as Source;
+  }
+
+  const { data, error } = await supabase
     .from("sources")
     .insert({
       workspace_id: workspaceId,
@@ -81,6 +112,18 @@ function sanitizeSourceConfig(type: SignalSource, config: Record<string, unknown
 
   if (type === "yemeksepeti") {
     return pickAllowedConfig(config, YEMEKSEPETI_CONFIG_FIELDS);
+  }
+
+  if (type === "googlereviews" || type === "google_reviews") {
+    return pickAllowedConfig(config, GOOGLE_REVIEWS_CONFIG_FIELDS);
+  }
+
+  if (type === "googleanalytics" || type === "ga4") {
+    return pickAllowedConfig(config, GA4_CONFIG_FIELDS);
+  }
+
+  if (type === "pos") {
+    return pickAllowedConfig(config, POS_CONFIG_FIELDS);
   }
 
   if (type === "csv") {
@@ -146,7 +189,9 @@ function findSensitiveKeys(value: Record<string, unknown>, prefix = ""): string[
       normalized.includes("password") ||
       normalized.includes("credential") ||
       normalized.includes("apikey") ||
-      normalized.includes("servicekey")
+      normalized.includes("servicekey") ||
+      normalized.includes("serviceaccountkey") ||
+      normalized.includes("privatekey")
     ) {
       matches.push(path);
       continue;
