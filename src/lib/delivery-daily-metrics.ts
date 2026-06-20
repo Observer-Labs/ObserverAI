@@ -1,4 +1,19 @@
-import type { DeliveryDailyMetrics, DeliveryDailyTopic, DeliveryOrder, DeliveryPlatform, DeliveryReview } from "./types";
+import {
+  evaluateDailySignalCandidates,
+  type DailyBaselineMetrics,
+  type DailyDeliveryMetrics as RuleDailyDeliveryMetrics,
+  type EvaluateDailySignalOptions,
+  type PreviousNotification,
+  type SignalCandidate,
+} from "./daily-signal-rules";
+import { getSupabaseAdmin } from "./supabase";
+import type {
+  DeliveryDailyMetrics,
+  DeliveryDailyTopic,
+  DeliveryOrder,
+  DeliveryPlatform,
+  DeliveryReview,
+} from "./types";
 
 export type DeliveryOrderMetricInput = Pick<
   DeliveryOrder,
@@ -27,6 +42,8 @@ export type DeliveryReviewMetricInput = Pick<
 >;
 
 export type DeliveryDailyMetricInsert = Omit<DeliveryDailyMetrics, "id" | "created_at">;
+
+const DELIVERY_DAILY_METRICS_CONFLICT_TARGET = "workspace_id,branch_id,source_id,platform,metric_date";
 
 export interface BuildDeliveryDailyMetricsInput {
   workspaceId: string;
@@ -77,6 +94,61 @@ export function buildDeliveryDailyMetrics(input: BuildDeliveryDailyMetricsInput)
     avg_delivery_duration_minutes: averageNumbers(orders.map((order) => order.delivery_duration_minutes)),
     dominant_topics: countDominantTopics(badReviews),
   };
+}
+
+export async function upsertDeliveryDailyMetrics(metrics: DeliveryDailyMetricInsert): Promise<DeliveryDailyMetrics> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("delivery_daily_metrics")
+    .upsert(metrics, { onConflict: DELIVERY_DAILY_METRICS_CONFLICT_TARGET })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as DeliveryDailyMetrics;
+}
+
+export async function buildAndUpsertDeliveryDailyMetrics(
+  input: BuildDeliveryDailyMetricsInput,
+): Promise<DeliveryDailyMetrics> {
+  return upsertDeliveryDailyMetrics(buildDeliveryDailyMetrics(input));
+}
+
+export function toRuleDailyDeliveryMetrics(
+  metrics: DeliveryDailyMetricInsert | DeliveryDailyMetrics,
+): RuleDailyDeliveryMetrics {
+  return {
+    workspaceId: metrics.workspace_id,
+    branchId: metrics.branch_id,
+    sourceId: metrics.source_id ?? undefined,
+    platform: metrics.platform,
+    date: metrics.metric_date,
+    orderCount: metrics.order_count,
+    cancelCount: metrics.cancel_count,
+    grossAmount: metrics.gross_amount,
+    netAmount: metrics.net_amount,
+    badReviewCount: metrics.bad_review_count,
+    avgRating: metrics.avg_rating ?? undefined,
+    avgPrepDurationMinutes: metrics.avg_prep_duration_minutes ?? undefined,
+    topicCounts: metrics.dominant_topics.map((topic) => ({
+      topic: topic.topic,
+      count: topic.count,
+      confidence: topic.confidence,
+    })),
+  };
+}
+
+export function evaluateDeliveryDailyMetricCandidates(
+  metrics: DeliveryDailyMetricInsert | DeliveryDailyMetrics,
+  baseline: DailyBaselineMetrics | null,
+  previousNotifications: PreviousNotification[] = [],
+  options: Partial<EvaluateDailySignalOptions> = {},
+): SignalCandidate[] {
+  return evaluateDailySignalCandidates(
+    toRuleDailyDeliveryMetrics(metrics),
+    baseline,
+    previousNotifications,
+    options,
+  );
 }
 
 function matchesMetricScope(args: {

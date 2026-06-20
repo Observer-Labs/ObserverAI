@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDeliveryDailyMetrics,
+  evaluateDeliveryDailyMetricCandidates,
+  toRuleDailyDeliveryMetrics,
   type DeliveryOrderMetricInput,
   type DeliveryReviewMetricInput,
 } from "./delivery-daily-metrics";
@@ -158,5 +160,67 @@ describe("delivery daily metrics", () => {
       avg_delivery_duration_minutes: null,
       dominant_topics: [],
     });
+  });
+
+  it("adapts stored delivery metrics into the daily signal rule input", () => {
+    const metrics = buildDeliveryDailyMetrics({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      platform: "trendyol",
+      metricDate: "2026-06-19",
+      orders: [baseOrder],
+      reviews: [baseReview],
+    });
+
+    expect(toRuleDailyDeliveryMetrics(metrics)).toEqual({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      platform: "trendyol",
+      date: "2026-06-19",
+      orderCount: 1,
+      cancelCount: 0,
+      grossAmount: 100,
+      netAmount: 90,
+      badReviewCount: 1,
+      avgRating: 2,
+      avgPrepDurationMinutes: 18,
+      topicCounts: [{ topic: "delivery_delay", count: 1, confidence: 0.92 }],
+    });
+  });
+
+  it("evaluates daily signal candidates from aggregated delivery metrics", () => {
+    const metrics = buildDeliveryDailyMetrics({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      platform: "trendyol",
+      metricDate: "2026-06-19",
+      orders: [
+        ...Array.from({ length: 40 }, (_, index) => ({
+          ...baseOrder,
+          status: index < 6 ? "Cancelled" : "Delivered",
+          gross_amount: 100,
+          net_amount: index < 6 ? 0 : 90,
+        })),
+      ],
+      reviews: Array.from({ length: 5 }, () => baseReview),
+    });
+
+    const candidates = evaluateDeliveryDailyMetricCandidates(metrics, {
+      orderCount: 120,
+      cancelRate: 0.02,
+      netAmount: 12000,
+      badReviewCount: 1,
+      avgRating: 4.1,
+      avgPrepDurationMinutes: 17,
+    });
+
+    expect(candidates.some((candidate) => (
+      candidate.kind === "delivery_cancel_delay" &&
+      candidate.shouldNotify &&
+      candidate.topic === "delivery_delay"
+    ))).toBe(true);
   });
 });
