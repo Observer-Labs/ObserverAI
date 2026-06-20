@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from "next/server";
+import { persistDeliveryCandidateClusters } from "@/lib/delivery-candidate-clusters";
 import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { DeliveryPlatform } from "@/lib/types";
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest) {
     status: "processed" | "failed";
     candidates?: number;
     notified_candidates?: number;
+    clusters?: number;
     error?: string;
   }> = [];
 
@@ -65,6 +67,10 @@ export async function GET(req: NextRequest) {
         platform: source.type,
         metricDate,
       });
+      const clusters = await persistDeliveryCandidateClusters({
+        candidates: result.candidates,
+        metricDate,
+      });
 
       summary.push({
         source_id: source.id,
@@ -74,6 +80,7 @@ export async function GET(req: NextRequest) {
         status: "processed",
         candidates: result.candidates.length,
         notified_candidates: result.candidates.filter((candidate) => candidate.shouldNotify).length,
+        clusters: clusters.length,
       });
     } catch (err) {
       summary.push({
