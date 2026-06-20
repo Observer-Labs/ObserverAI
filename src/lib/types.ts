@@ -136,6 +136,91 @@ export interface TokenUsage {
   created_at: string;
 }
 
+export type DeliveryPlatform = "getir" | "trendyol" | "yemeksepeti" | "csv";
+
+export interface DeliveryOrder {
+  id: string;
+  workspace_id: string;
+  branch_id: string;
+  source_id?: string | null;
+  platform: DeliveryPlatform;
+  external_order_id: string;
+  external_store_id?: string | null;
+  status: string;
+  ordered_at: string;
+  updated_at?: string | null;
+  gross_amount?: number | null;
+  net_amount?: number | null;
+  discount_amount?: number | null;
+  payment_type?: string | null;
+  payment_provider?: string | null;
+  cancel_reason?: string | null;
+  prep_duration_minutes?: number | null;
+  delivery_duration_minutes?: number | null;
+  raw_ref: Record<string, unknown>;
+  created_at: string;
+  updated_record_at?: string;
+}
+
+export interface DeliveryReviewClassification {
+  sentiment?: "positive" | "negative" | "neutral";
+  topics?: string[];
+  topic_confidence?: number;
+  severity_hint?: Severity;
+  critical_topic?: boolean;
+  actionable?: boolean;
+}
+
+export interface DeliveryReview {
+  id: string;
+  workspace_id: string;
+  branch_id: string;
+  source_id?: string | null;
+  platform: DeliveryPlatform;
+  external_review_id?: string | null;
+  external_order_id?: string | null;
+  external_store_id?: string | null;
+  reviewed_at: string;
+  rating_overall?: number | null;
+  rating_food?: number | null;
+  rating_service?: number | null;
+  rating_delivery?: number | null;
+  comment_text?: string | null;
+  answer_status?: string | null;
+  classification: DeliveryReviewClassification;
+  raw_ref: Record<string, unknown>;
+  created_at: string;
+  updated_record_at?: string;
+}
+
+export interface DeliveryDailyTopic {
+  topic: string;
+  count: number;
+  confidence?: number;
+}
+
+export interface DeliveryDailyMetrics {
+  id: string;
+  workspace_id: string;
+  branch_id: string;
+  source_id?: string | null;
+  platform: DeliveryPlatform;
+  metric_date: string;
+  order_count: number;
+  cancel_count: number;
+  cancel_rate: number;
+  gross_amount: number;
+  net_amount: number;
+  discount_amount: number;
+  avg_rating?: number | null;
+  bad_review_count: number;
+  avg_prep_duration_minutes?: number | null;
+  avg_delivery_duration_minutes?: number | null;
+  dominant_topics: DeliveryDailyTopic[];
+  created_at: string;
+  updated_record_at?: string;
+}
+
 // ─── Integration Configs ──────────────────────────────────────────────────────
 
 /** Slack signal ingestion config (credentials live on workspace top-level fields) */
