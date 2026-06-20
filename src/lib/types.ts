@@ -68,6 +68,7 @@ export interface Cluster {
   projected_impact?: string; // e.g. "~$12k MRR at risk" or "~18% conversion uplift"
   metric_delta?: number;
   correlation_id?: string | null;
+  candidate_key?: string | null;
   vertical?: VerticalType;
   status: ClusterStatus;
   created_at: string;
