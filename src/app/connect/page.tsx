@@ -80,6 +80,14 @@ interface CsvImportResult {
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 
+interface SourceConnectionTestResult {
+  status: "ready";
+  provider: string;
+  checkedAt: string;
+  checks: Array<{ id: string; status: "ok"; item_count?: number }>;
+  store_candidates: Array<{ external_id: string; name?: string; status?: string }>;
+}
+
 const CSV_MAPPING_FIELDS: { key: CsvMappingField; label: string; helper: string }[] = [
   { key: "content", label: "Content", helper: "Review, complaint, email, or note text" },
   { key: "timestamp", label: "Timestamp", helper: "Date/time for the row" },
@@ -373,6 +381,10 @@ function isSelfServiceAuthKey(key: ActiveSourceKey): key is SelfServiceAuthKey {
   return key === "getir" || key === "trendyol" || key === "yemeksepeti";
 }
 
+function isDeliveryConnectionTestKey(key: ActiveSourceKey): key is Extract<SelfServiceAuthKey, "getir" | "trendyol"> {
+  return key === "getir" || key === "trendyol";
+}
+
 function sourceRecordType(key: ActiveSourceKey) {
   return key;
 }
@@ -468,6 +480,9 @@ function ConnectPageContent() {
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [sourceSaveError, setSourceSaveError] = useState<string | null>(null);
+  const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
+  const [sourceTestResult, setSourceTestResult] = useState<SourceConnectionTestResult | null>(null);
+  const [sourceTestError, setSourceTestError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -524,6 +539,8 @@ function ConnectPageContent() {
   async function saveSource(key: ActiveSourceKey) {
     setSaving(true);
     setSourceSaveError(null);
+    setSourceTestError(null);
+    setSourceTestResult(null);
     try {
       if (isBranchSourceKey(key)) {
         if (!selectedBranchId) {
@@ -610,6 +627,28 @@ function ConnectPageContent() {
       body: JSON.stringify({ updates: { integrations_config: mergedConfig } }),
     });
     await loadWorkspace();
+  }
+
+  async function testSourceConnection(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setTestingSourceId(source.id);
+    setSourceTestError(null);
+    setSourceTestResult(null);
+
+    try {
+      const res = await fetch(`/api/sources/${source.id}/test`, { method: "POST" });
+      const data = await res.json().catch(() => ({})) as { result?: SourceConnectionTestResult; error?: string };
+      if (!res.ok || !data.result) {
+        setSourceTestError(data.error ?? "Connection test failed.");
+        return;
+      }
+
+      setSourceTestResult(data.result);
+      await loadWorkspace();
+    } finally {
+      setTestingSourceId(null);
+    }
   }
 
   async function syncAll() {
@@ -1076,6 +1115,46 @@ function ConnectPageContent() {
                     {sourceSaveError && (
                       <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
                         {sourceSaveError}
+                      </div>
+                    )}
+                    {isDeliveryConnectionTestKey(selected) && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Connection test</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Resolves the Vault credential and checks the partner API without exposing secrets.
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => void testSourceConnection(selectedSourceRecord)}
+                            disabled={!authReady || testingSourceId === selectedSourceRecord?.id}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {testingSourceId === selectedSourceRecord?.id ? "Testing..." : "Test connection"}
+                          </Button>
+                        </div>
+                        {sourceTestError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceTestError}
+                          </div>
+                        )}
+                        {sourceTestResult && sourceTestResult.provider === selected && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            <div className="font-semibold text-foreground">
+                              Ready · {sourceTestResult.checks.map((check) => check.id).join(", ")}
+                            </div>
+                            {sourceTestResult.store_candidates.length > 0 && (
+                              <div className="mt-1">
+                                Store candidates: {sourceTestResult.store_candidates.map((store) => (
+                                  store.name ? `${store.name} (${store.external_id})` : store.external_id
+                                )).join(", ")}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="mt-6 flex gap-2.5">
