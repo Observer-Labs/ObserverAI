@@ -386,6 +386,10 @@ function isDeliveryConnectionTestKey(key: ActiveSourceKey): key is Extract<SelfS
   return key === "getir" || key === "trendyol";
 }
 
+function isLocationListKey(key: ActiveSourceKey): key is Extract<ActiveSourceKey, "googlereviews"> {
+  return key === "googlereviews";
+}
+
 function sourceRecordType(key: ActiveSourceKey) {
   return key;
 }
@@ -434,9 +438,10 @@ function hasCredentialInput(values: Record<string, string>) {
   return Object.values(values).some((value) => value.trim().length > 0);
 }
 
-function sourceMappingField(key: ActiveSourceKey): "restaurant_id" | "store_id" | null {
+function sourceMappingField(key: ActiveSourceKey): "restaurant_id" | "store_id" | "location_id" | null {
   if (key === "getir") return "restaurant_id";
   if (key === "trendyol") return "store_id";
+  if (key === "googlereviews") return "location_id";
   return null;
 }
 
@@ -645,7 +650,10 @@ function ConnectPageContent() {
     setSourceTestResult(null);
 
     try {
-      const res = await fetch(`/api/sources/${source.id}/test`, { method: "POST" });
+      const route = source.type === "googlereviews"
+        ? `/api/sources/${source.id}/google-locations`
+        : `/api/sources/${source.id}/test`;
+      const res = await fetch(route, { method: "POST" });
       const data = await res.json().catch(() => ({})) as { result?: SourceConnectionTestResult; error?: string };
       if (!res.ok || !data.result) {
         setSourceTestError(data.error ?? "Connection test failed.");
@@ -660,7 +668,7 @@ function ConnectPageContent() {
   }
 
   async function applyStoreCandidate(
-    key: Extract<SelfServiceAuthKey, "getir" | "trendyol">,
+    key: Extract<ActiveSourceKey, "getir" | "trendyol" | "googlereviews">,
     candidate: SourceConnectionTestResult["store_candidates"][number],
   ) {
     const mappingField = sourceMappingField(key);
@@ -1170,26 +1178,60 @@ function ConnectPageContent() {
                         {sourceSaveError}
                       </div>
                     )}
-                    {isDeliveryConnectionTestKey(selected) && connected && (
+                    {isLocationListKey(selected) && connected && (
                       <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <div className="text-[0.78rem] font-semibold text-foreground">Connection test</div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Google Business Profile</div>
                             <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
-                              Resolves the Vault credential and checks the partner API without exposing secrets.
+                              Authorize Google, then map a Google location to this Observer branch.
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => void testSourceConnection(selectedSourceRecord)}
-                            disabled={!authReady || testingSourceId === selectedSourceRecord?.id}
-                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
-                          >
-                            {testingSourceId === selectedSourceRecord?.id ? "Testing..." : "Test connection"}
-                          </Button>
+                          {authReady ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => void testSourceConnection(selectedSourceRecord)}
+                              disabled={testingSourceId === selectedSourceRecord?.id}
+                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                            >
+                              {testingSourceId === selectedSourceRecord?.id ? "Loading..." : "List locations"}
+                            </Button>
+                          ) : selectedSourceRecord ? (
+                            <Button asChild className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold">
+                              <a href={`/api/auth/google-reviews?source_id=${selectedSourceRecord.id}`}>Authorize Google</a>
+                            </Button>
+                          ) : null}
                         </div>
                         {sourceTestError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceTestError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {((isDeliveryConnectionTestKey(selected) && connected) || (isLocationListKey(selected) && connected && sourceTestResult?.provider === selected)) && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        {isDeliveryConnectionTestKey(selected) && (
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[0.78rem] font-semibold text-foreground">Connection test</div>
+                              <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                                Resolves the Vault credential and checks the partner API without exposing secrets.
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => void testSourceConnection(selectedSourceRecord)}
+                              disabled={!authReady || testingSourceId === selectedSourceRecord?.id}
+                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                            >
+                              {testingSourceId === selectedSourceRecord?.id ? "Testing..." : "Test connection"}
+                            </Button>
+                          </div>
+                        )}
+                        {isDeliveryConnectionTestKey(selected) && sourceTestError && (
                           <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
                             {sourceTestError}
                           </div>
