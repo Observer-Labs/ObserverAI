@@ -63,6 +63,10 @@ export async function persistDeliveryCandidateClusters(
   input: PersistDeliveryCandidateClustersInput,
 ): Promise<Cluster[]> {
   const rows = input.candidates.map((candidate) => candidateToCluster(candidate, input.metricDate));
+  return persistDeliveryClusterRows(rows);
+}
+
+export async function persistDeliveryClusterRows(rows: CandidateClusterInsert[]): Promise<Cluster[]> {
   if (rows.length === 0) return [];
 
   const keys = rows.map((row) => row.candidate_key).filter((key): key is string => Boolean(key));

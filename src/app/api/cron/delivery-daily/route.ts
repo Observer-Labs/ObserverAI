@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from "next/server";
-import { persistDeliveryCandidateClusters } from "@/lib/delivery-candidate-clusters";
+import { persistDeliveryClusterRows } from "@/lib/delivery-candidate-clusters";
 import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
+import { generateDeliveryFinalBrief } from "@/lib/delivery-final-briefs";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { recordTokenUsage } from "@/lib/token-usage";
 import type { DeliveryPlatform } from "@/lib/types";
 
 const DELIVERY_PIPELINE_SOURCE_TYPES = ["getir", "trendyol", "yemeksepeti", "csv"] as const;
@@ -53,6 +55,7 @@ export async function GET(req: NextRequest) {
     candidates?: number;
     notified_candidates?: number;
     clusters?: number;
+    ai_briefs?: number;
     error?: string;
   }> = [];
 
@@ -67,10 +70,19 @@ export async function GET(req: NextRequest) {
         platform: source.type,
         metricDate,
       });
-      const clusters = await persistDeliveryCandidateClusters({
-        candidates: result.candidates,
-        metricDate,
-      });
+      const finalBriefs = await Promise.all(
+        result.candidates.map(async (candidate) => {
+          const brief = await generateDeliveryFinalBrief(candidate, metricDate);
+          await recordTokenUsage({
+            workspaceId: candidate.workspaceId,
+            branchId: candidate.branchId,
+            inputTokens: brief.usage.inputTokens,
+            outputTokens: brief.usage.outputTokens,
+          });
+          return brief;
+        }),
+      );
+      const clusters = await persistDeliveryClusterRows(finalBriefs.map((brief) => brief.cluster));
 
       summary.push({
         source_id: source.id,
@@ -81,6 +93,7 @@ export async function GET(req: NextRequest) {
         candidates: result.candidates.length,
         notified_candidates: result.candidates.filter((candidate) => candidate.shouldNotify).length,
         clusters: clusters.length,
+        ai_briefs: finalBriefs.filter((brief) => !brief.usedFallback).length,
       });
     } catch (err) {
       summary.push({
