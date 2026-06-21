@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { persistDeliveryClusterRows } from "@/lib/delivery-candidate-clusters";
 import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
 import { generateDeliveryFinalBrief } from "@/lib/delivery-final-briefs";
+import { createDeliveryPartnerHttpClient, envVaultResolver } from "@/lib/delivery-partner-runtime";
+import { syncDeliverySource, type SyncDeliverySourceResult } from "@/lib/delivery-source-sync";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { recordTokenUsage } from "@/lib/token-usage";
 import type { DeliveryPlatform } from "@/lib/types";
@@ -56,6 +58,7 @@ export async function GET(req: NextRequest) {
     notified_candidates?: number;
     clusters?: number;
     ai_briefs?: number;
+    partner_sync?: SyncDeliverySourceResult | { status: "failed"; error: string };
     error?: string;
   }> = [];
 
@@ -63,6 +66,7 @@ export async function GET(req: NextRequest) {
     if (!isDeliveryPipelinePlatform(source.type)) continue;
 
     try {
+      const partnerSync = await syncPartnerSourceIfSupported(source);
       const result = await runDeliveryDailyPipeline({
         workspaceId: source.workspace_id,
         branchId: source.branch_id,
@@ -94,6 +98,7 @@ export async function GET(req: NextRequest) {
         notified_candidates: result.candidates.filter((candidate) => candidate.shouldNotify).length,
         clusters: clusters.length,
         ai_briefs: finalBriefs.filter((brief) => !brief.usedFallback).length,
+        partner_sync: partnerSync,
       });
     } catch (err) {
       summary.push({
@@ -119,6 +124,26 @@ export async function GET(req: NextRequest) {
 
 function isDeliveryPipelinePlatform(value: string): value is DeliveryPlatform {
   return DELIVERY_PIPELINE_SOURCE_TYPES.includes(value as typeof DELIVERY_PIPELINE_SOURCE_TYPES[number]);
+}
+
+async function syncPartnerSourceIfSupported(
+  source: DeliveryPipelineSource,
+): Promise<SyncDeliverySourceResult | { status: "failed"; error: string } | undefined> {
+  if (source.type !== "getir" && source.type !== "trendyol") return undefined;
+
+  try {
+    return await syncDeliverySource({
+      workspaceId: source.workspace_id,
+      sourceId: source.id,
+      resolver: envVaultResolver,
+      http: createDeliveryPartnerHttpClient(source.type),
+    });
+  } catch (err) {
+    return {
+      status: "failed",
+      error: err instanceof Error ? err.message : "Delivery partner sync failed",
+    };
+  }
 }
 
 function yesterdayUtcDate() {
