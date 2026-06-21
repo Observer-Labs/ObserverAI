@@ -179,6 +179,27 @@ export function normalizeTrendyolReview(raw: Record<string, unknown>, context: N
   };
 }
 
+export function normalizeGetirReview(raw: Record<string, unknown>, context: NormalizeContext): DeliveryReviewInsert {
+  return {
+    workspace_id: context.workspaceId,
+    branch_id: context.branchId,
+    source_id: context.sourceId ?? null,
+    platform: "getir",
+    external_review_id: stringValue(raw.id) ?? stringValue(raw.reviewId),
+    external_order_id: stringValue(raw.foodOrderId) ?? stringValue(raw.orderId),
+    external_store_id: stringValue(raw.restaurantId) ?? context.externalStoreId ?? null,
+    reviewed_at: stringValue(raw.createdAt) ?? stringValue(raw.reviewDate) ?? context.observedAt,
+    rating_overall: numberValue(raw.rating) ?? numberValue(raw.rate) ?? numberValue(raw.score),
+    rating_food: numberValue(raw.foodRating),
+    rating_service: numberValue(raw.serviceRating),
+    rating_delivery: numberValue(raw.deliveryRating),
+    comment_text: stringValue(raw.comment) ?? stringValue(raw.commentText) ?? stringValue(raw.text),
+    answer_status: stringValue(raw.answerStatus),
+    classification: {},
+    raw_ref: buildRawRef(raw),
+  };
+}
+
 export interface NormalizeContext {
   workspaceId: string;
   branchId: string;
