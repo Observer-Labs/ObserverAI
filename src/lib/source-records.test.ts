@@ -289,7 +289,7 @@ describe("source record helpers", () => {
     });
   });
 
-  it("updates an existing source record instead of inserting a duplicate", async () => {
+  it("updates an existing source record without clearing auth metadata", async () => {
     existingSource = { id: "source-existing" };
     const { createSourceRecord } = await loadSourceRecordsModule();
 
@@ -304,7 +304,6 @@ describe("source record helpers", () => {
     })).resolves.toMatchObject({
       id: "source-existing",
       status: "pending",
-      credentials: null,
       config: {
         supplier_id: "supplier-1",
         store_id: "store-1",
@@ -319,7 +318,6 @@ describe("source record helpers", () => {
         supplier_id: "supplier-1",
         store_id: "store-1",
       },
-      credentials: null,
     });
     expect(updateCall?.filters).toEqual([
       ["id", "source-existing"],

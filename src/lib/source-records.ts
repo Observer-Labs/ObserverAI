@@ -43,7 +43,6 @@ export async function createSourceRecord(workspaceId: string, input: CreateSourc
       .update({
         status: parsed.status,
         config: parsed.config,
-        credentials: null,
       })
       .eq("id", (existing as { id: string }).id)
       .eq("workspace_id", workspaceId)
