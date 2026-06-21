@@ -78,6 +78,16 @@ interface CsvImportResult {
   existingDuplicates: number;
 }
 
+interface SourceSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  fetched?: number;
+  ingested?: number;
+  existing_duplicates?: number;
+  reason?: string;
+  error?: string;
+}
+
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 
@@ -398,6 +408,16 @@ function branchSourceForKey(sources: SourceRow[], branchId: string, key: ActiveS
   return sources.find((source) => source.branch_id === branchId && source.type === sourceRecordType(key));
 }
 
+function formatLastSync(value: string | null | undefined) {
+  if (!value) return "Never synced";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sync time unknown";
+  return new Intl.DateTimeFormat("tr-TR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 function isSourceAuthReady(source: SourceRow | undefined) {
   return source?.credentials?.status === "ready";
 }
@@ -496,6 +516,9 @@ function ConnectPageContent() {
   const [mappingCandidateId, setMappingCandidateId] = useState<string | null>(null);
   const [sourceTestResult, setSourceTestResult] = useState<SourceConnectionTestResult | null>(null);
   const [sourceTestError, setSourceTestError] = useState<string | null>(null);
+  const [syncingSourceId, setSyncingSourceId] = useState<string | null>(null);
+  const [sourceSyncResult, setSourceSyncResult] = useState<SourceSyncResult | null>(null);
+  const [sourceSyncError, setSourceSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -664,6 +687,44 @@ function ConnectPageContent() {
       await loadWorkspace();
     } finally {
       setTestingSourceId(null);
+    }
+  }
+
+  async function syncGoogleReviewsSource(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setSourceSyncResult(null);
+    setSourceSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/googlereviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: SourceSyncResult[];
+      };
+      if (!res.ok) {
+        setSourceSyncError(data.error ?? "Sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setSourceSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setSourceSyncError(result.error ?? "Sync failed.");
+      } else {
+        setSourceSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
     }
   }
 
@@ -1080,6 +1141,8 @@ function ConnectPageContent() {
             const connected = isSourceAvailable(selected, workspace, sources, selectedBranchId);
             const authReady = isSourceAuthReady(selectedSourceRecord);
             const fields = SOURCE_FIELDS[selected];
+            const hasMappedLocation = typeof selectedSourceRecord?.config?.location_id === "string" &&
+              selectedSourceRecord.config.location_id.trim().length > 0;
             return (
               <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
                 {/* Panel Header */}
@@ -1186,17 +1249,30 @@ function ConnectPageContent() {
                             <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
                               Authorize Google, then map a Google location to this Observer branch.
                             </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
                           </div>
                           {authReady ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => void testSourceConnection(selectedSourceRecord)}
-                              disabled={testingSourceId === selectedSourceRecord?.id}
-                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
-                            >
-                              {testingSourceId === selectedSourceRecord?.id ? "Loading..." : "List locations"}
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void testSourceConnection(selectedSourceRecord)}
+                                disabled={testingSourceId === selectedSourceRecord?.id}
+                                className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                              >
+                                {testingSourceId === selectedSourceRecord?.id ? "Loading..." : "List locations"}
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={() => void syncGoogleReviewsSource(selectedSourceRecord)}
+                                disabled={!hasMappedLocation || syncingSourceId === selectedSourceRecord?.id}
+                                className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                              >
+                                {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                              </Button>
+                            </div>
                           ) : selectedSourceRecord ? (
                             <Button asChild className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold">
                               <a href={`/api/auth/google-reviews?source_id=${selectedSourceRecord.id}`}>Authorize Google</a>
@@ -1206,6 +1282,23 @@ function ConnectPageContent() {
                         {sourceTestError && (
                           <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
                             {sourceTestError}
+                          </div>
+                        )}
+                        {authReady && !hasMappedLocation && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Select a Google location before syncing reviews.
+                          </div>
+                        )}
+                        {sourceSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceSyncError}
+                          </div>
+                        )}
+                        {sourceSyncResult && sourceSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {sourceSyncResult.status === "synced"
+                              ? `Synced ${sourceSyncResult.ingested ?? 0} new review signal${sourceSyncResult.ingested === 1 ? "" : "s"} from ${sourceSyncResult.fetched ?? 0} fetched review${sourceSyncResult.fetched === 1 ? "" : "s"}. ${sourceSyncResult.existing_duplicates ?? 0} already existed.`
+                              : `Skipped: ${sourceSyncResult.reason ?? "not ready"}.`}
                           </div>
                         )}
                       </div>
