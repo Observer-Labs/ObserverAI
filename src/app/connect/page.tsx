@@ -62,6 +62,7 @@ interface SourceRow {
   type: string;
   display_name: string;
   status: "connected" | "pending" | "error";
+  config?: Record<string, unknown>;
   credentials?: {
     provider?: string;
     status?: "pending" | "ready" | "error" | "revoked";
@@ -433,6 +434,12 @@ function hasCredentialInput(values: Record<string, string>) {
   return Object.values(values).some((value) => value.trim().length > 0);
 }
 
+function sourceMappingField(key: ActiveSourceKey): "restaurant_id" | "store_id" | null {
+  if (key === "getir") return "restaurant_id";
+  if (key === "trendyol") return "store_id";
+  return null;
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ConnectPageContent() {
@@ -481,6 +488,7 @@ function ConnectPageContent() {
   const [csvError, setCsvError] = useState<string | null>(null);
   const [sourceSaveError, setSourceSaveError] = useState<string | null>(null);
   const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
+  const [mappingCandidateId, setMappingCandidateId] = useState<string | null>(null);
   const [sourceTestResult, setSourceTestResult] = useState<SourceConnectionTestResult | null>(null);
   const [sourceTestError, setSourceTestError] = useState<string | null>(null);
 
@@ -648,6 +656,51 @@ function ConnectPageContent() {
       await loadWorkspace();
     } finally {
       setTestingSourceId(null);
+    }
+  }
+
+  async function applyStoreCandidate(
+    key: Extract<SelfServiceAuthKey, "getir" | "trendyol">,
+    candidate: SourceConnectionTestResult["store_candidates"][number],
+  ) {
+    const mappingField = sourceMappingField(key);
+    if (!mappingField || !selectedBranchId || !candidate.external_id) return;
+
+    setMappingCandidateId(candidate.external_id);
+    setSourceSaveError(null);
+
+    const nextValues = {
+      ...formValues[key],
+      [mappingField]: candidate.external_id,
+    };
+
+    try {
+      const sourceDefinition = ACTIVE_SOURCES.find((source) => source.key === key);
+      const res = await fetch("/api/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branch_id: selectedBranchId,
+          type: sourceRecordType(key),
+          display_name: sourceDefinition?.label ?? key,
+          config: compactSourceConfig(key, nextValues),
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) {
+        setSourceSaveError(data.error ?? "Store mapping could not be saved.");
+        return;
+      }
+
+      setFormValues((current) => ({
+        ...current,
+        [key]: nextValues,
+      }));
+      setSavedKey(key);
+      setTimeout(() => setSavedKey(null), 2500);
+      await loadWorkspace();
+    } finally {
+      setMappingCandidateId(null);
     }
   }
 
@@ -1147,10 +1200,33 @@ function ConnectPageContent() {
                               Ready · {sourceTestResult.checks.map((check) => check.id).join(", ")}
                             </div>
                             {sourceTestResult.store_candidates.length > 0 && (
-                              <div className="mt-1">
-                                Store candidates: {sourceTestResult.store_candidates.map((store) => (
-                                  store.name ? `${store.name} (${store.external_id})` : store.external_id
-                                )).join(", ")}
+                              <div className="mt-2 flex flex-col gap-2">
+                                {sourceTestResult.store_candidates.map((store) => {
+                                  const mappingField = sourceMappingField(selected);
+                                  const activeValue = mappingField ? formValues[selected][mappingField] : undefined;
+                                  const isMapped = activeValue === store.external_id;
+                                  return (
+                                    <div key={store.external_id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted px-2.5 py-2">
+                                      <div className="min-w-0">
+                                        <div className="truncate font-semibold text-foreground">
+                                          {store.name ?? store.external_id}
+                                        </div>
+                                        <div className="mt-0.5 font-mono text-[0.65rem] text-muted-foreground">
+                                          {store.external_id}{store.status ? ` · ${store.status}` : ""}
+                                        </div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant={isMapped ? "secondary" : "outline"}
+                                        onClick={() => void applyStoreCandidate(selected, store)}
+                                        disabled={mappingCandidateId === store.external_id || isMapped}
+                                        className="h-auto rounded-md px-2.5 py-1.5 text-[0.68rem] font-bold"
+                                      >
+                                        {isMapped ? "Mapped" : mappingCandidateId === store.external_id ? "Saving..." : "Use"}
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
