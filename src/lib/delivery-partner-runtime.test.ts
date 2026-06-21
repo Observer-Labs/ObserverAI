@@ -34,6 +34,22 @@ describe("delivery partner runtime", () => {
     });
   });
 
+  it("resolves delivery auth material through the combined resolver", async () => {
+    process.env.TRENDYOL_SOURCE_AUTH = JSON.stringify({
+      apiKey: "example-api-key",
+      apiSecretKey: "example-api-secret",
+    });
+    const { sourceAuthMaterialResolver } = await import("./delivery-partner-runtime");
+
+    await expect(sourceAuthMaterialResolver.resolve({
+      vaultRef: "vercel://env/TRENDYOL_SOURCE_AUTH",
+      fields: ["apiKey", "apiSecretKey"],
+    })).resolves.toEqual({
+      apiKey: "example-api-key",
+      apiSecretKey: "example-api-secret",
+    });
+  });
+
   it("rejects unsupported vault refs without reading arbitrary values", async () => {
     const { envVaultResolver, DeliveryPartnerRuntimeError } = await import("./delivery-partner-runtime");
 

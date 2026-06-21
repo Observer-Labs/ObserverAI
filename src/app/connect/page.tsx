@@ -62,6 +62,11 @@ interface SourceRow {
   type: string;
   display_name: string;
   status: "connected" | "pending" | "error";
+  credentials?: {
+    provider?: string;
+    status?: "pending" | "ready" | "error" | "revoked";
+    provided_fields?: string[];
+  } | null;
   last_sync_at: string | null;
 }
 
@@ -73,6 +78,7 @@ interface CsvImportResult {
 }
 
 type CsvMappingField = keyof CsvColumnMapping;
+type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 
 const CSV_MAPPING_FIELDS: { key: CsvMappingField; label: string; helper: string }[] = [
   { key: "content", label: "Content", helper: "Review, complaint, email, or note text" },
@@ -311,6 +317,21 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
 };
 
+const SOURCE_AUTH_FIELDS: Record<SelfServiceAuthKey, FormField[]> = {
+  getir: [
+    { key: "appSecretKey", label: "App secret key", placeholder: "Getir Food API app secret", type: "password", hint: "Getir Food API / entegrasyon bilgileriniz içinde paylaşılır. Observer bu değeri yalnız Vault'a yazar." },
+    { key: "restaurantSecretKey", label: "Restaurant secret key", placeholder: "Getir restoran secret", type: "password", hint: "Restoranınıza ait API secret. DB config içinde saklanmaz." },
+  ],
+  trendyol: [
+    { key: "apiKey", label: "API key", placeholder: "Trendyol API key", type: "password", hint: "Trendyol Go Satıcı Paneli → Hesap Bilgilerim → Entegrasyon Bilgileri." },
+    { key: "apiSecretKey", label: "API secret key", placeholder: "Trendyol API secret key", type: "password", hint: "Supplier seviyesindeki secret; şube ayrımı store ID ile yapılır." },
+  ],
+  yemeksepeti: [
+    { key: "integrationUser", label: "Integration user", placeholder: "Yemeksepeti integration user", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan kullanıcı." },
+    { key: "integrationPassword", label: "Integration password", placeholder: "Yemeksepeti integration password", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan parola." },
+  ],
+};
+
 // ── Connection status helper ──────────────────────────────────────────────────
 
 function isConnected(key: ActiveSourceKey, workspace: Workspace | null): boolean {
@@ -348,12 +369,20 @@ function isBranchSourceKey(key: ActiveSourceKey) {
   return BRANCH_SOURCE_TYPES.has(key);
 }
 
+function isSelfServiceAuthKey(key: ActiveSourceKey): key is SelfServiceAuthKey {
+  return key === "getir" || key === "trendyol" || key === "yemeksepeti";
+}
+
 function sourceRecordType(key: ActiveSourceKey) {
   return key;
 }
 
 function branchSourceForKey(sources: SourceRow[], branchId: string, key: ActiveSourceKey) {
   return sources.find((source) => source.branch_id === branchId && source.type === sourceRecordType(key));
+}
+
+function isSourceAuthReady(source: SourceRow | undefined) {
+  return source?.credentials?.status === "ready";
 }
 
 function isSourceAvailable(
@@ -388,6 +417,10 @@ function compactSourceConfig(key: ActiveSourceKey, values: Record<string, unknow
   return output;
 }
 
+function hasCredentialInput(values: Record<string, string>) {
+  return Object.values(values).some((value) => value.trim().length > 0);
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ConnectPageContent() {
@@ -416,6 +449,11 @@ function ConnectPageContent() {
     googleplay:      { ...DEFAULT_CONFIGS.googleplay },
     googleanalytics: { ...DEFAULT_CONFIGS.googleanalytics },
     trustpilot:      { ...DEFAULT_CONFIGS.trustpilot },
+  });
+  const [authValues, setAuthValues] = useState<Record<SelfServiceAuthKey, Record<string, string>>>({
+    getir: { appSecretKey: "", restaurantSecretKey: "" },
+    trendyol: { apiKey: "", apiSecretKey: "" },
+    yemeksepeti: { integrationUser: "", integrationPassword: "" },
   });
   const [saving, setSaving] = useState(false);
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
@@ -504,10 +542,37 @@ function ConnectPageContent() {
             config: compactSourceConfig(key, formValues[key]),
           }),
         });
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = await res.json().catch(() => ({})) as { source?: SourceRow; error?: string };
         if (!res.ok) {
           setSourceSaveError(data.error ?? "Source could not be saved.");
           return;
+        }
+
+        if (isSelfServiceAuthKey(key) && (hasCredentialInput(authValues[key]) || !isSourceAuthReady(data.source))) {
+          const sourceId = data.source?.id;
+          if (!sourceId) {
+            setSourceSaveError("Source was saved but credential setup could not start.");
+            return;
+          }
+
+          const authRes = await fetch(`/api/sources/${sourceId}/auth`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider: key,
+              credentials: authValues[key],
+            }),
+          });
+          const authData = await authRes.json().catch(() => ({})) as { error?: string };
+          if (!authRes.ok) {
+            setSourceSaveError(authData.error ?? "Credentials could not be saved securely.");
+            return;
+          }
+
+          setAuthValues((current) => ({
+            ...current,
+            [key]: Object.fromEntries(Object.keys(current[key]).map((field) => [field, ""])),
+          }) as Record<SelfServiceAuthKey, Record<string, string>>);
         }
 
         setSavedKey(key);
@@ -865,6 +930,7 @@ function ConnectPageContent() {
             {ACTIVE_SOURCES.map((source) => {
               const sourceRecord = branchSourceForKey(sources, selectedBranchId, source.key);
               const connected = isSourceAvailable(source.key, workspace, sources, selectedBranchId);
+              const authReady = isSourceAuthReady(sourceRecord);
               const isActive = selected === source.key;
               return (
                 <button
@@ -894,7 +960,7 @@ function ConnectPageContent() {
                     {connected ? (
                       <span className="flex items-center gap-1 font-mono text-[0.65rem] font-bold text-[#4ade80]">
                         <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                        {sourceRecord?.status === "pending" ? "PENDING" : "LIVE"}
+                        {authReady ? "READY" : sourceRecord?.status === "pending" ? "PENDING" : "LIVE"}
                       </span>
                     ) : (
                       <span className={cn("leading-none font-semibold", isActive ? "text-base text-primary" : "text-[0.65rem] text-[var(--muted-dim)]")}>
@@ -912,6 +978,7 @@ function ConnectPageContent() {
             const src = ACTIVE_SOURCES.find((s) => s.key === selected)!;
             const selectedSourceRecord = branchSourceForKey(sources, selectedBranchId, selected);
             const connected = isSourceAvailable(selected, workspace, sources, selectedBranchId);
+            const authReady = isSourceAuthReady(selectedSourceRecord);
             const fields = SOURCE_FIELDS[selected];
             return (
               <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
@@ -927,7 +994,7 @@ function ConnectPageContent() {
                   {connected && (
                     <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
                       <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                      {selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
+                      {authReady ? "Kimlik hazır" : selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
                     </span>
                   )}
                 </div>
@@ -984,6 +1051,26 @@ function ConnectPageContent() {
                     {isBranchSourceKey(selected) && (
                       <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
                         This step stores only branch mapping metadata. API keys, OAuth grants, and service account files are handled in a separate credential step and are not saved here.
+                      </div>
+                    )}
+                    {isSelfServiceAuthKey(selected) && (
+                      <div className="mt-5 border-t pt-5">
+                        <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">
+                          Secure API credentials
+                        </div>
+                        <div className="flex flex-col gap-[18px]">
+                          {SOURCE_AUTH_FIELDS[selected].map((field) => renderCredentialField(
+                            field,
+                            selected,
+                            authValues,
+                            setAuthValues,
+                          ))}
+                        </div>
+                        {authReady && (
+                          <div className="mt-4 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Credentials are stored as a Vault reference. Leave these fields blank unless you want to rotate them.
+                          </div>
+                        )}
                       </div>
                     )}
                     {sourceSaveError && (
@@ -1103,6 +1190,40 @@ function renderField(
         />
       )}
       {f.hint && f.type !== "checkbox" && (
+        <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
+      )}
+    </div>
+  );
+}
+
+function renderCredentialField(
+  f: FormField,
+  sourceKey: SelfServiceAuthKey,
+  authValues: Record<SelfServiceAuthKey, Record<string, string>>,
+  setAuthValues: React.Dispatch<React.SetStateAction<Record<SelfServiceAuthKey, Record<string, string>>>>
+) {
+  const val = authValues[sourceKey][f.key] ?? "";
+
+  return (
+    <div key={f.key}>
+      <Label className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        {f.label}
+      </Label>
+      <Input
+        type={f.type ?? "password"}
+        value={val}
+        onChange={(e) => setAuthValues((current) => ({
+          ...current,
+          [sourceKey]: {
+            ...current[sourceKey],
+            [f.key]: e.target.value,
+          },
+        }))}
+        placeholder={f.placeholder}
+        autoComplete="off"
+        className="h-auto rounded-[7px] border-border bg-muted px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem] dark:bg-muted"
+      />
+      {f.hint && (
         <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
       )}
     </div>

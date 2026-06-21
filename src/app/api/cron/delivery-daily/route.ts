@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { persistDeliveryClusterRows } from "@/lib/delivery-candidate-clusters";
 import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
 import { generateDeliveryFinalBrief } from "@/lib/delivery-final-briefs";
-import { createDeliveryPartnerHttpClient, envVaultResolver } from "@/lib/delivery-partner-runtime";
+import { createDeliveryPartnerHttpClient, sourceAuthMaterialResolver } from "@/lib/delivery-partner-runtime";
 import { syncDeliverySource, type SyncDeliverySourceResult } from "@/lib/delivery-source-sync";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { recordTokenUsage } from "@/lib/token-usage";
@@ -135,7 +135,7 @@ async function syncPartnerSourceIfSupported(
     return await syncDeliverySource({
       workspaceId: source.workspace_id,
       sourceId: source.id,
-      resolver: envVaultResolver,
+      resolver: sourceAuthMaterialResolver,
       http: createDeliveryPartnerHttpClient(source.type),
     });
   } catch (err) {

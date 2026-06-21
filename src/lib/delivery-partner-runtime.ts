@@ -6,6 +6,7 @@ import type {
   DeliveryPartnerHttpRequest,
 } from "./delivery-partner-ingest";
 import type { DeliveryConnectorProvider } from "./delivery-connectors";
+import { resolveSourceAuthMaterialFromVault } from "./source-auth-secret-store";
 
 export class DeliveryPartnerRuntimeError extends Error {
   status = 500;
@@ -29,6 +30,20 @@ export const envVaultResolver: DeliveryAuthMaterialResolver = {
       if (typeof value === "string" && value.trim()) result[field] = value.trim();
     }
     return result;
+  },
+};
+
+export const sourceAuthMaterialResolver: DeliveryAuthMaterialResolver = {
+  async resolve(ref) {
+    if (ref.vaultRef.startsWith("vercel://env/")) {
+      return envVaultResolver.resolve(ref);
+    }
+
+    if (ref.vaultRef.startsWith("supabase-vault://source-auth/")) {
+      return resolveSourceAuthMaterialFromVault(ref);
+    }
+
+    throw new DeliveryPartnerRuntimeError("Unsupported delivery auth vault reference");
   },
 };
 
