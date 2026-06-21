@@ -41,7 +41,7 @@ describe("google business profile helpers", () => {
     const { fetchGoogleBusinessLocations } = await import("./google-business-profile");
 
     await expect(fetchGoogleBusinessLocations("example-access-token")).resolves.toEqual([{
-      external_id: "locations/456",
+      external_id: "accounts/123/locations/456",
       name: "Moda Branch",
       account_name: "accounts/123",
       store_code: "MODA",
@@ -49,6 +49,42 @@ describe("google business profile helpers", () => {
 
     expect(fetchMock).toHaveBeenLastCalledWith(
       "https://mybusinessbusinessinformation.googleapis.com/v1/accounts/123/locations?readMask=name%2Ctitle%2CstoreCode&pageSize=100",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer example-access-token",
+        }),
+      }),
+    );
+  });
+
+  it("fetches and normalizes reviews for a mapped GBP location parent", async () => {
+    const fetchMock = vi.fn(async () => Response.json({
+      reviews: [{
+        reviewId: "review-1",
+        reviewer: { displayName: "Aylin" },
+        comment: "Servis cok yavas.",
+        starRating: "ONE",
+        createTime: "2026-06-20T09:00:00Z",
+        updateTime: "2026-06-20T09:30:00Z",
+      }],
+    }));
+    global.fetch = fetchMock as typeof fetch;
+    const { fetchGoogleBusinessReviews } = await import("./google-business-profile");
+
+    await expect(fetchGoogleBusinessReviews({
+      accessToken: "example-access-token",
+      locationName: "accounts/123/locations/456",
+    })).resolves.toEqual([{
+      external_review_id: "review-1",
+      reviewer_name: "Aylin",
+      comment: "Servis cok yavas.",
+      rating: 1,
+      reviewed_at: "2026-06-20T09:00:00Z",
+      update_time: "2026-06-20T09:30:00Z",
+    }]);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://mybusiness.googleapis.com/v4/accounts/123/locations/456/reviews?pageSize=50&orderBy=updateTime+desc",
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer example-access-token",

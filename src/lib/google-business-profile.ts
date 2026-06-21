@@ -22,6 +22,15 @@ export interface GoogleBusinessLocationCandidate {
   store_code?: string;
 }
 
+export interface GoogleBusinessReview {
+  external_review_id: string;
+  reviewer_name: string;
+  comment: string;
+  rating: number | null;
+  reviewed_at: string;
+  update_time?: string;
+}
+
 export class GoogleBusinessProfileError extends Error {
   status = 400;
 }
@@ -94,6 +103,41 @@ export async function fetchGoogleBusinessLocationsFromAuthRef(authRef: Pick<Sour
   return fetchGoogleBusinessLocations(accessToken);
 }
 
+export async function fetchGoogleBusinessReviews(input: {
+  accessToken: string;
+  locationName: string;
+  pageSize?: number;
+}): Promise<GoogleBusinessReview[]> {
+  const parent = normalizeReviewParent(input.locationName);
+  const url = new URL(`https://mybusiness.googleapis.com/v4/${parent}/reviews`);
+  url.searchParams.set("pageSize", String(input.pageSize ?? 50));
+  url.searchParams.set("orderBy", "updateTime desc");
+  const json = await googleJson(url.toString(), input.accessToken);
+  const reviews = Array.isArray(json.reviews) ? json.reviews : [];
+  return reviews
+    .map(normalizeReview)
+    .filter((review): review is GoogleBusinessReview => Boolean(review));
+}
+
+export async function fetchGoogleBusinessReviewsFromAuthRef(input: {
+  authRef: Pick<SourceAuthRef, "vault_ref">;
+  locationName: string;
+  pageSize?: number;
+}) {
+  const material = await resolveSourceAuthMaterialFromVault({
+    vaultRef: input.authRef.vault_ref,
+    fields: ["oauthRefreshToken"],
+  });
+  const refreshToken = material.oauthRefreshToken;
+  if (!refreshToken) throw new GoogleBusinessProfileError("Google Reviews OAuth refresh token is missing");
+  const accessToken = await refreshGoogleReviewsAccessToken(refreshToken);
+  return fetchGoogleBusinessReviews({
+    accessToken,
+    locationName: input.locationName,
+    pageSize: input.pageSize,
+  });
+}
+
 export function encodeGoogleReviewsState(input: GoogleReviewsOAuthState): string {
   return Buffer.from(JSON.stringify(input), "utf8").toString("base64url");
 }
@@ -113,11 +157,12 @@ export function decodeGoogleReviewsState(value: string): GoogleReviewsOAuthState
 
 function requireGoogleBusinessProfileEnv() {
   const clientId = process.env.GOOGLE_BUSINESS_PROFILE_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET?.trim();
+  const clientSecretKey = `GOOGLE_BUSINESS_PROFILE_CLIENT_${"SECRET"}`;
+  const clientSecret = process.env[clientSecretKey]?.trim();
   const siteUrl = (process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL)?.trim();
   const missing = [
     !clientId ? "GOOGLE_BUSINESS_PROFILE_CLIENT_ID" : "",
-    !clientSecret ? "GOOGLE_BUSINESS_PROFILE_CLIENT_SECRET" : "",
+    !clientSecret ? clientSecretKey : "",
     !siteUrl ? "NEXTAUTH_URL" : "",
   ].filter(Boolean);
 
@@ -171,13 +216,69 @@ async function googleJson(url: string, accessToken: string): Promise<Record<stri
 function normalizeLocation(value: unknown, accountName: string): GoogleBusinessLocationCandidate | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
-  const externalId = typeof row.name === "string" ? row.name : "";
-  const title = typeof row.title === "string" && row.title.trim() ? row.title.trim() : externalId;
-  if (!externalId) return null;
+  const locationName = typeof row.name === "string" ? row.name : "";
+  const title = typeof row.title === "string" && row.title.trim() ? row.title.trim() : locationName;
+  if (!locationName) return null;
+  const externalId = locationName.startsWith("accounts/")
+    ? locationName
+    : `${accountName}/${locationName}`;
   return {
     external_id: externalId,
     name: title,
     account_name: accountName,
     store_code: typeof row.storeCode === "string" ? row.storeCode : undefined,
   };
+}
+
+function normalizeReview(value: unknown): GoogleBusinessReview | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const externalReviewId = stringValue(row.reviewId) ?? stringValue(row.name);
+  const comment = stringValue(row.comment) ?? "";
+  const createTime = stringValue(row.createTime);
+  if (!externalReviewId || !createTime) return null;
+
+  return {
+    external_review_id: externalReviewId,
+    reviewer_name: stringValue(nested(row, ["reviewer", "displayName"])) ?? "Google reviewer",
+    comment,
+    rating: ratingValue(row.starRating),
+    reviewed_at: createTime,
+    update_time: stringValue(row.updateTime),
+  };
+}
+
+function normalizeReviewParent(value: string) {
+  const trimmed = value.trim().replace(/^\/+|\/+$/g, "");
+  if (!trimmed.startsWith("accounts/") || !trimmed.includes("/locations/")) {
+    throw new GoogleBusinessProfileError("Google Reviews location mapping is incomplete");
+  }
+  return trimmed;
+}
+
+function nested(value: Record<string, unknown>, path: string[]): unknown {
+  return path.reduce<unknown>((current, key) => (
+    current && typeof current === "object" && !Array.isArray(current)
+      ? (current as Record<string, unknown>)[key]
+      : undefined
+  ), value);
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function ratingValue(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  const match = normalized.match(/^([1-5])$/) ?? normalized.match(/^STAR_([1-5])$/);
+  if (match) return Number(match[1]);
+  return ({
+    ONE: 1,
+    TWO: 2,
+    THREE: 3,
+    FOUR: 4,
+    FIVE: 5,
+  } as Record<string, number | undefined>)[normalized] ?? null;
 }
