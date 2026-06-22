@@ -135,6 +135,7 @@
   *, *::before, *::after, *::backdrop, *::file-selector-button {
     border-color: var(--border);
   }
+  button { user-select: none; }
 }
 
 html, body {

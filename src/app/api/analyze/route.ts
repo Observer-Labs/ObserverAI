@@ -250,5 +250,11 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ clusters: data });
+
+  // Hide demo-seeded clusters in non-demo mode so they don't pollute real data
+  const clusters = includeDemo
+    ? data
+    : (data ?? []).filter((c) => !c.candidate_key?.startsWith("demo_"));
+
+  return NextResponse.json({ clusters });
 }

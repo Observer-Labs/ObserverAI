@@ -757,8 +757,13 @@ export default function DashboardPage() {
       const res = await fetch("/api/seed-demo", { method: "POST" });
       if (res.ok) {
         setShowingDemo(true);
+        // Reload branches to include the newly created demo branches
+        const branchRes = await fetch("/api/branches");
+        const branchData = await branchRes.json().catch(() => ({}));
+        if (Array.isArray(branchData.branches)) setBranches(branchData.branches);
+        // Fetch pre-computed demo clusters directly — no AI analysis needed
+        await fetchClusters(true);
         await fetchSignalCount(true);
-        await runAnalysis(true);
       }
     } finally {
       setSeedingDemo(false);
@@ -799,6 +804,8 @@ export default function DashboardPage() {
     if (selectedCluster && displayClusters.some((cluster) => cluster.id === selectedCluster.id)) return;
     setSelectedCluster(displayClusters[0] ?? null);
   }, [selectedBranchId, clusters, selectedCluster, displayClusters]);
+
+  const hasAnyConnectedSource = branches.some((b) => b.connected_source_count > 0);
 
   const plan = workspace?.plan ?? "trial";
   const polar_status = workspace?.polar_status;
@@ -883,7 +890,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {!loadingClusters && branches.length > 0 && (
+        {!loadingClusters && branches.length > 0 && (hasAnyConnectedSource || showingDemo) && (
           <div className="mb-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -951,6 +958,30 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        ) : !hasAnyConnectedSource && !showingDemo ? (
+          /* ── No sources connected ── */
+          <div className="rounded-[14px] border bg-card px-6 py-8">
+            <div className="max-w-[620px]">
+              <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz kaynak bağlanmadı.</p>
+              <p className="mt-2 text-[0.86rem] leading-[1.6] text-muted-foreground">
+                Google Reviews, Getir, Yemeksepeti ve diğer kanallardan gelen sinyaller burada analiz edilir. İlk kaynağı bağlamak için birkaç dakikanız yeterli.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button asChild className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
+                  <Link href="/connect">Kaynak bağla →</Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={seedingDemo}
+                  onClick={_loadDemoData}
+                  className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]"
+                >
+                  {seedingDemo ? "Demo yükleniyor..." : "Demo veriyle dene"}
+                </Button>
+              </div>
+            </div>
+          </div>
         ) : (
           <>
             {/* Header */}
@@ -1010,24 +1041,10 @@ export default function DashboardPage() {
             {displayClusters.length === 0 ? (
               <div className="rounded-[14px] border bg-card px-6 py-8">
                 <div className="max-w-[620px]">
-                  <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz gerçek içgörü yok.</p>
+                  <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz analiz sonucu yok.</p>
                   <p className="mt-2 text-[0.86rem] leading-[1.6] text-muted-foreground">
-                    İlk kaynak bağlandığında Observer gelen sinyalleri analiz eder. Hazır veriniz yoksa demo veriyi açıkça yükleyip akışı deneyebilirsiniz.
+                    Bağlı kaynaklardan sinyal geldiğinde Observer otomatik analiz eder.
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <Button asChild className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
-                      <Link href="/sources">Kaynak bağla →</Link>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={seedingDemo}
-                      onClick={_loadDemoData}
-                      className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]"
-                    >
-                      {seedingDemo ? "Demo veriler yükleniyor..." : "Demo veriyle dene"}
-                    </Button>
-                  </div>
                 </div>
               </div>
             ) : (
