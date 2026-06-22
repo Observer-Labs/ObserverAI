@@ -96,6 +96,26 @@ interface SourceSyncResult {
   error?: string;
 }
 
+interface DeliverySyncResult {
+  source_id: string;
+  platform: "getir" | "trendyol" | "yemeksepeti";
+  status: "synced" | "skipped" | "failed";
+  metric_date?: string;
+  order_count?: number;
+  bad_review_count?: number;
+  candidates?: number;
+  reason?: "unsupported_provider" | "missing_auth_ref";
+  error?: string;
+  partner_sync?: {
+    status: "synced" | "skipped";
+    fetchedOrders?: number;
+    fetchedReviews?: number;
+    persistedOrders?: number;
+    persistedReviews?: number;
+    reason?: "missing_auth_ref";
+  };
+}
+
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 
@@ -535,6 +555,8 @@ function ConnectPageContent() {
   const [syncingSourceId, setSyncingSourceId] = useState<string | null>(null);
   const [sourceSyncResult, setSourceSyncResult] = useState<SourceSyncResult | null>(null);
   const [sourceSyncError, setSourceSyncError] = useState<string | null>(null);
+  const [deliverySyncResult, setDeliverySyncResult] = useState<DeliverySyncResult | null>(null);
+  const [deliverySyncError, setDeliverySyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -745,6 +767,44 @@ function ConnectPageContent() {
         setSourceSyncError(result.error ?? "Sync failed.");
       } else {
         setSourceSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncDeliverySourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setDeliverySyncResult(null);
+    setDeliverySyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: DeliverySyncResult[];
+      };
+      if (!res.ok) {
+        setDeliverySyncError(data.error ?? "Delivery sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setDeliverySyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setDeliverySyncError(result.error ?? "Delivery sync failed.");
+      } else {
+        setDeliverySyncResult(result);
       }
       await loadWorkspace();
     } finally {
@@ -1438,6 +1498,48 @@ function ConnectPageContent() {
                         {authReady && (
                           <div className="mt-4 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
                             Credentials are stored as a Vault reference. Leave these fields blank unless you want to rotate them.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isSelfServiceAuthKey(selected) && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Delivery data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull order and review data into normalized delivery tables for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void syncDeliverySourceNow(selectedSourceRecord)}
+                            disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                          </Button>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Save secure API credentials before syncing delivery data.
+                          </div>
+                        )}
+                        {deliverySyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {deliverySyncError}
+                          </div>
+                        )}
+                        {deliverySyncResult && deliverySyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {deliverySyncResult.status === "synced"
+                              ? `Synced ${deliverySyncResult.partner_sync?.persistedOrders ?? 0} order${deliverySyncResult.partner_sync?.persistedOrders === 1 ? "" : "s"} and ${deliverySyncResult.partner_sync?.persistedReviews ?? 0} review${deliverySyncResult.partner_sync?.persistedReviews === 1 ? "" : "s"} for ${deliverySyncResult.metric_date ?? "latest metric date"}. Metrics: ${deliverySyncResult.order_count ?? 0} orders, ${deliverySyncResult.bad_review_count ?? 0} bad reviews, ${deliverySyncResult.candidates ?? 0} candidate${deliverySyncResult.candidates === 1 ? "" : "s"}.`
+                              : deliverySyncResult.reason === "missing_auth_ref"
+                                ? "Skipped: secure API credentials are not ready."
+                                : "Skipped: this delivery provider does not have a live sync adapter yet."}
                           </div>
                         )}
                       </div>
