@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SeverityBadge, ConfidenceBar, SourcePill } from "@/components/ui/SignalBadges";
+import { SeverityBadge, SourcePill } from "@/components/ui/SignalBadges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -357,15 +357,11 @@ export function OverviewTab({ clusters, onOpenSnapshot, onRunAnalysis, analyzing
                 {topCluster.business_case}
               </p>
 
-              <div className="mb-6 grid grid-cols-3 gap-4 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
-                <div>
-                  <div className="mb-1.5 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Confidence</div>
-                  <ConfidenceBar value={topCluster.confidence} />
-                </div>
+              <div className="mb-6 grid grid-cols-2 gap-4 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-5">
                 <div>
                   <div className="mb-1.5 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Evidence</div>
                   <div className="text-[1.1rem] font-semibold text-white">{topCluster.evidence_count}</div>
-                  <div className="text-[0.75rem] text-muted-foreground">signals</div>
+                  <div className="text-[0.75rem] text-muted-foreground">customer signal{topCluster.evidence_count === 1 ? "" : "s"}</div>
                 </div>
                 <div>
                   <div className="mb-1.5 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Revenue Risk</div>
@@ -441,7 +437,7 @@ export function OverviewTab({ clusters, onOpenSnapshot, onRunAnalysis, analyzing
                   <div className="mb-1.5 font-semibold">{topCluster.title}</div>
                   <div className="mb-2.5 text-[#9aa3b2]">{topCluster.business_case}</div>
                   <div className="mb-3 text-[0.75rem] text-[#9aa3b2]">
-                    Evidence: {topCluster.evidence_count} signals · Confidence: {Math.round(topCluster.confidence * 100)}%
+                    Evidence: {topCluster.evidence_count} customer signal{topCluster.evidence_count === 1 ? "" : "s"}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -489,7 +485,6 @@ export function OverviewTab({ clusters, onOpenSnapshot, onRunAnalysis, analyzing
                       <span className="truncate text-[0.875rem] font-medium text-white">{cluster.title}</span>
                       <SeverityBadge severity={cluster.severity_label} className="flex-shrink-0" />
                     </div>
-                    <ConfidenceBar value={cluster.confidence} />
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {cluster.source_breakdown.slack > 0 && <SourcePill source="slack" count={cluster.source_breakdown.slack} />}
                       {cluster.source_breakdown.email > 0 && <SourcePill source="email" count={cluster.source_breakdown.email} />}

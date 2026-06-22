@@ -118,8 +118,13 @@ export async function sendEmailBrief(
   });
 }
 
+export interface GmailOAuthState {
+  workspaceId: string;
+  sourceId?: string;
+}
+
 // Gmail OAuth helpers
-export function getGmailAuthUrl(workspaceId: string) {
+export function getGmailAuthUrl(state: string | GmailOAuthState) {
   const env = requireEnvGroup("gmail");
   const siteUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
   if (!siteUrl) {
@@ -132,9 +137,29 @@ export function getGmailAuthUrl(workspaceId: string) {
     scope: "https://www.googleapis.com/auth/gmail.readonly",
     access_type: "offline",
     prompt: "consent",
-    state: workspaceId,
+    state: typeof state === "string" ? state : encodeGmailState(state),
   });
   return `https://accounts.google.com/o/oauth2/auth?${params}`;
+}
+
+export function encodeGmailState(input: GmailOAuthState) {
+  return Buffer.from(JSON.stringify(input), "utf8").toString("base64url");
+}
+
+export function decodeGmailState(value: string): GmailOAuthState {
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as Partial<GmailOAuthState>;
+    if (typeof parsed.workspaceId === "string" && parsed.workspaceId.trim()) {
+      return {
+        workspaceId: parsed.workspaceId.trim(),
+        sourceId: typeof parsed.sourceId === "string" && parsed.sourceId.trim() ? parsed.sourceId.trim() : undefined,
+      };
+    }
+  } catch {
+    // Fall through to legacy state support below.
+  }
+  if (value.trim()) return { workspaceId: value.trim() };
+  throw new Error("Invalid Gmail OAuth state");
 }
 
 export async function exchangeGmailCode(code: string) {
@@ -155,6 +180,23 @@ export async function exchangeGmailCode(code: string) {
     }),
   });
   return res.json();
+}
+
+export async function refreshGmailAccessToken(refreshToken: string) {
+  const env = requireEnvGroup("gmail");
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: env.GMAIL_CLIENT_ID,
+      client_secret: env.GMAIL_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const json = await res.json() as { access_token?: string };
+  if (!res.ok || !json.access_token) throw new Error("Gmail access token refresh failed");
+  return json.access_token;
 }
 
 export async function fetchGmailMessages(accessToken: string, maxResults = 100) {

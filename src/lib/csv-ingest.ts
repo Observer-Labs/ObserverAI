@@ -12,6 +12,11 @@ export type CsvParseResult = {
 
 type CsvRecord = Record<string, string>;
 
+export type CsvColumnMapping = Partial<Record<
+  "timestamp" | "channel" | "sender" | "content" | "sentiment" | "metric_name" | "metric_value",
+  string
+>>;
+
 function parseCsvLine(line: string) {
   const cells: string[] = [];
   let current = "";
@@ -47,6 +52,16 @@ function parseCsvLine(line: string) {
 
 function normalizeHeader(value: string) {
   return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function mappedKey(mapping: CsvColumnMapping | undefined, field: keyof CsvColumnMapping) {
+  const value = mapping?.[field];
+  return value ? normalizeHeader(value) : undefined;
+}
+
+function mappedKeys(mapping: CsvColumnMapping | undefined, field: keyof CsvColumnMapping, fallbackKeys: string[]) {
+  const key = mappedKey(mapping, field);
+  return key ? [key, ...fallbackKeys] : fallbackKeys;
 }
 
 function first(record: CsvRecord, keys: string[]) {
@@ -90,6 +105,7 @@ export function parseCsvSignals(
     branchId: string;
     sourceId?: string;
     sourceName: string;
+    mapping?: CsvColumnMapping;
     now?: string;
   },
 ): CsvParseResult {
@@ -117,9 +133,12 @@ export function parseCsvSignals(
       return acc;
     }, {});
 
-    const content = first(record, ["content", "message", "text", "comment", "review", "description"]);
-    const metricName = first(record, ["metric_name", "metric", "kpi"]);
-    const metricValueRaw = first(record, ["metric_value", "value", "amount", "count"]);
+    const content = first(
+      record,
+      mappedKeys(options.mapping, "content", ["content", "message", "text", "comment", "review", "description"]),
+    );
+    const metricName = first(record, mappedKeys(options.mapping, "metric_name", ["metric_name", "metric", "kpi"]));
+    const metricValueRaw = first(record, mappedKeys(options.mapping, "metric_value", ["metric_value", "value", "amount", "count"]));
     const metricValue = metricValueRaw ? Number(metricValueRaw.replace(",", ".")) : undefined;
     const hasMetric = Boolean(metricName) && typeof metricValue === "number" && !Number.isNaN(metricValue);
 
@@ -129,12 +148,12 @@ export function parseCsvSignals(
     }
 
     const timestamp = normalizeTimestamp(
-      first(record, ["timestamp", "created_at", "date", "time"]),
+      first(record, mappedKeys(options.mapping, "timestamp", ["timestamp", "created_at", "date", "time"])),
       fallbackTimestamp,
     );
-    const channel = first(record, ["channel", "platform", "source"]) || "csv";
-    const sender = first(record, ["sender", "customer", "name", "author"]) || options.sourceName;
-    const sentiment = normalizeSentiment(first(record, ["sentiment", "tone"]));
+    const channel = first(record, mappedKeys(options.mapping, "channel", ["channel", "platform", "source"])) || "csv";
+    const sender = first(record, mappedKeys(options.mapping, "sender", ["sender", "customer", "name", "author"])) || options.sourceName;
+    const sentiment = normalizeSentiment(first(record, mappedKeys(options.mapping, "sentiment", ["sentiment", "tone"])));
     const signalContent = content || `${metricName}: ${metricValue}`;
 
     const signal: CsvSignalInput = {
@@ -168,4 +187,17 @@ export function parseCsvSignals(
 
 export function csvSignalDedupeKey(signal: Pick<CsvSignalInput, "timestamp" | "channel" | "sender" | "content" | "metric_name" | "metric_value">) {
   return dedupeKey(signal as CsvSignalInput);
+}
+
+export function parseCsvHeaders(csvText: string) {
+  const firstLine = csvText
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .find((line) => line.trim());
+
+  if (!firstLine) return [];
+
+  return parseCsvLine(firstLine)
+    .map((header) => header.trim())
+    .filter(Boolean);
 }

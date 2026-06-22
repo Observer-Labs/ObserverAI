@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCsvSignals } from "./csv-ingest";
+import { parseCsvHeaders, parseCsvSignals } from "./csv-ingest";
 
 describe("parseCsvSignals", () => {
   it("parses text and metric rows into branch-scoped CSV signals", () => {
@@ -55,5 +55,53 @@ describe("parseCsvSignals", () => {
     expect(result.signals).toHaveLength(1);
     expect(result.duplicateRows).toBe(1);
     expect(result.skipped).toBe(1);
+  });
+
+  it("uses explicit column mapping for non-standard exports", () => {
+    const csv = [
+      "When,Platform,Guest,Body,Score label,Metric,Reading",
+      "2026-06-18 11:00,Google,Aylin,\"Line was slow, but staff helped\",negative,,",
+      "2026-06-18 12:00,POS,Terminal,,,cancel_count,7",
+    ].join("\n");
+
+    const result = parseCsvSignals(csv, {
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceName: "Mapped CSV",
+      mapping: {
+        timestamp: "When",
+        channel: "Platform",
+        sender: "Guest",
+        content: "Body",
+        sentiment: "Score label",
+        metric_name: "Metric",
+        metric_value: "Reading",
+      },
+      now: "2026-06-18T10:00:00.000Z",
+    });
+
+    expect(result.skipped).toBe(0);
+    expect(result.signals).toHaveLength(2);
+    expect(result.signals[0]).toMatchObject({
+      channel: "Google",
+      sender: "Aylin",
+      content: "Line was slow, but staff helped",
+      sentiment: "negative",
+    });
+    expect(result.signals[1]).toMatchObject({
+      channel: "POS",
+      content: "cancel_count: 7",
+      metric_name: "cancel_count",
+      metric_value: 7,
+    });
+  });
+
+  it("reads headers with quoted commas for the mapping UI", () => {
+    expect(parseCsvHeaders('"Created, local",Channel,Customer,Comment')).toEqual([
+      "Created, local",
+      "Channel",
+      "Customer",
+      "Comment",
+    ]);
   });
 });

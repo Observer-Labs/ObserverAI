@@ -8,7 +8,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { IntentSnapshotModal } from "@/components/IntentSnapshotModal";
 import { severityLabel } from "@/lib/plans";
-import type { Cluster, Workspace, OutputConfig as _OutputConfig } from "@/lib/types";
+import type { Branch, Cluster, Workspace, OutputConfig as _OutputConfig } from "@/lib/types";
+
+type DashboardBranch = Branch & {
+  source_count: number;
+  connected_source_count: number;
+  last_sync_at: string | null;
+};
+
+type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
+type CategoryFilter = "all" | "operasyon" | "musteri" | "personel";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +86,112 @@ function sourceChips(cluster: Cluster): Array<{ name: string; count: number }> {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
+}
+
+function clusterCategory(cluster: Cluster): Exclude<CategoryFilter, "all"> {
+  const text = [
+    cluster.title,
+    cluster.business_case,
+    cluster.recommended_action,
+    cluster.root_cause,
+    cluster.customer_quote,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (/(personel|staff|çalışan|calisan|ekip|kasiyer|garson|kurye|servis personeli)/i.test(text)) {
+    return "personel";
+  }
+  if (/(müşteri|musteri|yorum|şikayet|sikayet|puan|rating|review|bekledi|memnun|deneyim)/i.test(text)) {
+    return "musteri";
+  }
+  return "operasyon";
+}
+
+function categoryLabel(category: CategoryFilter) {
+  switch (category) {
+    case "operasyon": return "Operasyon";
+    case "musteri": return "Müşteri";
+    case "personel": return "Personel";
+    default: return "Tümü";
+  }
+}
+
+function branchLocation(branch: DashboardBranch) {
+  return [branch.district, branch.city].filter(Boolean).join(", ") || "Konum eklenmedi";
+}
+
+function BranchCard({
+  branch,
+  topCluster,
+  issueCount,
+  selected,
+  onClick,
+}: {
+  branch: DashboardBranch;
+  topCluster: Cluster | null;
+  issueCount: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const sev = topCluster ? severityLabel(topCluster.severity) : "low";
+  const priorityText = topCluster ? topCluster.severity_label : "normal";
+  const priorityColor = topCluster ? severityColor(sev) : "var(--muted-dim)";
+  const category = topCluster ? clusterCategory(topCluster) : null;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "min-h-[156px] rounded-[14px] border bg-card px-4 py-4 text-left transition",
+        selected
+          ? "border-[rgba(249,115,22,0.5)] shadow-[0_0_0_1px_rgba(249,115,22,0.15)]"
+          : "border-border hover:border-[rgba(249,115,22,0.28)]",
+      )}
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-2">
+            {branch.brand && (
+              <span className="rounded-md border border-border px-2 py-0.5 text-[0.62rem] font-bold uppercase text-muted-foreground">
+                {branch.brand}
+              </span>
+            )}
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: priorityColor }} />
+          </div>
+          <h3 className="truncate text-[0.95rem] font-bold tracking-[-0.01em] text-foreground">{branch.name}</h3>
+          <p className="mt-1 text-[0.75rem] text-muted-foreground">{branchLocation(branch)}</p>
+        </div>
+        <span className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold uppercase text-muted-foreground">
+          {branch.status}
+        </span>
+      </div>
+
+      {topCluster ? (
+        <div>
+          <div className="mb-1 text-[0.72rem] font-semibold uppercase text-muted-foreground">{priorityText}</div>
+          <p className="line-clamp-2 text-[0.85rem] font-semibold leading-[1.4] text-foreground">{topCluster.title}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.74rem] text-muted-foreground">
+            <span>{topCluster.evidence_count} customer signal{topCluster.evidence_count === 1 ? "" : "s"}</span>
+            <span>·</span>
+            <span>{issueCount} issue{issueCount === 1 ? "" : "s"}</span>
+            {category && (
+              <span className="rounded-md border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold">
+                {categoryLabel(category)}
+              </span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="mb-1 text-[0.72rem] font-semibold uppercase text-muted-foreground">Normal</div>
+          <p className="text-[0.9rem] font-semibold text-foreground">Normal — sinyal yok</p>
+          <p className="mt-2 text-[0.74rem] text-muted-foreground">
+            {branch.connected_source_count}/{branch.source_count} kaynak bağlı
+          </p>
+        </div>
+      )}
+    </button>
+  );
 }
 
 // ── Score Ring (SVG arc) ──────────────────────────────────────────────────────
@@ -168,7 +283,6 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
     return {
       headline: `${emoji} ${sev.charAt(0).toUpperCase() + sev.slice(1)} priority signal detected`,
       detail: c.title,
-      confidence: c.confidence,
       sev,
     };
   });
@@ -185,9 +299,6 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
           <div className="mb-[5px] flex items-center gap-2">
             <span className="font-['JetBrains_Mono',monospace] text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">
               AI INSIGHT {idx + 1}/{insights.length}
-            </span>
-            <span className="rounded border border-[rgba(249,115,22,0.18)] bg-[rgba(249,115,22,0.1)] px-[7px] py-0.5 text-[0.62rem] font-semibold text-primary">
-              {Math.round(current.confidence * 100)}% confidence
             </span>
           </div>
           <p className="mb-[3px] text-[0.92rem] font-semibold leading-[1.4] text-foreground">
@@ -430,7 +541,7 @@ function ExecutionBrief({
               "mb-[5px] text-[0.74rem] font-extrabold",
               sev === "critical" ? "text-[#f87171]" : sev === "high" ? "text-[#fb923c]" : "text-[#fbbf24]",
             )}>
-              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {sev.toUpperCase()} · {cluster.severity}/100
+              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {urgencyLabel(cluster.severity)}
             </div>
             <div className={cn(
               "text-[0.78rem] font-semibold leading-[1.5] text-[#e9edef]",
@@ -469,6 +580,7 @@ function ExecutionBrief({
 export default function DashboardPage() {
   const router = useRouter();
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [branches, setBranches] = useState<DashboardBranch[]>([]);
   const [loadingClusters, setLoadingClusters] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [signalCount, setSignalCount] = useState(0);
@@ -479,6 +591,7 @@ export default function DashboardPage() {
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [approvals, setApprovals] = useState<Record<string, ApprovalState>>({});
   const [toast, setToast] = useState<{ msg: string; tone: "success" | "error" } | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
 
   const decideCluster = async (clusterId: string, action: "approve" | "reject") => {
     // Optimistic local update for snappy UI
@@ -519,7 +632,8 @@ export default function DashboardPage() {
     }
   };
   const [_showInsightBanner, _setShowInsightBanner] = useState(true);
-  const [severityFilter, _setSeverityFilter] = useState<"all"|"critical"|"high"|"medium"|"low">("all");
+  const [severityFilter, setSeverityFilter] = useState<PriorityFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [sortBy, _setSortBy] = useState<"severity"|"evidence"|"confidence">("severity");
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
@@ -532,15 +646,24 @@ export default function DashboardPage() {
       .then((res) => { if (!res.ok) router.push("/login?redirect=/dashboard"); else setAuthChecked(true); })
       .catch(() => router.push("/login"));
 
-    fetch("/api/workspace")
-      .then((r) => r.json())
-      .then((d) => { if (d.workspace) setWorkspace(d.workspace); })
-      .catch(() => {});
+    Promise.allSettled([
+      fetch("/api/workspace").then((r) => r.json()),
+      fetch("/api/branches").then((r) => r.json()),
+    ]).then(([workspaceResult, branchesResult]) => {
+      if (workspaceResult.status === "fulfilled" && workspaceResult.value.workspace) {
+        setWorkspace(workspaceResult.value.workspace);
+      }
+      if (branchesResult.status === "fulfilled" && Array.isArray(branchesResult.value.branches)) {
+        setBranches(branchesResult.value.branches);
+      }
+    }).catch(() => {});
 
   }, [router]);
 
   const fetchClusters = useCallback(async (includeDemo = showingDemo) => {
-    const res = await fetch(`/api/analyze${includeDemo ? "?include_demo=true" : ""}`);
+    const params = new URLSearchParams();
+    if (includeDemo) params.set("include_demo", "true");
+    const res = await fetch(`/api/analyze${params.size > 0 ? `?${params.toString()}` : ""}`);
     if (res.status === 401) { router.push("/login"); return; }
     const data = await res.json();
     const fetched: Cluster[] = data.clusters ?? [];
@@ -603,7 +726,10 @@ export default function DashboardPage() {
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ include_demo: includeDemo }),
+        body: JSON.stringify({
+          include_demo: includeDemo,
+          branch_id: selectedBranchId === "all" ? undefined : selectedBranchId,
+        }),
       });
       if (analyzeRes.status === 402) {
         const data = await analyzeRes.json();
@@ -641,8 +767,13 @@ export default function DashboardPage() {
 
   const filteredClusters = clusters
     .filter((c) => {
+      if (selectedBranchId !== "all" && c.branch_id !== selectedBranchId) return false;
       if (severityFilter === "all") return true;
       return severityLabel(c.severity) === severityFilter;
+    })
+    .filter((c) => {
+      if (categoryFilter === "all") return true;
+      return clusterCategory(c) === categoryFilter;
     })
     .sort((a, b) => {
       if (sortBy === "evidence") return b.evidence_count - a.evidence_count;
@@ -652,16 +783,41 @@ export default function DashboardPage() {
 
   const displayClusters = filteredClusters;
   const activeCluster = selectedCluster ?? displayClusters[0] ?? null;
+  const selectedBranch = branches.find((branch) => branch.id === selectedBranchId) ?? null;
+  const branchIssueCounts = new Map<string, number>();
+  const branchTopClusters = new Map<string, Cluster>();
+
+  for (const cluster of clusters) {
+    branchIssueCounts.set(cluster.branch_id, (branchIssueCounts.get(cluster.branch_id) ?? 0) + 1);
+    const current = branchTopClusters.get(cluster.branch_id);
+    if (!current || cluster.severity > current.severity) {
+      branchTopClusters.set(cluster.branch_id, cluster);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedCluster && displayClusters.some((cluster) => cluster.id === selectedCluster.id)) return;
+    setSelectedCluster(displayClusters[0] ?? null);
+  }, [selectedBranchId, clusters, selectedCluster, displayClusters]);
 
   const plan = workspace?.plan ?? "trial";
   const polar_status = workspace?.polar_status;
   const trialDays = daysLeft(workspace?.trial_ends_at);
-  const _filterCounts = {
-    all: clusters.length,
-    critical: clusters.filter((c) => severityLabel(c.severity) === "critical").length,
-    high: clusters.filter((c) => severityLabel(c.severity) === "high").length,
-    medium: clusters.filter((c) => severityLabel(c.severity) === "medium").length,
-    low: clusters.filter((c) => severityLabel(c.severity) === "low").length,
+  const branchScopedClusters = selectedBranchId === "all"
+    ? clusters
+    : clusters.filter((cluster) => cluster.branch_id === selectedBranchId);
+  const priorityFilterCounts: Record<PriorityFilter, number> = {
+    all: branchScopedClusters.length,
+    critical: branchScopedClusters.filter((c) => severityLabel(c.severity) === "critical").length,
+    high: branchScopedClusters.filter((c) => severityLabel(c.severity) === "high").length,
+    medium: branchScopedClusters.filter((c) => severityLabel(c.severity) === "medium").length,
+    low: branchScopedClusters.filter((c) => severityLabel(c.severity) === "low").length,
+  };
+  const categoryFilterCounts: Record<CategoryFilter, number> = {
+    all: branchScopedClusters.length,
+    operasyon: branchScopedClusters.filter((c) => clusterCategory(c) === "operasyon").length,
+    musteri: branchScopedClusters.filter((c) => clusterCategory(c) === "musteri").length,
+    personel: branchScopedClusters.filter((c) => clusterCategory(c) === "personel").length,
   };
 
   if (!authChecked) {
@@ -727,6 +883,41 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {!loadingClusters && branches.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Şubeler</h2>
+                <p className="mt-1 text-[0.78rem] text-muted-foreground">
+                  {selectedBranch ? `${selectedBranch.name} detayını görüyorsunuz.` : "Tüm şubelerin öncelikli durumları."}
+                </p>
+              </div>
+              {selectedBranchId !== "all" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSelectedBranchId("all")}
+                  className="h-auto rounded-lg px-3 py-2 text-[0.78rem] font-semibold"
+                >
+                  Tüm şubeler
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {branches.map((branch) => (
+                <BranchCard
+                  key={branch.id}
+                  branch={branch}
+                  topCluster={branchTopClusters.get(branch.id) ?? null}
+                  issueCount={branchIssueCounts.get(branch.id) ?? 0}
+                  selected={selectedBranchId === branch.id}
+                  onClick={() => setSelectedBranchId(branch.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {loadingClusters ? (
           /* ── Skeleton state ── */
           <div>
@@ -767,9 +958,52 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-[1.15rem] font-bold tracking-[-0.02em] text-foreground">Dikkat gereken konular</h2>
                 <p className="mt-[3px] text-[0.82rem] text-muted-foreground">
-                  Müşteri kanallarınızda {displayClusters.length} konu bulundu
+                  {selectedBranch ? `${selectedBranch.name} için` : "Müşteri kanallarınızda"} {displayClusters.length} konu bulundu
                   {lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>}
                 </p>
+              </div>
+            </div>
+
+            <div className="mb-4 flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-1.5 rounded-[10px] border bg-card p-1">
+                {([
+                  ["all", "Tüm öncelikler"],
+                  ["critical", "Kritik"],
+                  ["high", "Yüksek"],
+                  ["medium", "Orta"],
+                  ["low", "Düşük"],
+                ] as Array<[PriorityFilter, string]>).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSeverityFilter(value)}
+                    className={cn(
+                      "rounded-md px-2.5 py-1.5 text-[0.72rem] font-semibold transition",
+                      severityFilter === value
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {label} · {priorityFilterCounts[value]}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1.5 rounded-[10px] border bg-card p-1">
+                {(["all", "operasyon", "musteri", "personel"] as CategoryFilter[]).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setCategoryFilter(value)}
+                    className={cn(
+                      "rounded-md px-2.5 py-1.5 text-[0.72rem] font-semibold transition",
+                      categoryFilter === value
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {categoryLabel(value)} · {categoryFilterCounts[value]}
+                  </button>
+                ))}
               </div>
             </div>
 

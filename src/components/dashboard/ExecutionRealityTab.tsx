@@ -82,7 +82,7 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
                               : "bg-[rgba(70,230,166,0.12)] text-[var(--accent-green)]"
                         )}
                       >
-                        {cluster.severity}/100
+                        {cluster.severity_label}
                       </span>
                     </div>
                   </div>
@@ -112,7 +112,7 @@ export function ExecutionRealityTab({ clusters, onOpenSnapshot }: ExecutionReali
                   </div>
 
                   <p className="text-[0.75rem] leading-[1.5] text-muted-foreground">
-                    {cluster.evidence_count} signals · {cluster.source_breakdown.slack} Slack · {cluster.source_breakdown.email} Email
+                    {cluster.evidence_count} customer signal{cluster.evidence_count === 1 ? "" : "s"} · {cluster.source_breakdown.slack} Slack · {cluster.source_breakdown.email} Email
                     {cluster.source_breakdown.zendesk > 0 && ` · ${cluster.source_breakdown.zendesk} Zendesk`}
                     {cluster.source_breakdown.github > 0 && ` · ${cluster.source_breakdown.github} GitHub`}
                     {cluster.source_breakdown.jira > 0 && ` · ${cluster.source_breakdown.jira} Jira`}

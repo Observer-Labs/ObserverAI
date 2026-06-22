@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 import { csvSignalDedupeKey, parseCsvSignals } from "@/lib/csv-ingest";
 import { getSupabaseAdmin, insertSignals } from "@/lib/supabase";
-import type { CsvSignalInput } from "@/lib/csv-ingest";
+import type { CsvColumnMapping, CsvSignalInput } from "@/lib/csv-ingest";
 
 type CsvIngestBody = {
   branch_id?: unknown;
   display_name?: unknown;
   csv_text?: unknown;
+  mapping?: unknown;
 };
 
 type ExistingSignal = Pick<CsvSignalInput, "timestamp" | "channel" | "sender" | "content" | "metric_name" | "metric_value">;
@@ -17,12 +18,31 @@ function normalizeBody(body: CsvIngestBody) {
   const branchId = typeof body.branch_id === "string" ? body.branch_id.trim() : "";
   const displayNameRaw = typeof body.display_name === "string" ? body.display_name.trim() : "";
   const csvText = typeof body.csv_text === "string" ? body.csv_text.trim() : "";
+  const mapping = normalizeMapping(body.mapping);
 
   return {
     branchId,
     displayName: displayNameRaw || "Universal CSV",
     csvText,
+    mapping,
   };
+}
+
+function normalizeMapping(mapping: unknown): CsvColumnMapping | undefined {
+  if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) return undefined;
+
+  const fields = ["timestamp", "channel", "sender", "content", "sentiment", "metric_name", "metric_value"] as const;
+  const normalized: CsvColumnMapping = {};
+  const source = mapping as Record<string, unknown>;
+
+  for (const field of fields) {
+    const value = source[field];
+    if (typeof value === "string" && value.trim()) {
+      normalized[field] = value.trim();
+    }
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
 async function ensureBranch(workspaceId: string, branchId: string) {
@@ -109,7 +129,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({})) as CsvIngestBody;
-  const { branchId, displayName, csvText } = normalizeBody(body);
+  const { branchId, displayName, csvText, mapping } = normalizeBody(body);
 
   if (!branchId) return NextResponse.json({ error: "branch_id is required" }, { status: 400 });
   if (!csvText) return NextResponse.json({ error: "csv_text is required" }, { status: 400 });
@@ -124,6 +144,7 @@ export async function POST(req: NextRequest) {
       branchId,
       sourceId,
       sourceName: displayName,
+      mapping,
     });
     const newSignals = await filterExistingSignals(workspaceId, branchId, parsed.signals);
     const inserted = await insertSignals(newSignals);

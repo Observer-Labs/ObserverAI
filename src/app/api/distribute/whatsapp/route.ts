@@ -38,12 +38,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: "Not critical severity" });
   }
 
+  let branchName: string | null = null;
+  if ((cluster as Cluster).branch_id) {
+    const { data: branch } = await supabaseAdmin
+      .from("branches")
+      .select("name")
+      .eq("id", (cluster as Cluster).branch_id)
+      .eq("workspace_id", wid)
+      .single();
+    branchName = (branch as { name?: string } | null)?.name ?? null;
+  }
+
   const recipients = recipientOverride ? [recipientOverride] : config.recipient_numbers ?? [];
   const deliveries = [];
 
   for (const number of recipients) {
     try {
-      await sendWhatsAppAlert(number, cluster as Cluster);
+      await sendWhatsAppAlert(number, cluster as Cluster, { branchName });
       const delivery = await logDelivery({
         cluster_id: clusterId,
         channel: "whatsapp",

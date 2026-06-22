@@ -21,6 +21,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 // Sources whose ingest routes can be triggered per-workspace. Keyed by the
 // path segment under /api/ingest/. If you add a new source, list it here.
 const SCHEDULABLE_SOURCES = [
+  "googlereviews",
+  "googleanalytics",
   "appstore",
   "email",
   "reddit",
@@ -32,6 +34,18 @@ const SCHEDULABLE_SOURCES = [
 ] as const;
 
 type SourceKey = typeof SCHEDULABLE_SOURCES[number];
+type WorkspaceRow = {
+  id: string;
+  integrations_config?: Record<string, { enabled?: boolean }> | null;
+  plan?: string | null;
+  polar_status?: string | null;
+  trial_ends_at?: string | null;
+};
+
+type SourceRow = {
+  workspace_id: string;
+  type: string;
+};
 
 export async function GET(req: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -55,6 +69,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const { data: sourceRows, error: sourceError } = await supabase
+    .from("sources")
+    .select("workspace_id, type")
+    .in("type", ["googlereviews", "google_reviews", "googleanalytics", "ga4", "email", "gmail"]);
+
+  if (sourceError) {
+    return NextResponse.json({ error: sourceError.message }, { status: 500 });
+  }
+
+  const branchSourceKeys = new Map<string, Set<string>>();
+  for (const source of (sourceRows ?? []) as SourceRow[]) {
+    const normalizedType = normalizeSchedulableSourceType(source.type);
+    const current = branchSourceKeys.get(source.workspace_id) ?? new Set<string>();
+    current.add(normalizedType);
+    branchSourceKeys.set(source.workspace_id, current);
+  }
+
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.NEXTAUTH_URL ??
@@ -62,8 +93,8 @@ export async function GET(req: NextRequest) {
 
   const summary: Array<{ workspace_id: string; source: string; status: number }> = [];
 
-  for (const ws of workspaces ?? []) {
-    const ic = (ws.integrations_config ?? {}) as Record<string, { enabled?: boolean }>;
+  for (const ws of (workspaces ?? []) as WorkspaceRow[]) {
+    const ic = ws.integrations_config ?? {};
 
     // Only trigger ingest for active workspaces (not expired trials)
     // The ingest routes themselves don't gate on plan status, so we filter here
@@ -76,7 +107,7 @@ export async function GET(req: NextRequest) {
     }
 
     for (const source of SCHEDULABLE_SOURCES) {
-      if (!ic[source]?.enabled) continue;
+      if (!ic[source]?.enabled && !branchSourceKeys.get(ws.id)?.has(source)) continue;
 
       try {
         // Internal cron-trigger calls bypass cookie auth via a service header.
@@ -104,4 +135,11 @@ export async function GET(req: NextRequest) {
     workspaces: workspaces?.length ?? 0,
     summary,
   });
+}
+
+function normalizeSchedulableSourceType(value: string) {
+  if (value === "google_reviews") return "googlereviews";
+  if (value === "ga4") return "googleanalytics";
+  if (value === "gmail") return "email";
+  return value;
 }

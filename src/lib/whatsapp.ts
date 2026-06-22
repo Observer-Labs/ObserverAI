@@ -123,25 +123,92 @@ export async function sendWhatsAppWelcomeMessage(toNumber: string, locale = "tr"
   return sendMetaTextMessage(toNumber, body);
 }
 
-export async function sendWhatsAppAlert(toNumber: string, cluster: Cluster, locale = "tr") {
-  const coreEnv = requireEnvGroup("core");
-  const t = await getTranslations({ locale, namespace: "whatsapp" });
+type WhatsAppAlertOptions = {
+  locale?: string;
+  branchName?: string | null;
+};
+
+function alertLabels(locale: string) {
+  if (locale === "tr") {
+    return {
+      alertTitle: "Observer Uyarısı",
+      severityHigh: "YÜKSEK",
+      severityMedium: "ORTA",
+      severityLow: "DÜŞÜK",
+      what: "Ne oluyor",
+      rootCause: "Kök neden",
+      action: "Ne yapmalı",
+      impact: "Maliyet",
+      evidence: "Kanıt",
+      view: "Görüntüle",
+      reply: "Yanıtla: 1 detaylar · 2 hallettim · 3 geç",
+      customerSignal: "müşteri sinyali",
+      fallbackRootCause: "Aynı şube ve zaman penceresinde birden fazla kaynak aynı sorunu işaret ediyor.",
+    };
+  }
+
+  return {
+    alertTitle: "Observer Alert",
+    severityHigh: "HIGH",
+    severityMedium: "MEDIUM",
+    severityLow: "LOW",
+    what: "What is happening",
+    rootCause: "Root cause",
+    action: "What to do",
+    impact: "Impact",
+    evidence: "Evidence",
+    view: "View",
+    reply: "Reply: 1 details · 2 on it · 3 skip",
+    customerSignal: "customer signal",
+    fallbackRootCause: "Multiple sources point to the same issue in the same branch and time window.",
+  };
+}
+
+export function buildWhatsAppAlertBody(
+  cluster: Cluster,
+  input: {
+    baseUrl: string;
+    locale?: string;
+    branchName?: string | null;
+  },
+) {
+  const locale = input.locale ?? "tr";
+  const labels = alertLabels(locale);
   const severityEmoji = cluster.severity >= 70 ? "🔴" : cluster.severity >= 40 ? "🟡" : "🟢";
   const severityLabel =
-    cluster.severity >= 70 ? t("severityHigh") : cluster.severity >= 40 ? t("severityMedium") : t("severityLow");
+    cluster.severity >= 70 ? labels.severityHigh : cluster.severity >= 40 ? labels.severityMedium : labels.severityLow;
+  const branchLabel = input.branchName?.trim() || (locale === "tr" ? "Şube" : "Branch");
+  const signalSuffix = cluster.evidence_count === 1 ? "" : locale === "tr" ? "" : "s";
+  const viewUrl = `${input.baseUrl}/dashboard?gap=${cluster.id}&branch=${cluster.branch_id}`;
+  const impactLine = cluster.projected_impact ? `\n${labels.impact}: ${cluster.projected_impact}` : "";
 
-  const body = `${severityEmoji} *${t("alertTitle")}*
+  return `${severityEmoji} *${branchLabel}* · ${severityLabel}
 *${cluster.title}*
-${severityLabel}
 
-${cluster.business_case}
+${labels.what}: ${cluster.business_case}
+${labels.rootCause}: ${cluster.root_cause || labels.fallbackRootCause}${impactLine}
+${labels.action}: ${cluster.recommended_action}
 
-${t("actionLabel")}: ${cluster.recommended_action}
+${labels.evidence}: ${cluster.evidence_count} ${labels.customerSignal}${signalSuffix}
+${labels.view}: ${viewUrl}
 
-${t("evidenceLabel")}: ${cluster.evidence_count}
-${t("viewLabel")}: ${coreEnv.NEXTAUTH_URL}/dashboard?gap=${cluster.id}
+${labels.reply}`;
+}
 
-${t("replyHint")}`;
+export async function sendWhatsAppAlert(
+  toNumber: string,
+  cluster: Cluster,
+  localeOrOptions: string | WhatsAppAlertOptions = "tr",
+) {
+  const coreEnv = requireEnvGroup("core");
+  const options = typeof localeOrOptions === "string" ? { locale: localeOrOptions } : localeOrOptions;
+  const locale = options.locale ?? "tr";
+  await getTranslations({ locale, namespace: "whatsapp" });
+  const body = buildWhatsAppAlertBody(cluster, {
+    baseUrl: coreEnv.NEXTAUTH_URL,
+    locale,
+    branchName: options.branchName,
+  });
 
   return sendMetaTextMessage(toNumber, body);
 }

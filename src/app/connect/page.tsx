@@ -2,7 +2,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { parseCsvHeaders } from "@/lib/csv-ingest";
 import type { IntegrationsConfig } from "@/lib/types";
+import type { CsvColumnMapping } from "@/lib/csv-ingest";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +62,12 @@ interface SourceRow {
   type: string;
   display_name: string;
   status: "connected" | "pending" | "error";
+  config?: Record<string, unknown>;
+  credentials?: {
+    provider?: string;
+    status?: "pending" | "ready" | "error" | "revoked";
+    provided_fields?: string[];
+  } | null;
   last_sync_at: string | null;
 }
 
@@ -68,6 +76,114 @@ interface CsvImportResult {
   skipped: number;
   duplicateRows: number;
   existingDuplicates: number;
+}
+
+interface PosImportResult {
+  ingested: number;
+  skipped: number;
+  duplicateRows: number;
+  nonMetricRows: number;
+  existingDuplicates: number;
+}
+
+interface SourceSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  fetched?: number;
+  ingested?: number;
+  existing_duplicates?: number;
+  reason?: string;
+  error?: string;
+}
+
+interface DeliverySyncResult {
+  source_id: string;
+  platform: "getir" | "trendyol" | "yemeksepeti";
+  status: "synced" | "skipped" | "failed";
+  metric_date?: string;
+  order_count?: number;
+  bad_review_count?: number;
+  candidates?: number;
+  reason?: "unsupported_provider" | "missing_auth_ref";
+  error?: string;
+  partner_sync?: {
+    status: "synced" | "skipped";
+    fetchedOrders?: number;
+    fetchedReviews?: number;
+    persistedOrders?: number;
+    persistedReviews?: number;
+    reason?: "missing_auth_ref";
+  };
+}
+
+interface AnalyticsSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  anomalies?: number;
+  ingested?: number;
+  reason?: "missing_property_id" | "missing_auth_ref";
+  error?: string;
+}
+
+interface EmailSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  fetched?: number;
+  ingested?: number;
+  existing_duplicates?: number;
+  reason?: "missing_auth_ref";
+  error?: string;
+}
+
+type CsvMappingField = keyof CsvColumnMapping;
+type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
+type SourceCredentialKey = SelfServiceAuthKey | Extract<ActiveSourceKey, "googleanalytics">;
+
+interface SourceConnectionTestResult {
+  status: "ready";
+  provider: string;
+  checkedAt: string;
+  checks: Array<{ id: string; status: "ok"; item_count?: number }>;
+  store_candidates: Array<{ external_id: string; name?: string; status?: string }>;
+}
+
+const CSV_MAPPING_FIELDS: { key: CsvMappingField; label: string; helper: string }[] = [
+  { key: "content", label: "Content", helper: "Review, complaint, email, or note text" },
+  { key: "timestamp", label: "Timestamp", helper: "Date/time for the row" },
+  { key: "channel", label: "Channel", helper: "Google, POS, delivery, survey" },
+  { key: "sender", label: "Sender", helper: "Customer, reviewer, or terminal name" },
+  { key: "sentiment", label: "Sentiment", helper: "positive, neutral, negative" },
+  { key: "metric_name", label: "Metric name", helper: "order_count, sales, prep_time_avg" },
+  { key: "metric_value", label: "Metric value", helper: "Numeric metric value" },
+];
+
+const CSV_AUTO_VALUE = "__auto__";
+
+function normalizeCsvHeaderForGuess(value: string) {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function guessCsvMapping(headers: string[]): CsvColumnMapping {
+  const normalizedHeaders = headers.map((header) => ({
+    original: header,
+    normalized: normalizeCsvHeaderForGuess(header),
+  }));
+
+  const pick = (candidates: string[]) => normalizedHeaders.find((header) => candidates.includes(header.normalized))?.original;
+
+  return {
+    content: pick(["content", "message", "text", "comment", "review", "description", "body"]),
+    timestamp: pick(["timestamp", "created_at", "date", "time", "when", "created_local"]),
+    channel: pick(["channel", "platform", "source"]),
+    sender: pick(["sender", "customer", "name", "author", "guest"]),
+    sentiment: pick(["sentiment", "tone", "score_label"]),
+    metric_name: pick(["metric_name", "metric", "kpi"]),
+    metric_value: pick(["metric_value", "value", "amount", "count", "reading"]),
+  };
+}
+
+function compactCsvMapping(mapping: CsvColumnMapping) {
+  return Object.fromEntries(Object.entries(mapping).filter(([, value]) => value)) as CsvColumnMapping;
 }
 
 // ── Source definitions ────────────────────────────────────────────────────────
@@ -165,7 +281,7 @@ const DEFAULT_CONFIGS: Record<ActiveSourceKey, Record<string, unknown>> = {
   jira:            { enabled: false, domain: "", email: "", api_token: "", project_key: "", min_priority: "medium", exclude_done: true, issue_types: "", last_sync: null },
   shopify:         { enabled: false, shop_domain: "", access_token: "", last_sync: null },
   googleplay:      { enabled: false, package_name: "", service_account_key: "", max_rating: 3, last_sync: null },
-  googleanalytics: { enabled: false, property_id: "", service_account_email: "", service_account_key: "", event_filter: "", last_sync: null },
+  googleanalytics: { enabled: false, property_id: "", event_filter: "", last_sync: null },
   trustpilot:      { enabled: false, business_unit_id: "", api_key: "", max_rating: 3, last_sync: null },
 };
 
@@ -185,16 +301,24 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
     { key: "business_name", label: "Google'daki işletme adınız", placeholder: "örn. Kronotrop · Kadıköy", hint: "Google Haritalar'da göründüğü şekilde işletme adını girin. Yorumları otomatik çekeceğiz." },
   ],
   getir: [
-    { key: "store_id", label: "Getir'deki mağaza adı veya kimliği", placeholder: "örn. Coffee Lab · Beşiktaş", hint: "Getir iş ortağı panelinizde görünen mağaza adı." },
+    { key: "restaurant_id", label: "Getir restoran kimliği", placeholder: "örn. restoran-123", hint: "Getir iş ortağı panelindeki restoran kimliği. API anahtarları daha sonra güvenli credential adımında alınır." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
   yemeksepeti: [
-    { key: "restaurant_id", label: "Yemeksepeti'ndeki restoran adı veya kimliği", placeholder: "örn. Burger House · Moda", hint: "Yemeksepeti'nde görünen restoran adınız." },
+    { key: "vendor_id", label: "Yemeksepeti vendor kimliği", placeholder: "örn. vendor-123", hint: "Partner/integration erişimi onaylandığında kullanılacak satıcı kimliği." },
+    { key: "store_id", label: "Restoran / store kimliği", placeholder: "örn. store-456", hint: "Şube eşlemesi için kullanılacak güvenli mağaza kimliği." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük operasyon verisi taransın." },
   ],
   trendyol: [
-    { key: "store_id", label: "Trendyol Go'daki mağaza adı veya kimliği", placeholder: "örn. Pizza Roma · Şişli", hint: "Trendyol Go'da görünen mağaza adınız." },
+    { key: "supplier_id", label: "Trendyol supplier ID", placeholder: "örn. supplier-123", hint: "Satıcı panelindeki entegrasyon bilgilerinde görünür. API key/secret burada tutulmaz." },
+    { key: "store_id", label: "Store ID", placeholder: "örn. store-456", hint: "Restoran yorum endpoint'i için kullanılacak şube/store kimliği." },
+    { key: "delivery_type", label: "Teslimat tipi", placeholder: "GO", hint: "Trendyol Go operasyon türünü ayırmak için güvenli metadata." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
   pos: [
-    { key: "note", label: "Nasıl bağlanılır", placeholder: "", type: "textarea", hint: "Günlük şube satışlarını POS sisteminizden CSV olarak dışa aktarın ve yükleyin (yakında hazır). Şimdilik örnek veriler nasıl görüneceğini gösteriyor." },
+    { key: "system_name", label: "POS sistemi", placeholder: "örn. Simpra, Micros, Logo", hint: "Şube satışlarını hangi sistemden alacağımızı belirtir." },
+    { key: "sync_mode", label: "Bağlantı tipi", placeholder: "csv", hint: "MVP için csv veya partner_api gibi güvenli metadata." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "30", type: "number", hint: "İlk import/senkronizasyon penceresi." },
   ],
   appstore: [
     { key: "app_id_ios",  label: "iOS App Kimliği (App Store)", placeholder: "örn. 123456789", hint: "App Store Connect → Uygulama Bilgileri bölümünden bulabilirsiniz." },
@@ -216,9 +340,8 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
   googleanalytics: [
     { key: "property_id",           label: "GA4 Mülk Kimliği",               placeholder: "123456789", hint: "Google Analytics → Yönetici → Mülk → Mülk ayrıntıları bölümünde bulunur." },
-    { key: "service_account_email", label: "Servis Hesabı E-postası",         placeholder: "signal@your-project.iam.gserviceaccount.com", hint: "Bu e-postayı GA4 Yönetici → Hesap → Hesap Erişim Yönetimi'nde İzleyici olarak ekleyin." },
-    { key: "service_account_key",   label: "Servis Hesabı Anahtarı (JSON)",  placeholder: '{"type":"service_account",...}', type: "textarea", hint: "Google Cloud → IAM → Servis Hesapları'ndan alınan JSON anahtarı. analyticsdata.readonly iznine ihtiyaç duyar." },
     { key: "event_filter",          label: "Etkinlik Filtresi (isteğe bağlı)", placeholder: "page_view, purchase, sign_up", hint: "Virgülle ayrılmış etkinlik adları. Tüm etkinlikleri izlemek için boş bırakın." },
+    { key: "sync_window_days",      label: "Geriye dönük süre (gün)",         placeholder: "30", type: "number", hint: "İlk senkronizasyonda kaç günlük GA4 metriği taransın." },
   ],
   email: [
     { key: "sender_domains", label: "Gönderici Alan Adı Filtresi", placeholder: "sirketiniz.com, marka.io", hint: "Virgülle ayrılmış alan adları. Tüm gelen e-postaları yakalamak için boş bırakın." },
@@ -261,11 +384,28 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
 };
 
+const SOURCE_AUTH_FIELDS: Record<SourceCredentialKey, FormField[]> = {
+  getir: [
+    { key: "appSecretKey", label: "App secret key", placeholder: "Getir Food API app secret", type: "password", hint: "Getir Food API / entegrasyon bilgileriniz içinde paylaşılır. Observer bu değeri yalnız Vault'a yazar." },
+    { key: "restaurantSecretKey", label: "Restaurant secret key", placeholder: "Getir restoran secret", type: "password", hint: "Restoranınıza ait API secret. DB config içinde saklanmaz." },
+  ],
+  trendyol: [
+    { key: "apiKey", label: "API key", placeholder: "Trendyol API key", type: "password", hint: "Trendyol Go Satıcı Paneli → Hesap Bilgilerim → Entegrasyon Bilgileri." },
+    { key: "apiSecretKey", label: "API secret key", placeholder: "Trendyol API secret key", type: "password", hint: "Supplier seviyesindeki secret; şube ayrımı store ID ile yapılır." },
+  ],
+  yemeksepeti: [
+    { key: "integrationUser", label: "Integration user", placeholder: "Yemeksepeti integration user", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan kullanıcı." },
+    { key: "integrationPassword", label: "Integration password", placeholder: "Yemeksepeti integration password", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan parola." },
+  ],
+  googleanalytics: [
+    { key: "serviceAccountJson", label: "Service account JSON", placeholder: "{\"type\":\"service_account\",...}", type: "textarea", hint: "Google Cloud service account JSON. Observer stores it only in Vault and keeps source config non-sensitive." },
+  ],
+};
+
 // ── Connection status helper ──────────────────────────────────────────────────
 
 function isConnected(key: ActiveSourceKey, workspace: Workspace | null): boolean {
   if (!workspace) return false;
-  if (key === "email") return !!workspace.gmail_token;
   if (key === "slack") return !!workspace.slack_token;
   const config = workspace.integrations_config?.[key as keyof IntegrationsConfig] as Record<string, unknown> | undefined;
   return !!(config?.enabled);
@@ -276,8 +416,113 @@ function ingestRoute(key: ActiveSourceKey): string {
   return `/api/ingest/${key}`;
 }
 
-function getConnectedCount(workspace: Workspace | null): number {
-  return ACTIVE_SOURCES.filter((s) => isConnected(s.key, workspace)).length;
+const BRANCH_SOURCE_TYPES = new Set<ActiveSourceKey>([
+  "googlereviews",
+  "getir",
+  "yemeksepeti",
+  "trendyol",
+  "pos",
+  "googleanalytics",
+  "email",
+]);
+
+const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
+  googlereviews: ["business_name", "location_id", "sync_window_days"],
+  getir: ["restaurant_id", "restaurant_ids", "sync_window_days"],
+  yemeksepeti: ["vendor_id", "store_id", "sync_window_days"],
+  trendyol: ["supplier_id", "store_id", "delivery_type", "sync_window_days"],
+  pos: ["system_name", "sync_mode", "sync_window_days"],
+  googleanalytics: ["property_id", "event_filter", "sync_window_days"],
+  email: ["sender_domains", "max_age_days"],
+};
+
+function isBranchSourceKey(key: ActiveSourceKey) {
+  return BRANCH_SOURCE_TYPES.has(key);
+}
+
+function isSelfServiceAuthKey(key: ActiveSourceKey): key is SelfServiceAuthKey {
+  return key === "getir" || key === "trendyol" || key === "yemeksepeti";
+}
+
+function isSourceCredentialKey(key: ActiveSourceKey): key is SourceCredentialKey {
+  return isSelfServiceAuthKey(key) || key === "googleanalytics";
+}
+
+function sourceAuthProviderForKey(key: SourceCredentialKey) {
+  return key === "googleanalytics" ? "ga4" : key;
+}
+
+function isDeliveryConnectionTestKey(key: ActiveSourceKey): key is Extract<SelfServiceAuthKey, "getir" | "trendyol"> {
+  return key === "getir" || key === "trendyol";
+}
+
+function isLocationListKey(key: ActiveSourceKey): key is Extract<ActiveSourceKey, "googlereviews"> {
+  return key === "googlereviews";
+}
+
+function sourceRecordType(key: ActiveSourceKey) {
+  return key;
+}
+
+function branchSourceForKey(sources: SourceRow[], branchId: string, key: ActiveSourceKey) {
+  return sources.find((source) => source.branch_id === branchId && source.type === sourceRecordType(key));
+}
+
+function formatLastSync(value: string | null | undefined) {
+  if (!value) return "Never synced";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sync time unknown";
+  return new Intl.DateTimeFormat("tr-TR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function isSourceAuthReady(source: SourceRow | undefined) {
+  return source?.credentials?.status === "ready";
+}
+
+function isSourceAvailable(
+  key: ActiveSourceKey,
+  workspace: Workspace | null,
+  sources: SourceRow[],
+  branchId: string,
+) {
+  if (isBranchSourceKey(key)) return Boolean(branchSourceForKey(sources, branchId, key));
+  return isConnected(key, workspace);
+}
+
+function getAvailableCount(
+  workspace: Workspace | null,
+  sources: SourceRow[],
+  branchId: string,
+) {
+  return ACTIVE_SOURCES.filter((source) => isSourceAvailable(source.key, workspace, sources, branchId)).length;
+}
+
+function compactSourceConfig(key: ActiveSourceKey, values: Record<string, unknown>) {
+  const allowed = SOURCE_CONFIG_ALLOWLIST[key] ?? [];
+  const output: Record<string, unknown> = {};
+
+  for (const field of allowed) {
+    const value = values[field];
+    if (typeof value === "string" && value.trim()) output[field] = value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) output[field] = value;
+    if (Array.isArray(value) && value.every((item) => typeof item === "string")) output[field] = value;
+  }
+
+  return output;
+}
+
+function hasCredentialInput(values: Record<string, string>) {
+  return Object.values(values).some((value) => value.trim().length > 0);
+}
+
+function sourceMappingField(key: ActiveSourceKey): "restaurant_id" | "store_id" | "location_id" | null {
+  if (key === "getir") return "restaurant_id";
+  if (key === "trendyol") return "store_id";
+  if (key === "googlereviews") return "location_id";
+  return null;
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
@@ -309,14 +554,80 @@ function ConnectPageContent() {
     googleanalytics: { ...DEFAULT_CONFIGS.googleanalytics },
     trustpilot:      { ...DEFAULT_CONFIGS.trustpilot },
   });
+  const [authValues, setAuthValues] = useState<Record<SourceCredentialKey, Record<string, string>>>({
+    getir: { appSecretKey: "", restaurantSecretKey: "" },
+    trendyol: { apiKey: "", apiSecretKey: "" },
+    yemeksepeti: { integrationUser: "", integrationPassword: "" },
+    googleanalytics: { serviceAccountJson: "" },
+  });
   const [saving, setSaving] = useState(false);
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [csvName, setCsvName] = useState("Manual CSV upload");
+  const [csvFileName, setCsvFileName] = useState("");
   const [csvText, setCsvText] = useState("");
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvMapping, setCsvMapping] = useState<CsvColumnMapping>({});
   const [csvImporting, setCsvImporting] = useState(false);
+  const [csvFileLoading, setCsvFileLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [posCsvText, setPosCsvText] = useState("");
+  const [posCsvHeaders, setPosCsvHeaders] = useState<string[]>([]);
+  const [posCsvMapping, setPosCsvMapping] = useState<CsvColumnMapping>({});
+  const [posFileName, setPosFileName] = useState("");
+  const [posImporting, setPosImporting] = useState(false);
+  const [posFileLoading, setPosFileLoading] = useState(false);
+  const [posResult, setPosResult] = useState<PosImportResult | null>(null);
+  const [posError, setPosError] = useState<string | null>(null);
+  const [sourceSaveError, setSourceSaveError] = useState<string | null>(null);
+  const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
+  const [mappingCandidateId, setMappingCandidateId] = useState<string | null>(null);
+  const [sourceTestResult, setSourceTestResult] = useState<SourceConnectionTestResult | null>(null);
+  const [sourceTestError, setSourceTestError] = useState<string | null>(null);
+  const [syncingSourceId, setSyncingSourceId] = useState<string | null>(null);
+  const [sourceSyncResult, setSourceSyncResult] = useState<SourceSyncResult | null>(null);
+  const [sourceSyncError, setSourceSyncError] = useState<string | null>(null);
+  const [deliverySyncResult, setDeliverySyncResult] = useState<DeliverySyncResult | null>(null);
+  const [deliverySyncError, setDeliverySyncError] = useState<string | null>(null);
+  const [analyticsSyncResult, setAnalyticsSyncResult] = useState<AnalyticsSyncResult | null>(null);
+  const [analyticsSyncError, setAnalyticsSyncError] = useState<string | null>(null);
+  const [emailSyncResult, setEmailSyncResult] = useState<EmailSyncResult | null>(null);
+  const [emailSyncError, setEmailSyncError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const headers = parseCsvHeaders(csvText);
+    setCsvHeaders(headers);
+    if (headers.length === 0) {
+      setCsvMapping({});
+    }
+  }, [csvText]);
+
+  useEffect(() => {
+    const headers = parseCsvHeaders(posCsvText);
+    setPosCsvHeaders(headers);
+    if (headers.length === 0) {
+      setPosCsvMapping({});
+    }
+  }, [posCsvText]);
+
+  useEffect(() => {
+    if (!selectedBranchId || sources.length === 0) return;
+
+    setFormValues((current) => {
+      const next = { ...current };
+      for (const source of sources) {
+        if (source.branch_id !== selectedBranchId) continue;
+        if (!isBranchSourceKey(source.type as ActiveSourceKey)) continue;
+        const key = source.type as ActiveSourceKey;
+        next[key] = {
+          ...DEFAULT_CONFIGS[key],
+          ...(source.config ?? {}),
+        };
+      }
+      return next;
+    });
+  }, [selectedBranchId, sources]);
 
   const loadWorkspace = useCallback(async () => {
     try {
@@ -364,7 +675,66 @@ function ConnectPageContent() {
 
   async function saveSource(key: ActiveSourceKey) {
     setSaving(true);
+    setSourceSaveError(null);
+    setSourceTestError(null);
+    setSourceTestResult(null);
     try {
+      if (isBranchSourceKey(key)) {
+        if (!selectedBranchId) {
+          setSourceSaveError("Select a branch before creating a source.");
+          return;
+        }
+
+        const sourceDefinition = ACTIVE_SOURCES.find((source) => source.key === key);
+        const res = await fetch("/api/sources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            branch_id: selectedBranchId,
+            type: sourceRecordType(key),
+            display_name: sourceDefinition?.label ?? key,
+            config: compactSourceConfig(key, formValues[key]),
+          }),
+        });
+        const data = await res.json().catch(() => ({})) as { source?: SourceRow; error?: string };
+        if (!res.ok) {
+          setSourceSaveError(data.error ?? "Source could not be saved.");
+          return;
+        }
+
+        if (isSourceCredentialKey(key) && (hasCredentialInput(authValues[key]) || !isSourceAuthReady(data.source))) {
+          const sourceId = data.source?.id;
+          if (!sourceId) {
+            setSourceSaveError("Source was saved but credential setup could not start.");
+            return;
+          }
+
+          const authRes = await fetch(`/api/sources/${sourceId}/auth`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              provider: sourceAuthProviderForKey(key),
+              credentials: authValues[key],
+            }),
+          });
+          const authData = await authRes.json().catch(() => ({})) as { error?: string };
+          if (!authRes.ok) {
+            setSourceSaveError(authData.error ?? "Credentials could not be saved securely.");
+            return;
+          }
+
+          setAuthValues((current) => ({
+            ...current,
+            [key]: Object.fromEntries(Object.keys(current[key]).map((field) => [field, ""])),
+          }) as Record<SourceCredentialKey, Record<string, string>>);
+        }
+
+        setSavedKey(key);
+        setTimeout(() => setSavedKey(null), 2500);
+        await loadWorkspace();
+        return;
+      }
+
       const values = { ...formValues[key], enabled: true };
       // Merge new values into existing integrations_config so other sources aren't wiped
       const mergedConfig = { ...(workspace?.integrations_config ?? {}), [key]: values };
@@ -396,6 +766,228 @@ function ConnectPageContent() {
     await loadWorkspace();
   }
 
+  async function testSourceConnection(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setTestingSourceId(source.id);
+    setSourceTestError(null);
+    setSourceTestResult(null);
+
+    try {
+      const route = source.type === "googlereviews"
+        ? `/api/sources/${source.id}/google-locations`
+        : `/api/sources/${source.id}/test`;
+      const res = await fetch(route, { method: "POST" });
+      const data = await res.json().catch(() => ({})) as { result?: SourceConnectionTestResult; error?: string };
+      if (!res.ok || !data.result) {
+        setSourceTestError(data.error ?? "Connection test failed.");
+        return;
+      }
+
+      setSourceTestResult(data.result);
+      await loadWorkspace();
+    } finally {
+      setTestingSourceId(null);
+    }
+  }
+
+  async function syncGoogleReviewsSource(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setSourceSyncResult(null);
+    setSourceSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/googlereviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: SourceSyncResult[];
+      };
+      if (!res.ok) {
+        setSourceSyncError(data.error ?? "Sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setSourceSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setSourceSyncError(result.error ?? "Sync failed.");
+      } else {
+        setSourceSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncDeliverySourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setDeliverySyncResult(null);
+    setDeliverySyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: DeliverySyncResult[];
+      };
+      if (!res.ok) {
+        setDeliverySyncError(data.error ?? "Delivery sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setDeliverySyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setDeliverySyncError(result.error ?? "Delivery sync failed.");
+      } else {
+        setDeliverySyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncAnalyticsSourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setAnalyticsSyncResult(null);
+    setAnalyticsSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/googleanalytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: AnalyticsSyncResult[];
+      };
+      if (!res.ok) {
+        setAnalyticsSyncError(data.error ?? "Google Analytics sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setAnalyticsSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setAnalyticsSyncError(result.error ?? "Google Analytics sync failed.");
+      } else {
+        setAnalyticsSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncEmailSourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setEmailSyncResult(null);
+    setEmailSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: EmailSyncResult[];
+      };
+      if (!res.ok) {
+        setEmailSyncError(data.error ?? "Gmail sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setEmailSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setEmailSyncError(result.error ?? "Gmail sync failed.");
+      } else {
+        setEmailSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function applyStoreCandidate(
+    key: Extract<ActiveSourceKey, "getir" | "trendyol" | "googlereviews">,
+    candidate: SourceConnectionTestResult["store_candidates"][number],
+  ) {
+    const mappingField = sourceMappingField(key);
+    if (!mappingField || !selectedBranchId || !candidate.external_id) return;
+
+    setMappingCandidateId(candidate.external_id);
+    setSourceSaveError(null);
+
+    const nextValues = {
+      ...formValues[key],
+      [mappingField]: candidate.external_id,
+    };
+
+    try {
+      const sourceDefinition = ACTIVE_SOURCES.find((source) => source.key === key);
+      const res = await fetch("/api/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branch_id: selectedBranchId,
+          type: sourceRecordType(key),
+          display_name: sourceDefinition?.label ?? key,
+          config: compactSourceConfig(key, nextValues),
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) {
+        setSourceSaveError(data.error ?? "Store mapping could not be saved.");
+        return;
+      }
+
+      setFormValues((current) => ({
+        ...current,
+        [key]: nextValues,
+      }));
+      setSavedKey(key);
+      setTimeout(() => setSavedKey(null), 2500);
+      await loadWorkspace();
+    } finally {
+      setMappingCandidateId(null);
+    }
+  }
+
   async function syncAll() {
     setSyncing(true);
     try {
@@ -422,6 +1014,7 @@ function ConnectPageContent() {
           branch_id: selectedBranchId,
           display_name: csvName,
           csv_text: csvText,
+          mapping: compactCsvMapping(csvMapping),
         }),
       });
       const data = await res.json().catch(() => ({})) as Partial<CsvImportResult> & { error?: string };
@@ -437,15 +1030,135 @@ function ConnectPageContent() {
         existingDuplicates: data.existingDuplicates ?? 0,
       });
       setCsvText("");
+      setCsvFileName("");
+      setCsvMapping({});
       await loadWorkspace();
     } finally {
       setCsvImporting(false);
     }
   }
 
-  const connectedCount = getConnectedCount(workspace);
+  async function importPosCsv(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setPosImporting(true);
+    setPosError(null);
+    setPosResult(null);
+
+    try {
+      const res = await fetch("/api/ingest/pos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_id: source.id,
+          csv_text: posCsvText,
+          mapping: compactCsvMapping(posCsvMapping),
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as Partial<PosImportResult> & { error?: string };
+      if (!res.ok) {
+        setPosError(data.error ?? "POS import failed");
+        return;
+      }
+
+      setPosResult({
+        ingested: data.ingested ?? 0,
+        skipped: data.skipped ?? 0,
+        duplicateRows: data.duplicateRows ?? 0,
+        nonMetricRows: data.nonMetricRows ?? 0,
+        existingDuplicates: data.existingDuplicates ?? 0,
+      });
+      setPosCsvText("");
+      setPosFileName("");
+      setPosCsvMapping({});
+      await loadWorkspace();
+    } finally {
+      setPosImporting(false);
+    }
+  }
+
+  async function handleCsvFileChange(file: File | undefined) {
+    if (!file) return;
+
+    setCsvFileLoading(true);
+    setCsvError(null);
+    setCsvResult(null);
+
+    try {
+      const text = await file.text();
+      const headers = parseCsvHeaders(text);
+      setCsvFileName(file.name);
+      setCsvText(text);
+      setCsvMapping(guessCsvMapping(headers));
+      if (csvName === "Manual CSV upload") {
+        setCsvName(file.name.replace(/\.[^.]+$/, "") || "CSV upload");
+      }
+    } catch {
+      setCsvError("Could not read the selected CSV file.");
+    } finally {
+      setCsvFileLoading(false);
+    }
+  }
+
+  async function handlePosFileChange(file: File | undefined) {
+    if (!file) return;
+
+    setPosFileLoading(true);
+    setPosError(null);
+    setPosResult(null);
+
+    try {
+      const text = await file.text();
+      const headers = parseCsvHeaders(text);
+      setPosFileName(file.name);
+      setPosCsvText(text);
+      setPosCsvMapping(guessCsvMapping(headers));
+    } catch {
+      setPosError("Could not read the selected POS CSV file.");
+    } finally {
+      setPosFileLoading(false);
+    }
+  }
+
+  function updateCsvText(value: string) {
+    setCsvText(value);
+    setCsvResult(null);
+    setCsvError(null);
+  }
+
+  function updatePosCsvText(value: string) {
+    setPosCsvText(value);
+    setPosResult(null);
+    setPosError(null);
+  }
+
+  function updateCsvMapping(field: CsvMappingField, value: string) {
+    setCsvMapping((current) => {
+      const next = { ...current };
+      if (value === CSV_AUTO_VALUE) {
+        delete next[field];
+      } else {
+        next[field] = value;
+      }
+      return next;
+    });
+  }
+
+  function updatePosCsvMapping(field: CsvMappingField, value: string) {
+    setPosCsvMapping((current) => {
+      const next = { ...current };
+      if (value === CSV_AUTO_VALUE) {
+        delete next[field];
+      } else {
+        next[field] = value;
+      }
+      return next;
+    });
+  }
+
+  const connectedCount = getAvailableCount(workspace, sources, selectedBranchId);
   const selectedBranch = branches.find((branch) => branch.id === selectedBranchId);
-  const csvSources = sources.filter((source) => source.type === "csv");
+  const csvSources = sources.filter((source) => source.type === "csv" && source.branch_id === selectedBranchId);
 
   if (loading) {
     return (
@@ -474,7 +1187,7 @@ function ConnectPageContent() {
             <div className="flex items-center gap-2 rounded-[20px] border bg-card px-3 py-1.5">
               <div className="flex gap-[3px]">
                 {ACTIVE_SOURCES.map((s) => (
-                  <div key={s.key} className={cn("size-1.5 rounded-full", isConnected(s.key, workspace) ? "bg-[#22c55e]" : "bg-border")} />
+                  <div key={s.key} className={cn("size-1.5 rounded-full", isSourceAvailable(s.key, workspace, sources, selectedBranchId) ? "bg-[#22c55e]" : "bg-border")} />
                 ))}
               </div>
               <span className={cn("font-mono text-[0.7rem] font-bold", connectedCount > 0 ? "text-[#4ade80]" : "text-muted-foreground")}>
@@ -508,7 +1221,7 @@ function ConnectPageContent() {
                 </CardDescription>
               </div>
               <div className="rounded-lg border bg-muted px-3 py-2 font-mono text-[0.7rem] font-semibold text-muted-foreground">
-                {csvSources.length} CSV source{csvSources.length === 1 ? "" : "s"}
+                {csvSources.length} CSV source{csvSources.length === 1 ? "" : "s"} for branch
               </div>
             </div>
           </CardHeader>
@@ -544,8 +1257,25 @@ function ConnectPageContent() {
                   className="h-auto rounded-[7px] bg-background px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem]"
                 />
               </div>
+              <div>
+                <Label htmlFor="csv-file" className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                  CSV file
+                </Label>
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(event) => void handleCsvFileChange(event.currentTarget.files?.[0])}
+                  className="h-auto rounded-[7px] bg-background px-3 py-[9px] text-[0.82rem] shadow-none file:mr-3 file:rounded-md file:bg-muted file:px-2.5 file:py-1.5 file:text-[0.75rem] file:font-bold md:text-[0.82rem]"
+                />
+                {(csvFileName || csvFileLoading) && (
+                  <div className="mt-2 text-[0.72rem] text-muted-foreground">
+                    {csvFileLoading ? "Reading file..." : `Loaded ${csvFileName}`}
+                  </div>
+                )}
+              </div>
               <div className="rounded-lg border bg-muted px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
-                Expected headers: <span className="font-mono text-foreground">timestamp, channel, sender, content</span>. Metrics can use <span className="font-mono text-foreground">metric_name, metric_value</span>.
+                Auto-detected headers still work: <span className="font-mono text-foreground">timestamp, channel, sender, content</span>. Use mapping for exports with different column names.
               </div>
             </div>
 
@@ -553,10 +1283,60 @@ function ConnectPageContent() {
               <Label htmlFor="csv-text" className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
                 CSV rows for {selectedBranch?.name ?? "selected branch"}
               </Label>
+              {csvHeaders.length > 0 && (
+                <div className="rounded-lg border bg-muted/55 p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                        Column mapping
+                      </div>
+                      <div className="mt-1 text-[0.72rem] text-muted-foreground">
+                        {csvHeaders.length} header{csvHeaders.length === 1 ? "" : "s"} detected. Leave a field on auto when the header already matches Observer defaults.
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCsvMapping(guessCsvMapping(csvHeaders))}
+                      className="h-auto rounded-lg px-3 py-2 text-[0.75rem] font-bold"
+                    >
+                      Detect columns
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {CSV_MAPPING_FIELDS.map((field) => (
+                      <div key={field.key} className="space-y-1.5">
+                        <Label className="text-[0.72rem] font-semibold text-foreground">
+                          {field.label}
+                        </Label>
+                        <Select
+                          value={csvMapping[field.key] ?? CSV_AUTO_VALUE}
+                          onValueChange={(value) => updateCsvMapping(field.key, value)}
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background text-[0.78rem]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={CSV_AUTO_VALUE}>Auto / not mapped</SelectItem>
+                            {csvHeaders.map((header) => (
+                              <SelectItem key={`${field.key}-${header}`} value={header}>
+                                {header}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="text-[0.68rem] leading-[1.4] text-muted-foreground">
+                          {field.helper}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <textarea
                 id="csv-text"
                 value={csvText}
-                onChange={(event) => setCsvText(event.target.value)}
+                onChange={(event) => updateCsvText(event.target.value)}
                 rows={8}
                 placeholder={"timestamp,channel,sender,content\n2026-06-18T08:00:00Z,review,Aylin,Queue was too slow\n2026-06-18T09:00:00Z,pos,POS Terminal,,order_count,42"}
                 className="min-h-[190px] w-full resize-y rounded-lg border bg-background px-3 py-3 font-mono text-[0.78rem] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -595,8 +1375,15 @@ function ConnectPageContent() {
             <div className="mb-1 font-mono text-[0.6rem] font-bold tracking-[0.12em] text-[var(--muted-dim)] uppercase">
               Aktif Kaynaklar
             </div>
+            {selectedBranch && (
+              <div className="text-[0.72rem] text-muted-foreground">
+                Selected branch: <span className="font-semibold text-foreground">{selectedBranch.name}</span>
+              </div>
+            )}
             {ACTIVE_SOURCES.map((source) => {
-              const connected = isConnected(source.key, workspace);
+              const sourceRecord = branchSourceForKey(sources, selectedBranchId, source.key);
+              const connected = isSourceAvailable(source.key, workspace, sources, selectedBranchId);
+              const authReady = isSourceAuthReady(sourceRecord);
               const isActive = selected === source.key;
               return (
                 <button
@@ -626,7 +1413,7 @@ function ConnectPageContent() {
                     {connected ? (
                       <span className="flex items-center gap-1 font-mono text-[0.65rem] font-bold text-[#4ade80]">
                         <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                        LIVE
+                        {authReady ? "READY" : sourceRecord?.status === "pending" ? "PENDING" : "LIVE"}
                       </span>
                     ) : (
                       <span className={cn("leading-none font-semibold", isActive ? "text-base text-primary" : "text-[0.65rem] text-[var(--muted-dim)]")}>
@@ -642,8 +1429,12 @@ function ConnectPageContent() {
           {/* Config Panel */}
           {selected && (() => {
             const src = ACTIVE_SOURCES.find((s) => s.key === selected)!;
-            const connected = isConnected(selected, workspace);
+            const selectedSourceRecord = branchSourceForKey(sources, selectedBranchId, selected);
+            const connected = isSourceAvailable(selected, workspace, sources, selectedBranchId);
+            const authReady = isSourceAuthReady(selectedSourceRecord);
             const fields = SOURCE_FIELDS[selected];
+            const hasMappedLocation = typeof selectedSourceRecord?.config?.location_id === "string" &&
+              selectedSourceRecord.config.location_id.trim().length > 0;
             return (
               <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
                 {/* Panel Header */}
@@ -658,30 +1449,25 @@ function ConnectPageContent() {
                   {connected && (
                     <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
                       <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                      Bağlı
+                      {authReady ? "Kimlik hazır" : selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
                     </span>
                   )}
                 </div>
 
                 {/* Special: Email OAuth */}
-                {selected === "email" && !workspace?.gmail_token ? (
+                {selected === "email" && connected && !authReady ? (
                   <div className="p-6">
                     <p className="mt-0 mb-5 text-[0.82rem] leading-[1.65] text-muted-foreground">
-                      Gmail hesabınızı bağlayarak destek e-postalarını sinyal olarak içeri aktarın. Observer yalnızca okur, hiçbir şey göndermez.
+                      Gmail hesabınızı bu branch kaynağına bağlayarak destek e-postalarını sinyal olarak içeri aktarın. Observer yalnızca okur, hiçbir şey göndermez.
                     </p>
                     <Button asChild className="h-auto gap-2 rounded-lg bg-[#EA4335] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#EA4335]/90">
-                      <a href="/api/auth/gmail">
+                      <a href={`/api/auth/gmail?source_id=${selectedSourceRecord?.id ?? ""}`}>
                         <span>✉️</span> Gmail&apos;i Bağla
                       </a>
                     </Button>
-                    {formValues.email && (
-                      <div className="mt-6 border-t pt-5">
-                        <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">Filtreler</div>
-                        <div className="flex flex-col gap-[18px]">
-                          {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                      Filter settings are saved. Complete OAuth to unlock Gmail sync for this branch.
+                    </div>
                   </div>
                 ) : selected === "slack" && !workspace?.slack_token ? (
                   /* Special: Slack OAuth */
@@ -712,6 +1498,401 @@ function ConnectPageContent() {
                     <div className="flex flex-col gap-[18px]">
                       {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
                     </div>
+                    {isBranchSourceKey(selected) && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                        This step stores only branch mapping metadata. API keys, OAuth grants, and service account files are handled in a separate credential step and are not saved here.
+                      </div>
+                    )}
+                    {selected === "pos" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">POS metric CSV</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Import sales, order count, cancel count, prep time, or other numeric metrics for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Input
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={(event) => void handlePosFileChange(event.currentTarget.files?.[0])}
+                            className="h-auto max-w-[220px] rounded-[7px] bg-background px-3 py-[8px] text-[0.74rem] shadow-none file:mr-2 file:rounded-md file:bg-muted file:px-2 file:py-1 file:text-[0.7rem] file:font-bold md:text-[0.74rem]"
+                          />
+                        </div>
+                        {(posFileName || posFileLoading) && (
+                          <div className="mt-2 text-[0.72rem] text-muted-foreground">
+                            {posFileLoading ? "Reading file..." : `Loaded ${posFileName}`}
+                          </div>
+                        )}
+                        {posCsvHeaders.length > 0 && (
+                          <div className="mt-3 rounded-md border bg-background p-3">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                                Column mapping
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setPosCsvMapping(guessCsvMapping(posCsvHeaders))}
+                                className="h-auto rounded-md px-2.5 py-1.5 text-[0.68rem] font-bold"
+                              >
+                                Detect columns
+                              </Button>
+                            </div>
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {CSV_MAPPING_FIELDS.filter((field) => (
+                                field.key === "timestamp" ||
+                                field.key === "channel" ||
+                                field.key === "sender" ||
+                                field.key === "content" ||
+                                field.key === "metric_name" ||
+                                field.key === "metric_value"
+                              )).map((field) => (
+                                <div key={`pos-${field.key}`} className="flex flex-col gap-1">
+                                  <Label className="text-[0.68rem] font-semibold text-foreground">
+                                    {field.label}
+                                  </Label>
+                                  <Select
+                                    value={posCsvMapping[field.key] ?? CSV_AUTO_VALUE}
+                                    onValueChange={(value) => updatePosCsvMapping(field.key, value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-full bg-background text-[0.72rem]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value={CSV_AUTO_VALUE}>Auto / not mapped</SelectItem>
+                                      {posCsvHeaders.map((header) => (
+                                        <SelectItem key={`pos-${field.key}-${header}`} value={header}>
+                                          {header}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <textarea
+                          value={posCsvText}
+                          onChange={(event) => updatePosCsvText(event.target.value)}
+                          rows={5}
+                          placeholder={"timestamp,channel,sender,metric_name,metric_value\n2026-06-21T10:00:00Z,pos,Terminal 1,daily_sales,12500\n2026-06-21T10:00:00Z,pos,Terminal 1,cancel_count,4"}
+                          className="mt-3 min-h-[120px] w-full resize-y rounded-lg border bg-background px-3 py-3 font-mono text-[0.74rem] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        />
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="text-[0.7rem] leading-[1.45] text-muted-foreground">
+                            Rows without <span className="font-mono text-foreground">metric_name</span> and <span className="font-mono text-foreground">metric_value</span> are ignored for POS.
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void importPosCsv(selectedSourceRecord)}
+                            disabled={posImporting || !posCsvText.trim()}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {posImporting ? "Importing..." : "Import POS CSV"}
+                          </Button>
+                        </div>
+                        {posError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {posError}
+                          </div>
+                        )}
+                        {posResult && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Imported {posResult.ingested} POS metric signal{posResult.ingested === 1 ? "" : "s"}. Skipped {posResult.skipped}; non-metric rows {posResult.nonMetricRows}; duplicates in file {posResult.duplicateRows}; already existing {posResult.existingDuplicates}.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isSourceCredentialKey(selected) && (
+                      <div className="mt-5 border-t pt-5">
+                        <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">
+                          Secure API credentials
+                        </div>
+                        <div className="flex flex-col gap-[18px]">
+                          {SOURCE_AUTH_FIELDS[selected].map((field) => renderCredentialField(
+                            field,
+                            selected,
+                            authValues,
+                            setAuthValues,
+                          ))}
+                        </div>
+                        {authReady && (
+                          <div className="mt-4 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Credentials are stored as a Vault reference. Leave these fields blank unless you want to rotate them.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isSelfServiceAuthKey(selected) && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Delivery data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull order and review data into normalized delivery tables for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void syncDeliverySourceNow(selectedSourceRecord)}
+                            disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                          </Button>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Save secure API credentials before syncing delivery data.
+                          </div>
+                        )}
+                        {deliverySyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {deliverySyncError}
+                          </div>
+                        )}
+                        {deliverySyncResult && deliverySyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {deliverySyncResult.status === "synced"
+                              ? `Synced ${deliverySyncResult.partner_sync?.persistedOrders ?? 0} order${deliverySyncResult.partner_sync?.persistedOrders === 1 ? "" : "s"} and ${deliverySyncResult.partner_sync?.persistedReviews ?? 0} review${deliverySyncResult.partner_sync?.persistedReviews === 1 ? "" : "s"} for ${deliverySyncResult.metric_date ?? "latest metric date"}. Metrics: ${deliverySyncResult.order_count ?? 0} orders, ${deliverySyncResult.bad_review_count ?? 0} bad reviews, ${deliverySyncResult.candidates ?? 0} candidate${deliverySyncResult.candidates === 1 ? "" : "s"}.`
+                              : deliverySyncResult.reason === "missing_auth_ref"
+                                ? "Skipped: secure API credentials are not ready."
+                                : "Skipped: this delivery provider does not have a live sync adapter yet."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selected === "googleanalytics" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Analytics data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull GA4 page traffic and conversion anomalies for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void syncAnalyticsSourceNow(selectedSourceRecord)}
+                            disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                          </Button>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Save the GA4 service account JSON before syncing analytics data.
+                          </div>
+                        )}
+                        {analyticsSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {analyticsSyncError}
+                          </div>
+                        )}
+                        {analyticsSyncResult && analyticsSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {analyticsSyncResult.status === "synced"
+                              ? `Synced ${analyticsSyncResult.ingested ?? 0} analytics signal${analyticsSyncResult.ingested === 1 ? "" : "s"} from ${analyticsSyncResult.anomalies ?? 0} detected anomal${analyticsSyncResult.anomalies === 1 ? "y" : "ies"}.`
+                              : analyticsSyncResult.reason === "missing_property_id"
+                                ? "Skipped: GA4 property ID is missing."
+                                : "Skipped: GA4 service account credentials are not ready."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selected === "email" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Gmail data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull matching inbox messages into this branch as email signals.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedSourceRecord && (
+                              <Button asChild variant="outline" className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold">
+                                <a href={`/api/auth/gmail?source_id=${selectedSourceRecord.id}`}>
+                                  {authReady ? "Reauthorize" : "Authorize Gmail"}
+                                </a>
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              onClick={() => void syncEmailSourceNow(selectedSourceRecord)}
+                              disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                            >
+                              {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                            </Button>
+                          </div>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Authorize Gmail before syncing email data.
+                          </div>
+                        )}
+                        {emailSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {emailSyncError}
+                          </div>
+                        )}
+                        {emailSyncResult && emailSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {emailSyncResult.status === "synced"
+                              ? `Synced ${emailSyncResult.ingested ?? 0} email signal${emailSyncResult.ingested === 1 ? "" : "s"} from ${emailSyncResult.fetched ?? 0} fetched message${emailSyncResult.fetched === 1 ? "" : "s"}. ${emailSyncResult.existing_duplicates ?? 0} already existed.`
+                              : "Skipped: Gmail authorization is not ready."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {sourceSaveError && (
+                      <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
+                        {sourceSaveError}
+                      </div>
+                    )}
+                    {isLocationListKey(selected) && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Google Business Profile</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Authorize Google, then map a Google location to this Observer branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          {authReady ? (
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void testSourceConnection(selectedSourceRecord)}
+                                disabled={testingSourceId === selectedSourceRecord?.id}
+                                className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                              >
+                                {testingSourceId === selectedSourceRecord?.id ? "Loading..." : "List locations"}
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={() => void syncGoogleReviewsSource(selectedSourceRecord)}
+                                disabled={!hasMappedLocation || syncingSourceId === selectedSourceRecord?.id}
+                                className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                              >
+                                {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                              </Button>
+                            </div>
+                          ) : selectedSourceRecord ? (
+                            <Button asChild className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold">
+                              <a href={`/api/auth/google-reviews?source_id=${selectedSourceRecord.id}`}>Authorize Google</a>
+                            </Button>
+                          ) : null}
+                        </div>
+                        {sourceTestError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceTestError}
+                          </div>
+                        )}
+                        {authReady && !hasMappedLocation && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Select a Google location before syncing reviews.
+                          </div>
+                        )}
+                        {sourceSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceSyncError}
+                          </div>
+                        )}
+                        {sourceSyncResult && sourceSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {sourceSyncResult.status === "synced"
+                              ? `Synced ${sourceSyncResult.ingested ?? 0} new review signal${sourceSyncResult.ingested === 1 ? "" : "s"} from ${sourceSyncResult.fetched ?? 0} fetched review${sourceSyncResult.fetched === 1 ? "" : "s"}. ${sourceSyncResult.existing_duplicates ?? 0} already existed.`
+                              : `Skipped: ${sourceSyncResult.reason ?? "not ready"}.`}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {((isDeliveryConnectionTestKey(selected) && connected) || (isLocationListKey(selected) && connected && sourceTestResult?.provider === selected)) && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        {isDeliveryConnectionTestKey(selected) && (
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-[0.78rem] font-semibold text-foreground">Connection test</div>
+                              <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                                Resolves the Vault credential and checks the partner API without exposing secrets.
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => void testSourceConnection(selectedSourceRecord)}
+                              disabled={!authReady || testingSourceId === selectedSourceRecord?.id}
+                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                            >
+                              {testingSourceId === selectedSourceRecord?.id ? "Testing..." : "Test connection"}
+                            </Button>
+                          </div>
+                        )}
+                        {isDeliveryConnectionTestKey(selected) && sourceTestError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {sourceTestError}
+                          </div>
+                        )}
+                        {sourceTestResult && sourceTestResult.provider === selected && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            <div className="font-semibold text-foreground">
+                              Ready · {sourceTestResult.checks.map((check) => check.id).join(", ")}
+                            </div>
+                            {sourceTestResult.store_candidates.length > 0 && (
+                              <div className="mt-2 flex flex-col gap-2">
+                                {sourceTestResult.store_candidates.map((store) => {
+                                  const mappingField = sourceMappingField(selected);
+                                  const activeValue = mappingField ? formValues[selected][mappingField] : undefined;
+                                  const isMapped = activeValue === store.external_id;
+                                  return (
+                                    <div key={store.external_id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted px-2.5 py-2">
+                                      <div className="min-w-0">
+                                        <div className="truncate font-semibold text-foreground">
+                                          {store.name ?? store.external_id}
+                                        </div>
+                                        <div className="mt-0.5 font-mono text-[0.65rem] text-muted-foreground">
+                                          {store.external_id}{store.status ? ` · ${store.status}` : ""}
+                                        </div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant={isMapped ? "secondary" : "outline"}
+                                        onClick={() => void applyStoreCandidate(selected, store)}
+                                        disabled={mappingCandidateId === store.external_id || isMapped}
+                                        className="h-auto rounded-md px-2.5 py-1.5 text-[0.68rem] font-bold"
+                                      >
+                                        {isMapped ? "Mapped" : mappingCandidateId === store.external_id ? "Saving..." : "Use"}
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-6 flex gap-2.5">
                       <Button
                         onClick={() => saveSource(selected)}
@@ -727,7 +1908,7 @@ function ConnectPageContent() {
                       >
                         {savedKey === selected ? "✓ Kaydedildi" : saving ? "Kaydediliyor…" : connected ? "Güncelle" : "Bağlan"}
                       </Button>
-                      {connected && (
+                      {connected && !isBranchSourceKey(selected) && (
                         <Button
                           variant="outline"
                           onClick={() => disconnectSource(selected)}
@@ -824,6 +2005,52 @@ function renderField(
         />
       )}
       {f.hint && f.type !== "checkbox" && (
+        <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
+      )}
+    </div>
+  );
+}
+
+function renderCredentialField(
+  f: FormField,
+  sourceKey: SourceCredentialKey,
+  authValues: Record<SourceCredentialKey, Record<string, string>>,
+  setAuthValues: React.Dispatch<React.SetStateAction<Record<SourceCredentialKey, Record<string, string>>>>
+) {
+  const val = authValues[sourceKey][f.key] ?? "";
+  const updateValue = (value: string) => setAuthValues((current) => ({
+    ...current,
+    [sourceKey]: {
+      ...current[sourceKey],
+      [f.key]: value,
+    },
+  }));
+
+  return (
+    <div key={f.key}>
+      <Label className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        {f.label}
+      </Label>
+      {f.type === "textarea" ? (
+        <textarea
+          value={val}
+          onChange={(event) => updateValue(event.target.value)}
+          placeholder={f.placeholder}
+          autoComplete="off"
+          rows={5}
+          className="min-h-[120px] w-full resize-y rounded-[7px] border border-border bg-muted px-3 py-[9px] font-mono text-[0.76rem] leading-[1.55] text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-muted"
+        />
+      ) : (
+        <Input
+          type={f.type ?? "password"}
+          value={val}
+          onChange={(event) => updateValue(event.target.value)}
+          placeholder={f.placeholder}
+          autoComplete="off"
+          className="h-auto rounded-[7px] border-border bg-muted px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem] dark:bg-muted"
+        />
+      )}
+      {f.hint && (
         <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
       )}
     </div>
