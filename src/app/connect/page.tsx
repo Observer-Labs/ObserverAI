@@ -78,6 +78,14 @@ interface CsvImportResult {
   existingDuplicates: number;
 }
 
+interface PosImportResult {
+  ingested: number;
+  skipped: number;
+  duplicateRows: number;
+  nonMetricRows: number;
+  existingDuplicates: number;
+}
+
 interface SourceSyncResult {
   source_id: string;
   status: "synced" | "skipped" | "failed";
@@ -511,6 +519,14 @@ function ConnectPageContent() {
   const [csvFileLoading, setCsvFileLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<CsvImportResult | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [posCsvText, setPosCsvText] = useState("");
+  const [posCsvHeaders, setPosCsvHeaders] = useState<string[]>([]);
+  const [posCsvMapping, setPosCsvMapping] = useState<CsvColumnMapping>({});
+  const [posFileName, setPosFileName] = useState("");
+  const [posImporting, setPosImporting] = useState(false);
+  const [posFileLoading, setPosFileLoading] = useState(false);
+  const [posResult, setPosResult] = useState<PosImportResult | null>(null);
+  const [posError, setPosError] = useState<string | null>(null);
   const [sourceSaveError, setSourceSaveError] = useState<string | null>(null);
   const [testingSourceId, setTestingSourceId] = useState<string | null>(null);
   const [mappingCandidateId, setMappingCandidateId] = useState<string | null>(null);
@@ -527,6 +543,14 @@ function ConnectPageContent() {
       setCsvMapping({});
     }
   }, [csvText]);
+
+  useEffect(() => {
+    const headers = parseCsvHeaders(posCsvText);
+    setPosCsvHeaders(headers);
+    if (headers.length === 0) {
+      setPosCsvMapping({});
+    }
+  }, [posCsvText]);
 
   const loadWorkspace = useCallback(async () => {
     try {
@@ -823,6 +847,45 @@ function ConnectPageContent() {
     }
   }
 
+  async function importPosCsv(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setPosImporting(true);
+    setPosError(null);
+    setPosResult(null);
+
+    try {
+      const res = await fetch("/api/ingest/pos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_id: source.id,
+          csv_text: posCsvText,
+          mapping: compactCsvMapping(posCsvMapping),
+        }),
+      });
+      const data = await res.json().catch(() => ({})) as Partial<PosImportResult> & { error?: string };
+      if (!res.ok) {
+        setPosError(data.error ?? "POS import failed");
+        return;
+      }
+
+      setPosResult({
+        ingested: data.ingested ?? 0,
+        skipped: data.skipped ?? 0,
+        duplicateRows: data.duplicateRows ?? 0,
+        nonMetricRows: data.nonMetricRows ?? 0,
+        existingDuplicates: data.existingDuplicates ?? 0,
+      });
+      setPosCsvText("");
+      setPosFileName("");
+      setPosCsvMapping({});
+      await loadWorkspace();
+    } finally {
+      setPosImporting(false);
+    }
+  }
+
   async function handleCsvFileChange(file: File | undefined) {
     if (!file) return;
 
@@ -846,14 +909,52 @@ function ConnectPageContent() {
     }
   }
 
+  async function handlePosFileChange(file: File | undefined) {
+    if (!file) return;
+
+    setPosFileLoading(true);
+    setPosError(null);
+    setPosResult(null);
+
+    try {
+      const text = await file.text();
+      const headers = parseCsvHeaders(text);
+      setPosFileName(file.name);
+      setPosCsvText(text);
+      setPosCsvMapping(guessCsvMapping(headers));
+    } catch {
+      setPosError("Could not read the selected POS CSV file.");
+    } finally {
+      setPosFileLoading(false);
+    }
+  }
+
   function updateCsvText(value: string) {
     setCsvText(value);
     setCsvResult(null);
     setCsvError(null);
   }
 
+  function updatePosCsvText(value: string) {
+    setPosCsvText(value);
+    setPosResult(null);
+    setPosError(null);
+  }
+
   function updateCsvMapping(field: CsvMappingField, value: string) {
     setCsvMapping((current) => {
+      const next = { ...current };
+      if (value === CSV_AUTO_VALUE) {
+        delete next[field];
+      } else {
+        next[field] = value;
+      }
+      return next;
+    });
+  }
+
+  function updatePosCsvMapping(field: CsvMappingField, value: string) {
+    setPosCsvMapping((current) => {
       const next = { ...current };
       if (value === CSV_AUTO_VALUE) {
         delete next[field];
@@ -1214,6 +1315,111 @@ function ConnectPageContent() {
                     {isBranchSourceKey(selected) && (
                       <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
                         This step stores only branch mapping metadata. API keys, OAuth grants, and service account files are handled in a separate credential step and are not saved here.
+                      </div>
+                    )}
+                    {selected === "pos" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">POS metric CSV</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Import sales, order count, cancel count, prep time, or other numeric metrics for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Input
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={(event) => void handlePosFileChange(event.currentTarget.files?.[0])}
+                            className="h-auto max-w-[220px] rounded-[7px] bg-background px-3 py-[8px] text-[0.74rem] shadow-none file:mr-2 file:rounded-md file:bg-muted file:px-2 file:py-1 file:text-[0.7rem] file:font-bold md:text-[0.74rem]"
+                          />
+                        </div>
+                        {(posFileName || posFileLoading) && (
+                          <div className="mt-2 text-[0.72rem] text-muted-foreground">
+                            {posFileLoading ? "Reading file..." : `Loaded ${posFileName}`}
+                          </div>
+                        )}
+                        {posCsvHeaders.length > 0 && (
+                          <div className="mt-3 rounded-md border bg-background p-3">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                                Column mapping
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setPosCsvMapping(guessCsvMapping(posCsvHeaders))}
+                                className="h-auto rounded-md px-2.5 py-1.5 text-[0.68rem] font-bold"
+                              >
+                                Detect columns
+                              </Button>
+                            </div>
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {CSV_MAPPING_FIELDS.filter((field) => (
+                                field.key === "timestamp" ||
+                                field.key === "channel" ||
+                                field.key === "sender" ||
+                                field.key === "content" ||
+                                field.key === "metric_name" ||
+                                field.key === "metric_value"
+                              )).map((field) => (
+                                <div key={`pos-${field.key}`} className="flex flex-col gap-1">
+                                  <Label className="text-[0.68rem] font-semibold text-foreground">
+                                    {field.label}
+                                  </Label>
+                                  <Select
+                                    value={posCsvMapping[field.key] ?? CSV_AUTO_VALUE}
+                                    onValueChange={(value) => updatePosCsvMapping(field.key, value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-full bg-background text-[0.72rem]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value={CSV_AUTO_VALUE}>Auto / not mapped</SelectItem>
+                                      {posCsvHeaders.map((header) => (
+                                        <SelectItem key={`pos-${field.key}-${header}`} value={header}>
+                                          {header}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <textarea
+                          value={posCsvText}
+                          onChange={(event) => updatePosCsvText(event.target.value)}
+                          rows={5}
+                          placeholder={"timestamp,channel,sender,metric_name,metric_value\n2026-06-21T10:00:00Z,pos,Terminal 1,daily_sales,12500\n2026-06-21T10:00:00Z,pos,Terminal 1,cancel_count,4"}
+                          className="mt-3 min-h-[120px] w-full resize-y rounded-lg border bg-background px-3 py-3 font-mono text-[0.74rem] leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        />
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="text-[0.7rem] leading-[1.45] text-muted-foreground">
+                            Rows without <span className="font-mono text-foreground">metric_name</span> and <span className="font-mono text-foreground">metric_value</span> are ignored for POS.
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void importPosCsv(selectedSourceRecord)}
+                            disabled={posImporting || !posCsvText.trim()}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {posImporting ? "Importing..." : "Import POS CSV"}
+                          </Button>
+                        </div>
+                        {posError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {posError}
+                          </div>
+                        )}
+                        {posResult && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Imported {posResult.ingested} POS metric signal{posResult.ingested === 1 ? "" : "s"}. Skipped {posResult.skipped}; non-metric rows {posResult.nonMetricRows}; duplicates in file {posResult.duplicateRows}; already existing {posResult.existingDuplicates}.
+                          </div>
+                        )}
                       </div>
                     )}
                     {isSelfServiceAuthKey(selected) && (
