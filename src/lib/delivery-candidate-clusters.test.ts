@@ -123,6 +123,43 @@ describe("delivery candidate clusters", () => {
     });
   });
 
+  it("uses winter heating action for cold-food sales drop candidates", async () => {
+    const { candidateToCluster } = await loadCandidateClustersModule();
+    const coldCandidate: SignalCandidate = {
+      ...candidate,
+      kind: "sales_drop_review",
+      topic: "cold_food",
+      severity: 72,
+      severityLabel: "high",
+      evidenceCount: 4,
+      businessImpact: "Net sales are down 18% vs baseline.",
+      evidence: ["4 reviews mention cold_food."],
+    };
+
+    expect(candidateToCluster(coldCandidate, "2026-01-15")).toMatchObject({
+      root_cause: "Customer comfort or food temperature complaints coincided with lower net sales.",
+      recommended_action: "Increase dining room heating and check food holding temperature before the next rush.",
+    });
+  });
+
+  it("uses summer cooling action for cold-food sales drop candidates", async () => {
+    const { candidateToCluster } = await loadCandidateClustersModule();
+    const coldCandidate: SignalCandidate = {
+      ...candidate,
+      kind: "sales_drop_review",
+      topic: "cold_food",
+      severity: 72,
+      severityLabel: "high",
+      evidenceCount: 4,
+      businessImpact: "Net sales are down 18% vs baseline.",
+      evidence: ["4 reviews mention cold_food."],
+    };
+
+    expect(candidateToCluster(coldCandidate, "2026-07-15")).toMatchObject({
+      recommended_action: "Reduce excessive cooling in the dining room and check food holding temperature before the next rush.",
+    });
+  });
+
   it("refreshes active clusters by candidate key and preserves decided clusters", async () => {
     const { persistDeliveryCandidateClusters } = await loadCandidateClustersModule();
 

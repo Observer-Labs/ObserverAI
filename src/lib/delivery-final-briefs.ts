@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 import { candidateToCluster, type CandidateClusterInsert } from "./delivery-candidate-clusters";
 import type { SignalCandidate } from "./daily-signal-rules";
 
@@ -33,7 +34,15 @@ export interface GenerateDeliveryFinalBriefOptions {
   createMessage?: MessageCreate | null;
 }
 
-const MODEL = "claude-sonnet-4-5";
+const DEFAULT_FINAL_MODEL = "claude-sonnet-4-5";
+
+const DeliveryFinalBriefSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  business_case: z.string().trim().min(1).max(320),
+  recommended_action: z.string().trim().min(1).max(280),
+  root_cause: z.string().trim().min(1).max(240).optional(),
+  projected_impact: z.string().trim().min(1).max(220).optional(),
+});
 
 export async function generateDeliveryFinalBrief(
   candidate: SignalCandidate,
@@ -55,7 +64,7 @@ export async function generateDeliveryFinalBrief(
 
   try {
     const message = await createMessage({
-      model: MODEL,
+      model: process.env.AI_FINAL_MODEL ?? DEFAULT_FINAL_MODEL,
       max_tokens: 900,
       system: [
         "You are Observer's QSR operations analyst.",
@@ -131,22 +140,8 @@ export function parseDeliveryFinalBrief(rawText: string): DeliveryFinalBrief | n
   if (!text) return null;
 
   try {
-    const parsed = JSON.parse(text) as Partial<DeliveryFinalBrief>;
-    if (
-      typeof parsed.title !== "string" ||
-      typeof parsed.business_case !== "string" ||
-      typeof parsed.recommended_action !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      title: parsed.title.trim(),
-      business_case: parsed.business_case.trim(),
-      recommended_action: parsed.recommended_action.trim(),
-      root_cause: typeof parsed.root_cause === "string" ? parsed.root_cause.trim() : undefined,
-      projected_impact: typeof parsed.projected_impact === "string" ? parsed.projected_impact.trim() : undefined,
-    };
+    const parsed = DeliveryFinalBriefSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

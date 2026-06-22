@@ -49,7 +49,7 @@ export function candidateToCluster(candidate: SignalCandidate, metricDate: strin
     evidence_count: candidate.evidenceCount,
     source_breakdown: sourceBreakdownForCandidate(candidate),
     business_case: candidate.businessImpact,
-    recommended_action: recommendedActionForCandidate(candidate),
+    recommended_action: recommendedActionForCandidate(candidate, metricDate),
     root_cause: rootCauseForCandidate(candidate),
     customer_quote: candidate.evidence[0] ?? undefined,
     projected_impact: candidate.businessImpact,
@@ -106,17 +106,23 @@ function titleForCandidate(candidate: SignalCandidate) {
 
 function rootCauseForCandidate(candidate: SignalCandidate) {
   if (candidate.kind === "delivery_cancel_delay") return "Delivery delay complaints and cancellation rate moved together.";
+  if (candidate.kind === "sales_drop_review" && candidate.topic === "cold_food") {
+    return "Customer comfort or food temperature complaints coincided with lower net sales.";
+  }
   if (candidate.kind === "sales_drop_review") return `Negative reviews around ${candidate.topic} coincided with lower net sales.`;
   if (candidate.kind === "payment_problem") return "Payment-related complaints appeared alongside business impact.";
   if (candidate.kind === "critical_topic") return `Critical topic detected: ${candidate.topic}.`;
   return candidate.topic;
 }
 
-function recommendedActionForCandidate(candidate: SignalCandidate) {
+function recommendedActionForCandidate(candidate: SignalCandidate, metricDate: string) {
   if (candidate.kind === "delivery_cancel_delay") {
     return "Check kitchen prep and packing flow for this branch before the next delivery peak.";
   }
   if (candidate.kind === "sales_drop_review") {
+    if (candidate.topic === "cold_food") {
+      return seasonalColdFoodAction(metricDate);
+    }
     return `Review branch operations tied to ${candidate.topic} and assign an owner for today's shift.`;
   }
   if (candidate.kind === "payment_problem") {
@@ -126,6 +132,17 @@ function recommendedActionForCandidate(candidate: SignalCandidate) {
     return "Escalate to the branch manager immediately and document the customer safety response.";
   }
   return "Review the evidence and assign an owner.";
+}
+
+function seasonalColdFoodAction(metricDate: string) {
+  const month = Number(metricDate.slice(5, 7));
+  if (month === 12 || month === 1 || month === 2) {
+    return "Increase dining room heating and check food holding temperature before the next rush.";
+  }
+  if (month >= 6 && month <= 8) {
+    return "Reduce excessive cooling in the dining room and check food holding temperature before the next rush.";
+  }
+  return "Check dining room comfort and food holding temperature before the next rush.";
 }
 
 function confidenceForCandidate(candidate: SignalCandidate) {

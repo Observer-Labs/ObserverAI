@@ -1,3 +1,4 @@
+import { classifyReviewTextDeterministic } from "./review-classifier";
 import type { DeliveryOrder, DeliveryPlatform, DeliveryReview } from "./types";
 
 export type DeliveryConnectorProvider = Extract<DeliveryPlatform, "getir" | "trendyol">;
@@ -159,6 +160,9 @@ export function normalizeTrendyolPackage(raw: Record<string, unknown>, context: 
 }
 
 export function normalizeTrendyolReview(raw: Record<string, unknown>, context: NormalizeContext): DeliveryReviewInsert {
+  const commentText = stringValue(nested(raw, ["comment", "text"]));
+  const ratingOverall = numberValue(nested(raw, ["rating", "average"]));
+
   return {
     workspace_id: context.workspaceId,
     branch_id: context.branchId,
@@ -168,18 +172,24 @@ export function normalizeTrendyolReview(raw: Record<string, unknown>, context: N
     external_order_id: stringValue(raw.orderParentId),
     external_store_id: stringValue(raw.restaurantId) ?? context.externalStoreId ?? null,
     reviewed_at: dateFromEpoch(raw.createdDate) ?? context.observedAt,
-    rating_overall: numberValue(nested(raw, ["rating", "average"])),
+    rating_overall: ratingOverall,
     rating_food: numberValue(nested(raw, ["rating", "flavorScore"])),
     rating_service: numberValue(nested(raw, ["rating", "serviceScore"])),
     rating_delivery: numberValue(nested(raw, ["rating", "deliveryScore"])),
-    comment_text: stringValue(nested(raw, ["comment", "text"])),
+    comment_text: commentText,
     answer_status: stringValue(nested(raw, ["comment", "restaurantAnswer", "status"])),
-    classification: {},
+    classification: classifyReviewTextDeterministic({
+      text: commentText,
+      rating: ratingOverall,
+    }),
     raw_ref: buildRawRef(raw),
   };
 }
 
 export function normalizeGetirReview(raw: Record<string, unknown>, context: NormalizeContext): DeliveryReviewInsert {
+  const commentText = stringValue(raw.comment) ?? stringValue(raw.commentText) ?? stringValue(raw.text);
+  const ratingOverall = numberValue(raw.rating) ?? numberValue(raw.rate) ?? numberValue(raw.score);
+
   return {
     workspace_id: context.workspaceId,
     branch_id: context.branchId,
@@ -189,13 +199,16 @@ export function normalizeGetirReview(raw: Record<string, unknown>, context: Norm
     external_order_id: stringValue(raw.foodOrderId) ?? stringValue(raw.orderId),
     external_store_id: stringValue(raw.restaurantId) ?? context.externalStoreId ?? null,
     reviewed_at: stringValue(raw.createdAt) ?? stringValue(raw.reviewDate) ?? context.observedAt,
-    rating_overall: numberValue(raw.rating) ?? numberValue(raw.rate) ?? numberValue(raw.score),
+    rating_overall: ratingOverall,
     rating_food: numberValue(raw.foodRating),
     rating_service: numberValue(raw.serviceRating),
     rating_delivery: numberValue(raw.deliveryRating),
-    comment_text: stringValue(raw.comment) ?? stringValue(raw.commentText) ?? stringValue(raw.text),
+    comment_text: commentText,
     answer_status: stringValue(raw.answerStatus),
-    classification: {},
+    classification: classifyReviewTextDeterministic({
+      text: commentText,
+      rating: ratingOverall,
+    }),
     raw_ref: buildRawRef(raw),
   };
 }

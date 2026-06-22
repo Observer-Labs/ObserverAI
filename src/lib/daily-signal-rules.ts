@@ -1,6 +1,6 @@
 import { severityLabel, type SeverityLabel } from "./plans";
 
-export type DailyTopic = "delivery_delay" | "late_delivery" | "cold_food" | "payment_failed" | "food_poisoning" | "foreign_object" | "severe_hygiene" | "threat" | "other";
+export type DailyTopic = "delivery_delay" | "late_delivery" | "cold_food" | "payment_failed" | "payment_type_error" | "payment_system_down" | "food_poisoning" | "foreign_object" | "severe_hygiene" | "threat" | "other";
 
 export interface TopicCount {
   topic: DailyTopic | string;
@@ -86,9 +86,9 @@ export const DEFAULT_DAILY_SIGNAL_OPTIONS: EvaluateDailySignalOptions = {
   now: new Date(),
 };
 
-const CRITICAL_TOPICS = new Set(["food_poisoning", "foreign_object", "severe_hygiene", "threat"]);
+const CRITICAL_TOPICS = new Set(["food_poisoning", "foreign_object", "severe_hygiene", "threat", "payment_system_down"]);
 const DELAY_TOPICS = new Set(["delivery_delay", "late_delivery"]);
-const PAYMENT_TOPICS = new Set(["payment_failed"]);
+const PAYMENT_TOPICS = new Set(["payment_failed", "payment_type_error", "payment_system_down"]);
 
 export function evaluateDailySignalCandidates(
   metrics: DailyDeliveryMetrics,

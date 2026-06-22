@@ -121,6 +121,27 @@ describe("daily signal rules", () => {
     });
   });
 
+  it("lets payment system down through as a critical operational topic", () => {
+    const candidates = evaluateDailySignalCandidates(
+      metrics({
+        orderCount: 3,
+        cancelCount: 0,
+        netAmount: 900,
+        badReviewCount: 1,
+        topicCounts: [{ topic: "payment_system_down", count: 1, confidence: 0.88 }],
+      }),
+      null,
+    );
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      kind: "critical_topic",
+      topic: "payment_system_down",
+      shouldNotify: true,
+      severityLabel: "critical",
+    });
+  });
+
   it("suppresses repeated branch-topic notifications during cooldown", () => {
     const candidates = evaluateDailySignalCandidates(
       metrics(),

@@ -129,6 +129,11 @@ describe("delivery payload normalization", () => {
       rating_delivery: 1,
       comment_text: "Delivery was late.",
       answer_status: "APPROVED",
+      classification: expect.objectContaining({
+        sentiment: "negative",
+        topics: expect.arrayContaining(["delivery_delay"]),
+        actionable: true,
+      }),
     });
   });
 
