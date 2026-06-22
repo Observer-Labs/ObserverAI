@@ -104,7 +104,7 @@ describe("delivery candidate clusters", () => {
   });
 
   it("maps deterministic signal candidates into active clusters", async () => {
-    const { candidateToCluster } = await loadCandidateClustersModule();
+    const { candidateToCluster, candidateToCorrelation } = await loadCandidateClustersModule();
 
     expect(candidateToCluster(candidate, "2026-06-19")).toMatchObject({
       workspace_id: "workspace-1",
@@ -120,6 +120,15 @@ describe("delivery candidate clusters", () => {
       projected_impact: "Cancel rate is 7.5x baseline.",
       candidate_key: "daily:2026-06-19:workspace-1:branch-1:source-1:trendyol:delivery_cancel_delay:delivery_delay",
       status: "active",
+    });
+    expect(candidateToCorrelation(candidate, "2026-06-19")).toMatchObject({
+      workspace_id: "workspace-1",
+      branch_id: "branch-1",
+      window_start: "2026-06-19T00:00:00.000Z",
+      window_end: "2026-06-20T00:00:00.000Z",
+      primary_metric: "cancel_rate",
+      correlated_signal_ids: [],
+      hypothesis: "Delivery delay complaints and cancellation rate moved together.",
     });
   });
 
@@ -184,11 +193,21 @@ describe("delivery candidate clusters", () => {
       ["candidate_key", ["daily:2026-06-19:workspace-1:branch-1:source-1:trendyol:delivery_cancel_delay:delivery_delay"]],
     ]);
 
-    const insertCall = calls.find((call) => call.operation === "insert");
-    expect(insertCall?.insertPayload).toMatchObject([
+    const correlationInsert = calls.find((call) => call.table === "correlations" && call.operation === "insert");
+    expect(correlationInsert?.insertPayload).toMatchObject([
       {
         workspace_id: "workspace-1",
         branch_id: "branch-1",
+        primary_metric: "cancel_rate",
+      },
+    ]);
+
+    const clusterInsert = calls.find((call) => call.table === "clusters" && call.operation === "insert");
+    expect(clusterInsert?.insertPayload).toMatchObject([
+      {
+        workspace_id: "workspace-1",
+        branch_id: "branch-1",
+        correlation_id: "cluster-1",
         status: "active",
       },
     ]);

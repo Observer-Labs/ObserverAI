@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from "next/server";
-import { persistDeliveryClusterRows } from "@/lib/delivery-candidate-clusters";
+import { persistDeliveryCandidateClusterResults } from "@/lib/delivery-candidate-clusters";
 import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
 import { generateDeliveryFinalBrief } from "@/lib/delivery-final-briefs";
 import { createDeliveryPartnerHttpClient, sourceAuthMaterialResolver } from "@/lib/delivery-partner-runtime";
@@ -86,7 +86,13 @@ export async function GET(req: NextRequest) {
           return brief;
         }),
       );
-      const clusters = await persistDeliveryClusterRows(finalBriefs.map((brief) => brief.cluster));
+      const clusters = await persistDeliveryCandidateClusterResults({
+        metricDate,
+        items: result.candidates.map((candidate, index) => ({
+          candidate,
+          cluster: finalBriefs[index].cluster,
+        })),
+      });
 
       summary.push({
         source_id: source.id,

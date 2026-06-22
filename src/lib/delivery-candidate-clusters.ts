@@ -1,11 +1,20 @@
 import { getSupabaseAdmin } from "./supabase";
 import type { SignalCandidate } from "./daily-signal-rules";
-import type { Cluster } from "./types";
+import type { Cluster, Correlation } from "./types";
 
 export type CandidateClusterInsert = Omit<Cluster, "id" | "created_at" | "updated_at">;
+export type CandidateCorrelationInsert = Omit<Correlation, "id" | "created_at">;
 
 export interface PersistDeliveryCandidateClustersInput {
   candidates: SignalCandidate[];
+  metricDate: string;
+}
+
+export interface PersistDeliveryCandidateClusterResultsInput {
+  items: Array<{
+    candidate: SignalCandidate;
+    cluster: CandidateClusterInsert;
+  }>;
   metricDate: string;
 }
 
@@ -59,10 +68,44 @@ export function candidateToCluster(candidate: SignalCandidate, metricDate: strin
   };
 }
 
+export function candidateToCorrelation(candidate: SignalCandidate, metricDate: string): CandidateCorrelationInsert {
+  return {
+    workspace_id: candidate.workspaceId,
+    branch_id: candidate.branchId,
+    window_start: `${metricDate}T00:00:00.000Z`,
+    window_end: nextUtcDate(metricDate),
+    primary_metric: primaryMetricForCandidate(candidate),
+    correlated_signal_ids: [],
+    hypothesis: rootCauseForCandidate(candidate),
+    confidence: confidenceForCandidate(candidate),
+  };
+}
+
 export async function persistDeliveryCandidateClusters(
   input: PersistDeliveryCandidateClustersInput,
 ): Promise<Cluster[]> {
-  const rows = input.candidates.map((candidate) => candidateToCluster(candidate, input.metricDate));
+  return persistDeliveryCandidateClusterResults({
+    metricDate: input.metricDate,
+    items: input.candidates.map((candidate) => ({
+      candidate,
+      cluster: candidateToCluster(candidate, input.metricDate),
+    })),
+  });
+}
+
+export async function persistDeliveryCandidateClusterResults(
+  input: PersistDeliveryCandidateClusterResultsInput,
+): Promise<Cluster[]> {
+  if (input.items.length === 0) return [];
+
+  const correlations = await insertCandidateCorrelations(
+    input.items.map((item) => candidateToCorrelation(item.candidate, input.metricDate)),
+  );
+  const rows = input.items.map((item, index) => ({
+    ...item.cluster,
+    correlation_id: correlations[index]?.id ?? item.cluster.correlation_id ?? null,
+  }));
+
   return persistDeliveryClusterRows(rows);
 }
 
@@ -132,6 +175,33 @@ function recommendedActionForCandidate(candidate: SignalCandidate, metricDate: s
     return "Escalate to the branch manager immediately and document the customer safety response.";
   }
   return "Review the evidence and assign an owner.";
+}
+
+async function insertCandidateCorrelations(rows: CandidateCorrelationInsert[]): Promise<Correlation[]> {
+  if (rows.length === 0) return [];
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("correlations")
+    .insert(rows)
+    .select("*");
+
+  if (error) throw error;
+  return (data ?? []) as unknown as Correlation[];
+}
+
+function primaryMetricForCandidate(candidate: SignalCandidate) {
+  if (candidate.kind === "delivery_cancel_delay") return "cancel_rate";
+  if (candidate.kind === "sales_drop_review") return "net_amount";
+  if (candidate.kind === "payment_problem") return "payment_complaints";
+  if (candidate.kind === "critical_topic") return candidate.topic;
+  return candidate.kind;
+}
+
+function nextUtcDate(metricDate: string) {
+  const date = new Date(`${metricDate}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return `${metricDate}T23:59:59.999Z`;
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString();
 }
 
 function seasonalColdFoodAction(metricDate: string) {
