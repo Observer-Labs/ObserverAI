@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal } from "./ui/Modal";
-import { SeverityBadge, ConfidenceBar } from "./ui/SignalBadges";
+import { SeverityBadge } from "./ui/SignalBadges";
 import { Button } from "@/components/ui/button";
 import type { Cluster } from "@/lib/types";
 
@@ -89,7 +89,7 @@ export function IntentSnapshotModal({ cluster, open, onClose }: IntentSnapshotMo
 
   const exportMarkdown = () => {
     if (!cluster || !snapshot) return;
-    const md = `# ${cluster.title}\n\n**Severity:** ${cluster.severity_label} (${cluster.severity}/100)\n**Confidence:** ${Math.round(cluster.confidence * 100)}%\n**Evidence:** ${cluster.evidence_count} signals\n\n## Problem Statement\n${snapshot.problem_statement}\n\n## Business Case\n${cluster.business_case}\n\n## Recommended Solution\n${snapshot.recommended_solution}\n\n## Acceptance Criteria\n${snapshot.acceptance_criteria.map((c) => `- ${c}`).join("\n")}\n\n## Success Metrics\n${snapshot.success_metrics.map((m) => `- ${m}`).join("\n")}\n\n## Effort Estimate\n${snapshot.effort_estimate}\n\n## Customer Quote\n> "${cluster.customer_quote}"\n`;
+    const md = `# ${cluster.title}\n\n**Priority:** ${cluster.severity_label}\n**Evidence:** ${cluster.evidence_count} customer signal${cluster.evidence_count === 1 ? "" : "s"}\n\n## Problem Statement\n${snapshot.problem_statement}\n\n## Business Case\n${cluster.business_case}\n\n## Recommended Solution\n${snapshot.recommended_solution}\n\n## Acceptance Criteria\n${snapshot.acceptance_criteria.map((c) => `- ${c}`).join("\n")}\n\n## Success Metrics\n${snapshot.success_metrics.map((m) => `- ${m}`).join("\n")}\n\n## Effort Estimate\n${snapshot.effort_estimate}\n\n## Customer Quote\n> "${cluster.customer_quote}"\n`;
     const blob = new Blob([md], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -130,12 +130,10 @@ export function IntentSnapshotModal({ cluster, open, onClose }: IntentSnapshotMo
         {/* Meta row */}
         <div className="mb-6 flex flex-wrap gap-6 border-y border-[rgba(255,255,255,0.08)] py-4">
           <div>
-            <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Confidence</div>
-            <ConfidenceBar value={cluster.confidence} className="" />
-          </div>
-          <div>
             <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Evidence</div>
-            <div className="text-[0.9rem] font-semibold text-white">{cluster.evidence_count} signals</div>
+            <div className="text-[0.9rem] font-semibold text-white">
+              {cluster.evidence_count} customer signal{cluster.evidence_count === 1 ? "" : "s"}
+            </div>
           </div>
           <div>
             <div className="mb-1 text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground">Sources</div>

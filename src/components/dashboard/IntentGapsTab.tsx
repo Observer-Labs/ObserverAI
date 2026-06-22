@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { SeverityBadge, ConfidenceBar, SourcePill } from "@/components/ui/SignalBadges";
+import { SeverityBadge, SourcePill } from "@/components/ui/SignalBadges";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Cluster } from "@/lib/types";
@@ -79,7 +79,7 @@ export function IntentGapsTab({ clusters, onOpenSnapshot }: IntentGapsTabProps) 
                   <div className="flex-1">
                     <div className="mb-1.5 flex items-center gap-2">
                       <SeverityBadge severity={cluster.severity_label} />
-                      <span className="text-[0.7rem] text-muted-foreground">Severity {cluster.severity}/100</span>
+                      <span className="text-[0.7rem] text-muted-foreground">{cluster.evidence_count} customer signal{cluster.evidence_count === 1 ? "" : "s"}</span>
                     </div>
                     <h3 className="text-[1rem] font-semibold leading-[1.4] text-white">{cluster.title}</h3>
                   </div>
@@ -93,13 +93,12 @@ export function IntentGapsTab({ clusters, onOpenSnapshot }: IntentGapsTabProps) 
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4">
-                  <ConfidenceBar value={cluster.confidence} className="w-32" />
                   <div className="flex gap-1.5">
                     {cluster.source_breakdown.slack > 0 && <SourcePill source="slack" count={cluster.source_breakdown.slack} />}
                     {cluster.source_breakdown.email > 0 && <SourcePill source="email" count={cluster.source_breakdown.email} />}
                     {cluster.source_breakdown.whatsapp > 0 && <SourcePill source="whatsapp" count={cluster.source_breakdown.whatsapp} />}
                   </div>
-                  <span className="text-[0.75rem] text-muted-foreground">{cluster.evidence_count} signals</span>
+                  <span className="text-[0.75rem] text-muted-foreground">{cluster.evidence_count} customer signal{cluster.evidence_count === 1 ? "" : "s"}</span>
                 </div>
               </div>
             </div>
@@ -138,10 +137,6 @@ export function IntentGapsTab({ clusters, onOpenSnapshot }: IntentGapsTabProps) 
                   <div className="min-w-[120px] flex-1 rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-3">
                     <div className="mb-1 text-[0.7rem] text-muted-foreground">💬 WhatsApp</div>
                     <div className="font-semibold text-white">{cluster.source_breakdown.whatsapp} signals</div>
-                  </div>
-                  <div className="min-w-[120px] flex-1 rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-3">
-                    <div className="mb-1 text-[0.7rem] text-muted-foreground">📊 Confidence</div>
-                    <div className="font-semibold text-white">{Math.round(cluster.confidence * 100)}%</div>
                   </div>
                 </div>
 

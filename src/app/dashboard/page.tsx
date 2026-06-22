@@ -168,7 +168,6 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
     return {
       headline: `${emoji} ${sev.charAt(0).toUpperCase() + sev.slice(1)} priority signal detected`,
       detail: c.title,
-      confidence: c.confidence,
       sev,
     };
   });
@@ -185,9 +184,6 @@ function AIInsightBanner({ clusters, onClose }: { clusters: Cluster[]; onClose: 
           <div className="mb-[5px] flex items-center gap-2">
             <span className="font-['JetBrains_Mono',monospace] text-[0.62rem] font-bold uppercase tracking-[0.1em] text-primary">
               AI INSIGHT {idx + 1}/{insights.length}
-            </span>
-            <span className="rounded border border-[rgba(249,115,22,0.18)] bg-[rgba(249,115,22,0.1)] px-[7px] py-0.5 text-[0.62rem] font-semibold text-primary">
-              {Math.round(current.confidence * 100)}% confidence
             </span>
           </div>
           <p className="mb-[3px] text-[0.92rem] font-semibold leading-[1.4] text-foreground">
@@ -430,7 +426,7 @@ function ExecutionBrief({
               "mb-[5px] text-[0.74rem] font-extrabold",
               sev === "critical" ? "text-[#f87171]" : sev === "high" ? "text-[#fb923c]" : "text-[#fbbf24]",
             )}>
-              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {sev.toUpperCase()} · {cluster.severity}/100
+              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {urgencyLabel(cluster.severity)}
             </div>
             <div className={cn(
               "text-[0.78rem] font-semibold leading-[1.5] text-[#e9edef]",
