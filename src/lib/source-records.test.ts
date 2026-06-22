@@ -205,12 +205,11 @@ describe("source record helpers", () => {
       type: "googlereviews",
       display_name: "Google Reviews",
       config: {
-        business_name: " Coffee Lab ",
         sync_window_days: 30,
+        business_name: "ignored",
         admin_email: "owner@example.com",
       },
     }).config).toEqual({
-      business_name: "Coffee Lab",
       sync_window_days: 30,
     });
 

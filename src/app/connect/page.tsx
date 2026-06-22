@@ -266,7 +266,7 @@ const COMING_SOON = [
 // ── Default configs ───────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIGS: Record<ActiveSourceKey, Record<string, unknown>> = {
-  googlereviews:   { enabled: false, business_name: "", last_sync: null },
+  googlereviews:   { enabled: false, sync_window_days: 30, last_sync: null },
   getir:           { enabled: false, store_id: "", last_sync: null },
   yemeksepeti:     { enabled: false, restaurant_id: "", last_sync: null },
   trendyol:        { enabled: false, store_id: "", last_sync: null },
@@ -298,7 +298,7 @@ interface FormField {
 
 const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   googlereviews: [
-    { key: "business_name", label: "Google'daki işletme adınız", placeholder: "örn. Kronotrop · Kadıköy", hint: "Google Haritalar'da göründüğü şekilde işletme adını girin. Yorumları otomatik çekeceğiz." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "30", type: "number", hint: "İlk senkronizasyonda kaç günlük yorum geçmişi taransın." },
   ],
   getir: [
     { key: "restaurant_id", label: "Getir restoran kimliği", placeholder: "örn. restoran-123", hint: "Getir iş ortağı panelindeki restoran kimliği. API anahtarları daha sonra güvenli credential adımında alınır." },
@@ -427,7 +427,7 @@ const BRANCH_SOURCE_TYPES = new Set<ActiveSourceKey>([
 ]);
 
 const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
-  googlereviews: ["business_name", "location_id", "sync_window_days"],
+  googlereviews: ["location_id", "sync_window_days"],
   getir: ["restaurant_id", "restaurant_ids", "sync_window_days"],
   yemeksepeti: ["vendor_id", "store_id", "sync_window_days"],
   trendyol: ["supplier_id", "store_id", "delivery_type", "sync_window_days"],
@@ -1498,7 +1498,12 @@ function ConnectPageContent() {
                     <div className="flex flex-col gap-[18px]">
                       {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
                     </div>
-                    {isBranchSourceKey(selected) && (
+                    {selected === "googlereviews" && !connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                        Kaydettikten sonra Google hesabınızla oturum açacak ve işletme konumlarınızdan birini bu şubeye eşleyeceksiniz. İşletme adı veya ID girmeniz gerekmez.
+                      </div>
+                    )}
+                    {isBranchSourceKey(selected) && selected !== "googlereviews" && (
                       <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
                         This step stores only branch mapping metadata. API keys, OAuth grants, and service account files are handled in a separate credential step and are not saved here.
                       </div>

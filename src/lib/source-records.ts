@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from "./supabase";
 import type { SignalSource, Source } from "./types";
 
 const YEMEKSEPETI_CONFIG_FIELDS = new Set(["vendor_id", "store_id", "sync_window_days"]);
-const GOOGLE_REVIEWS_CONFIG_FIELDS = new Set(["business_name", "location_id", "sync_window_days"]);
+const GOOGLE_REVIEWS_CONFIG_FIELDS = new Set(["location_id", "sync_window_days"]);
 const GA4_CONFIG_FIELDS = new Set(["property_id", "event_filter", "sync_window_days"]);
 const POS_CONFIG_FIELDS = new Set(["system_name", "sync_mode", "sync_window_days"]);
 

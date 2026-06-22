@@ -11,14 +11,14 @@ import { Label } from "@/components/ui/label";
 
 const SOURCES_BY_VERTICAL: Record<string, Array<{ key: string; icon: string; label: string; desc: string; color: string; effort: string; recommended?: boolean; fields: Array<{ key: string; label: string; placeholder: string; type?: string }> }>> = {
   qsr: [
-    { key: "googlereviews", icon: "⭐", label: "Google Reviews", desc: "What people say about your branches on Google", color: "#4285F4", effort: "1 min", recommended: true, fields: [{ key: "business_name", label: "Your business on Google", placeholder: "e.g. Kronotrop · Kadıköy" }] },
+    { key: "googlereviews", icon: "⭐", label: "Google Reviews", desc: "What people say about your branches on Google", color: "#4285F4", effort: "OAuth", recommended: true, fields: [] },
     { key: "email",         icon: "✉️", label: "Gmail", desc: "Support emails and customer requests from your inbox", color: "#EA4335", effort: "OAuth", fields: [] },
     { key: "yemeksepeti",   icon: "🍽️", label: "Yemeksepeti", desc: "Order ratings & customer comments", color: "#ff0a44", effort: "2 min", fields: [{ key: "restaurant_id", label: "Restaurant name or ID", placeholder: "e.g. Burger House Moda" }] },
     { key: "getir",         icon: "🛵", label: "Getir", desc: "Delivery ratings & complaints", color: "#5d3ebc", effort: "2 min", fields: [{ key: "store_id", label: "Store name or ID", placeholder: "e.g. Coffee Lab Beşiktaş" }] },
     { key: "pos",           icon: "🧾", label: "POS / Payments", desc: "Daily sales by branch, spot drops early", color: "#0f7a4f", effort: "CSV", fields: [] },
   ],
   retail: [
-    { key: "googlereviews", icon: "⭐", label: "Google Reviews", desc: "What people say about your store on Google", color: "#4285F4", effort: "1 min", recommended: true, fields: [{ key: "business_name", label: "Your business on Google", placeholder: "e.g. Moda Butik · Şişli" }] },
+    { key: "googlereviews", icon: "⭐", label: "Google Reviews", desc: "What people say about your store on Google", color: "#4285F4", effort: "OAuth", recommended: true, fields: [] },
     { key: "email",         icon: "✉️", label: "Gmail", desc: "Support emails and customer requests from your inbox", color: "#EA4335", effort: "OAuth", fields: [] },
     { key: "pos",           icon: "🧾", label: "POS / Payments", desc: "Daily sales, spot quiet drops before month-end", color: "#0f7a4f", effort: "CSV", fields: [] },
     { key: "googleanalytics", icon: "📊", label: "Google Analytics", desc: "If you have a website, traffic & checkout drops", color: "#e8710a", effort: "5 min", fields: [{ key: "property_id", label: "GA4 Property ID", placeholder: "123456789" }] },
