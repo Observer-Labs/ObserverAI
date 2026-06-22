@@ -13,36 +13,52 @@ export async function POST() {
 
   const supabase = getSupabaseAdmin();
 
-  // Idempotency: demo branches already exist?
-  const { count: existing } = await supabase
+  // Fetch or create demo branches (idempotent — safe to call multiple times)
+  const { data: existingBranches } = await supabase
     .from("branches")
-    .select("id", { count: "exact", head: true })
+    .select("id, name")
     .eq("workspace_id", workspaceId)
     .eq("brand", "Observer Coffee");
 
-  if ((existing ?? 0) > 0) {
-    return NextResponse.json({ message: "Demo data already loaded" });
+  let kId: string;
+  let bId: string;
+
+  if (existingBranches && existingBranches.length >= 2) {
+    // Branches already exist — check if clusters are also present
+    const branchIds = existingBranches.map((b: { id: string }) => b.id);
+    const { count: clusterCount } = await supabase
+      .from("clusters")
+      .select("id", { count: "exact", head: true })
+      .in("branch_id", branchIds);
+
+    if ((clusterCount ?? 0) > 0) {
+      return NextResponse.json({ message: "Demo data already loaded" });
+    }
+
+    // Branches exist but clusters are missing (previous partial failure) — finish the job
+    kId = existingBranches.find((b: { name: string; id: string }) => b.name === "Kadıköy")?.id ?? existingBranches[0].id;
+    bId = existingBranches.find((b: { name: string; id: string }) => b.name === "Beşiktaş")?.id ?? existingBranches[1].id;
+  } else {
+    // ── Create 2 demo branches ──────────────────────────────────────────────
+    const { data: kadikoy, error: e1 } = await supabase
+      .from("branches")
+      .insert({ workspace_id: workspaceId, name: "Kadıköy", brand: "Observer Coffee", district: "Kadıköy", city: "İstanbul", timezone: "Europe/Istanbul", status: "active" })
+      .select("id")
+      .single();
+
+    const { data: besiktas, error: e2 } = await supabase
+      .from("branches")
+      .insert({ workspace_id: workspaceId, name: "Beşiktaş", brand: "Observer Coffee", district: "Beşiktaş", city: "İstanbul", timezone: "Europe/Istanbul", status: "active" })
+      .select("id")
+      .single();
+
+    if (e1 || e2 || !kadikoy || !besiktas) {
+      return NextResponse.json({ error: "Branch creation failed" }, { status: 500 });
+    }
+
+    kId = kadikoy.id as string;
+    bId = besiktas.id as string;
   }
-
-  // ── Create 2 demo branches ────────────────────────────────────────────────
-  const { data: kadikoy, error: e1 } = await supabase
-    .from("branches")
-    .insert({ workspace_id: workspaceId, name: "Kadıköy", brand: "Observer Coffee", district: "Kadıköy", city: "İstanbul", timezone: "Europe/Istanbul", status: "active" })
-    .select("id")
-    .single();
-
-  const { data: besiktas, error: e2 } = await supabase
-    .from("branches")
-    .insert({ workspace_id: workspaceId, name: "Beşiktaş", brand: "Observer Coffee", district: "Beşiktaş", city: "İstanbul", timezone: "Europe/Istanbul", status: "active" })
-    .select("id")
-    .single();
-
-  if (e1 || e2 || !kadikoy || !besiktas) {
-    return NextResponse.json({ error: "Branch creation failed" }, { status: 500 });
-  }
-
-  const kId = kadikoy.id as string;
-  const bId = besiktas.id as string;
 
   const now = new Date();
   const ago = (days: number) => new Date(now.getTime() - days * 86400000).toISOString();
@@ -94,7 +110,7 @@ export async function POST() {
       customer_quote: "Cumartesi sabahı 20 dakika sıra bekledim, sipariş vermeden çıktım.",
       severity: 88,
       severity_label: "critical",
-      signal_count: 6,
+      evidence_count: 6,
       source_breakdown: { googlereviews: 3, getir: 2, pos: 1 },
       status: "active",
     },
@@ -109,7 +125,7 @@ export async function POST() {
       customer_quote: "Sipariş 1 saat 10 dakika sonra geldi, her şey soğumuştu.",
       severity: 72,
       severity_label: "high",
-      signal_count: 4,
+      evidence_count: 4,
       source_breakdown: { yemeksepeti: 2, getir: 2 },
       status: "active",
     },
@@ -124,7 +140,7 @@ export async function POST() {
       customer_quote: "Bu ay üçüncü kez oat milk istedim, normal süt geldi.",
       severity: 48,
       severity_label: "medium",
-      signal_count: 3,
+      evidence_count: 3,
       source_breakdown: { yemeksepeti: 1, googlereviews: 2 },
       status: "active",
     },
@@ -139,7 +155,7 @@ export async function POST() {
       customer_quote: "Her Pazar aynı sorun, sıra çok uzun.",
       severity: 65,
       severity_label: "high",
-      signal_count: 3,
+      evidence_count: 3,
       source_breakdown: { googlereviews: 2, getir: 1 },
       status: "active",
     },
@@ -154,7 +170,7 @@ export async function POST() {
       customer_quote: "Kahvemi eve getirene kadar yarısı dökülmüştü.",
       severity: 22,
       severity_label: "low",
-      signal_count: 2,
+      evidence_count: 2,
       source_breakdown: { googlereviews: 1, getir: 1 },
       status: "active",
     },
