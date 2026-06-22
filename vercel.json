@@ -10,6 +10,10 @@
       "schedule": "30 12 * * *"
     },
     {
+      "path": "/api/cron/analyze",
+      "schedule": "45 12 * * *"
+    },
+    {
       "path": "/api/cron/digest",
       "schedule": "0 13 * * *"
     }
