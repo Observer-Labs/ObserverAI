@@ -7,6 +7,7 @@ import { runDeliveryDailyPipeline } from "@/lib/delivery-daily-pipeline";
 import { generateDeliveryFinalBrief } from "@/lib/delivery-final-briefs";
 import { createDeliveryPartnerHttpClient, sourceAuthMaterialResolver } from "@/lib/delivery-partner-runtime";
 import { syncDeliverySource, type SyncDeliverySourceResult } from "@/lib/delivery-source-sync";
+import { fetchRecentCandidateNotifications } from "@/lib/notification-cooldown";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { recordTokenUsage } from "@/lib/token-usage";
 import type { DeliveryPlatform } from "@/lib/types";
@@ -67,12 +68,18 @@ export async function GET(req: NextRequest) {
 
     try {
       const partnerSync = await syncPartnerSourceIfSupported(source);
+      const previousNotifications = await fetchRecentCandidateNotifications({
+        workspaceId: source.workspace_id,
+        branchId: source.branch_id,
+        since: cooldownSince(24),
+      });
       const result = await runDeliveryDailyPipeline({
         workspaceId: source.workspace_id,
         branchId: source.branch_id,
         sourceId: source.id,
         platform: source.type,
         metricDate,
+        previousNotifications,
       });
       const finalBriefs = await Promise.all(
         result.candidates.map(async (candidate) => {
@@ -156,4 +163,8 @@ function yesterdayUtcDate() {
   const date = new Date();
   date.setUTCDate(date.getUTCDate() - 1);
   return date.toISOString().slice(0, 10);
+}
+
+function cooldownSince(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000);
 }
