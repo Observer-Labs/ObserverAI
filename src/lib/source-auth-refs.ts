@@ -43,7 +43,7 @@ export class SourceAuthRefNotFoundError extends Error {
 const NON_DELIVERY_REQUIRED_FIELDS: Record<Exclude<SourceAuthProvider, DeliveryConnectorProvider>, string[]> = {
   yemeksepeti: ["integrationUser", "integrationPassword"],
   google_reviews: ["oauthRefreshToken"],
-  ga4: ["serviceAccountRef"],
+  ga4: ["serviceAccountJson"],
   pos: ["integrationRef"],
 };
 

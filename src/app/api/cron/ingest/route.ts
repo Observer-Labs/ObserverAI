@@ -22,6 +22,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 // path segment under /api/ingest/. If you add a new source, list it here.
 const SCHEDULABLE_SOURCES = [
   "googlereviews",
+  "googleanalytics",
   "appstore",
   "email",
   "reddit",
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
   const { data: sourceRows, error: sourceError } = await supabase
     .from("sources")
     .select("workspace_id, type")
-    .in("type", ["googlereviews", "google_reviews"]);
+    .in("type", ["googlereviews", "google_reviews", "googleanalytics", "ga4"]);
 
   if (sourceError) {
     return NextResponse.json({ error: sourceError.message }, { status: 500 });
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
 
   const branchSourceKeys = new Map<string, Set<string>>();
   for (const source of (sourceRows ?? []) as SourceRow[]) {
-    const normalizedType = source.type === "google_reviews" ? "googlereviews" : source.type;
+    const normalizedType = normalizeSchedulableSourceType(source.type);
     const current = branchSourceKeys.get(source.workspace_id) ?? new Set<string>();
     current.add(normalizedType);
     branchSourceKeys.set(source.workspace_id, current);
@@ -134,4 +135,10 @@ export async function GET(req: NextRequest) {
     workspaces: workspaces?.length ?? 0,
     summary,
   });
+}
+
+function normalizeSchedulableSourceType(value: string) {
+  if (value === "google_reviews") return "googlereviews";
+  if (value === "ga4") return "googleanalytics";
+  return value;
 }

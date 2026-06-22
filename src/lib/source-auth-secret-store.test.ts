@@ -48,6 +48,17 @@ describe("source auth secret store", () => {
       requiredFields: ["apiKey", "apiSecretKey"],
       providedFields: ["apiKey", "apiSecretKey"],
     });
+
+    expect(normalizeAuthMaterial("ga4", {
+      serviceAccountJson: " {\"type\":\"service_account\"} ",
+      service_account_email: "drop-me@example.com",
+    })).toEqual({
+      material: {
+        serviceAccountJson: "{\"type\":\"service_account\"}",
+      },
+      requiredFields: ["serviceAccountJson"],
+      providedFields: ["serviceAccountJson"],
+    });
   });
 
   it("stores complete auth material and returns only a vault reference summary", async () => {

@@ -18,6 +18,7 @@ const SELF_SERVICE_AUTH_PROVIDERS = new Set<SourceAuthProvider>([
   "getir",
   "trendyol",
   "yemeksepeti",
+  "ga4",
 ]);
 
 type SourceAuthRequestBody = {
@@ -108,7 +109,12 @@ async function assertSourceMatchesProvider(
     .single();
 
   if (error || !data) throw new SourceAuthRefNotFoundError("Source not found");
-  if ((data as { type?: string }).type !== provider) {
+  if (!sourceTypeMatchesProvider((data as { type?: string }).type, provider)) {
     throw new SourceAuthSecretStoreError("Provider does not match source type");
   }
+}
+
+function sourceTypeMatchesProvider(sourceType: string | undefined, provider: SourceAuthProvider) {
+  if (provider === "ga4") return sourceType === "ga4" || sourceType === "googleanalytics";
+  return sourceType === provider;
 }

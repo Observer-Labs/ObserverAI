@@ -116,8 +116,18 @@ interface DeliverySyncResult {
   };
 }
 
+interface AnalyticsSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  anomalies?: number;
+  ingested?: number;
+  reason?: "missing_property_id" | "missing_auth_ref";
+  error?: string;
+}
+
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
+type SourceCredentialKey = SelfServiceAuthKey | Extract<ActiveSourceKey, "googleanalytics">;
 
 interface SourceConnectionTestResult {
   status: "ready";
@@ -261,7 +271,7 @@ const DEFAULT_CONFIGS: Record<ActiveSourceKey, Record<string, unknown>> = {
   jira:            { enabled: false, domain: "", email: "", api_token: "", project_key: "", min_priority: "medium", exclude_done: true, issue_types: "", last_sync: null },
   shopify:         { enabled: false, shop_domain: "", access_token: "", last_sync: null },
   googleplay:      { enabled: false, package_name: "", service_account_key: "", max_rating: 3, last_sync: null },
-  googleanalytics: { enabled: false, property_id: "", service_account_email: "", service_account_key: "", event_filter: "", last_sync: null },
+  googleanalytics: { enabled: false, property_id: "", event_filter: "", last_sync: null },
   trustpilot:      { enabled: false, business_unit_id: "", api_key: "", max_rating: 3, last_sync: null },
 };
 
@@ -364,7 +374,7 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
 };
 
-const SOURCE_AUTH_FIELDS: Record<SelfServiceAuthKey, FormField[]> = {
+const SOURCE_AUTH_FIELDS: Record<SourceCredentialKey, FormField[]> = {
   getir: [
     { key: "appSecretKey", label: "App secret key", placeholder: "Getir Food API app secret", type: "password", hint: "Getir Food API / entegrasyon bilgileriniz içinde paylaşılır. Observer bu değeri yalnız Vault'a yazar." },
     { key: "restaurantSecretKey", label: "Restaurant secret key", placeholder: "Getir restoran secret", type: "password", hint: "Restoranınıza ait API secret. DB config içinde saklanmaz." },
@@ -376,6 +386,9 @@ const SOURCE_AUTH_FIELDS: Record<SelfServiceAuthKey, FormField[]> = {
   yemeksepeti: [
     { key: "integrationUser", label: "Integration user", placeholder: "Yemeksepeti integration user", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan kullanıcı." },
     { key: "integrationPassword", label: "Integration password", placeholder: "Yemeksepeti integration password", type: "password", hint: "Partner erişimi onaylandığında Yemeksepeti tarafından sağlanan parola." },
+  ],
+  googleanalytics: [
+    { key: "serviceAccountJson", label: "Service account JSON", placeholder: "{\"type\":\"service_account\",...}", type: "textarea", hint: "Google Cloud service account JSON. Observer stores it only in Vault and keeps source config non-sensitive." },
   ],
 };
 
@@ -418,6 +431,14 @@ function isBranchSourceKey(key: ActiveSourceKey) {
 
 function isSelfServiceAuthKey(key: ActiveSourceKey): key is SelfServiceAuthKey {
   return key === "getir" || key === "trendyol" || key === "yemeksepeti";
+}
+
+function isSourceCredentialKey(key: ActiveSourceKey): key is SourceCredentialKey {
+  return isSelfServiceAuthKey(key) || key === "googleanalytics";
+}
+
+function sourceAuthProviderForKey(key: SourceCredentialKey) {
+  return key === "googleanalytics" ? "ga4" : key;
 }
 
 function isDeliveryConnectionTestKey(key: ActiveSourceKey): key is Extract<SelfServiceAuthKey, "getir" | "trendyol"> {
@@ -522,10 +543,11 @@ function ConnectPageContent() {
     googleanalytics: { ...DEFAULT_CONFIGS.googleanalytics },
     trustpilot:      { ...DEFAULT_CONFIGS.trustpilot },
   });
-  const [authValues, setAuthValues] = useState<Record<SelfServiceAuthKey, Record<string, string>>>({
+  const [authValues, setAuthValues] = useState<Record<SourceCredentialKey, Record<string, string>>>({
     getir: { appSecretKey: "", restaurantSecretKey: "" },
     trendyol: { apiKey: "", apiSecretKey: "" },
     yemeksepeti: { integrationUser: "", integrationPassword: "" },
+    googleanalytics: { serviceAccountJson: "" },
   });
   const [saving, setSaving] = useState(false);
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
@@ -557,6 +579,8 @@ function ConnectPageContent() {
   const [sourceSyncError, setSourceSyncError] = useState<string | null>(null);
   const [deliverySyncResult, setDeliverySyncResult] = useState<DeliverySyncResult | null>(null);
   const [deliverySyncError, setDeliverySyncError] = useState<string | null>(null);
+  const [analyticsSyncResult, setAnalyticsSyncResult] = useState<AnalyticsSyncResult | null>(null);
+  const [analyticsSyncError, setAnalyticsSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -647,7 +671,7 @@ function ConnectPageContent() {
           return;
         }
 
-        if (isSelfServiceAuthKey(key) && (hasCredentialInput(authValues[key]) || !isSourceAuthReady(data.source))) {
+        if (isSourceCredentialKey(key) && (hasCredentialInput(authValues[key]) || !isSourceAuthReady(data.source))) {
           const sourceId = data.source?.id;
           if (!sourceId) {
             setSourceSaveError("Source was saved but credential setup could not start.");
@@ -658,7 +682,7 @@ function ConnectPageContent() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              provider: key,
+              provider: sourceAuthProviderForKey(key),
               credentials: authValues[key],
             }),
           });
@@ -671,7 +695,7 @@ function ConnectPageContent() {
           setAuthValues((current) => ({
             ...current,
             [key]: Object.fromEntries(Object.keys(current[key]).map((field) => [field, ""])),
-          }) as Record<SelfServiceAuthKey, Record<string, string>>);
+          }) as Record<SourceCredentialKey, Record<string, string>>);
         }
 
         setSavedKey(key);
@@ -805,6 +829,44 @@ function ConnectPageContent() {
         setDeliverySyncError(result.error ?? "Delivery sync failed.");
       } else {
         setDeliverySyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncAnalyticsSourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setAnalyticsSyncResult(null);
+    setAnalyticsSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/googleanalytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: AnalyticsSyncResult[];
+      };
+      if (!res.ok) {
+        setAnalyticsSyncError(data.error ?? "Google Analytics sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setAnalyticsSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setAnalyticsSyncError(result.error ?? "Google Analytics sync failed.");
+      } else {
+        setAnalyticsSyncResult(result);
       }
       await loadWorkspace();
     } finally {
@@ -1482,7 +1544,7 @@ function ConnectPageContent() {
                         )}
                       </div>
                     )}
-                    {isSelfServiceAuthKey(selected) && (
+                    {isSourceCredentialKey(selected) && (
                       <div className="mt-5 border-t pt-5">
                         <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">
                           Secure API credentials
@@ -1540,6 +1602,48 @@ function ConnectPageContent() {
                               : deliverySyncResult.reason === "missing_auth_ref"
                                 ? "Skipped: secure API credentials are not ready."
                                 : "Skipped: this delivery provider does not have a live sync adapter yet."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selected === "googleanalytics" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Analytics data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull GA4 page traffic and conversion anomalies for this branch.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => void syncAnalyticsSourceNow(selectedSourceRecord)}
+                            disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                            className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                          >
+                            {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                          </Button>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Save the GA4 service account JSON before syncing analytics data.
+                          </div>
+                        )}
+                        {analyticsSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {analyticsSyncError}
+                          </div>
+                        )}
+                        {analyticsSyncResult && analyticsSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {analyticsSyncResult.status === "synced"
+                              ? `Synced ${analyticsSyncResult.ingested ?? 0} analytics signal${analyticsSyncResult.ingested === 1 ? "" : "s"} from ${analyticsSyncResult.anomalies ?? 0} detected anomal${analyticsSyncResult.anomalies === 1 ? "y" : "ies"}.`
+                              : analyticsSyncResult.reason === "missing_property_id"
+                                ? "Skipped: GA4 property ID is missing."
+                                : "Skipped: GA4 service account credentials are not ready."}
                           </div>
                         )}
                       </div>
@@ -1796,31 +1900,43 @@ function renderField(
 
 function renderCredentialField(
   f: FormField,
-  sourceKey: SelfServiceAuthKey,
-  authValues: Record<SelfServiceAuthKey, Record<string, string>>,
-  setAuthValues: React.Dispatch<React.SetStateAction<Record<SelfServiceAuthKey, Record<string, string>>>>
+  sourceKey: SourceCredentialKey,
+  authValues: Record<SourceCredentialKey, Record<string, string>>,
+  setAuthValues: React.Dispatch<React.SetStateAction<Record<SourceCredentialKey, Record<string, string>>>>
 ) {
   const val = authValues[sourceKey][f.key] ?? "";
+  const updateValue = (value: string) => setAuthValues((current) => ({
+    ...current,
+    [sourceKey]: {
+      ...current[sourceKey],
+      [f.key]: value,
+    },
+  }));
 
   return (
     <div key={f.key}>
       <Label className="mb-1.5 font-mono text-[0.65rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
         {f.label}
       </Label>
-      <Input
-        type={f.type ?? "password"}
-        value={val}
-        onChange={(e) => setAuthValues((current) => ({
-          ...current,
-          [sourceKey]: {
-            ...current[sourceKey],
-            [f.key]: e.target.value,
-          },
-        }))}
-        placeholder={f.placeholder}
-        autoComplete="off"
-        className="h-auto rounded-[7px] border-border bg-muted px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem] dark:bg-muted"
-      />
+      {f.type === "textarea" ? (
+        <textarea
+          value={val}
+          onChange={(event) => updateValue(event.target.value)}
+          placeholder={f.placeholder}
+          autoComplete="off"
+          rows={5}
+          className="min-h-[120px] w-full resize-y rounded-[7px] border border-border bg-muted px-3 py-[9px] font-mono text-[0.76rem] leading-[1.55] text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-muted"
+        />
+      ) : (
+        <Input
+          type={f.type ?? "password"}
+          value={val}
+          onChange={(event) => updateValue(event.target.value)}
+          placeholder={f.placeholder}
+          autoComplete="off"
+          className="h-auto rounded-[7px] border-border bg-muted px-3 py-[9px] text-[0.82rem] shadow-none md:text-[0.82rem] dark:bg-muted"
+        />
+      )}
       {f.hint && (
         <div className="mt-[5px] text-[0.67rem] leading-[1.55] text-[var(--muted-dim)]">{f.hint}</div>
       )}
