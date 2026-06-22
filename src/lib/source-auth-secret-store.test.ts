@@ -59,6 +59,17 @@ describe("source auth secret store", () => {
       requiredFields: ["serviceAccountJson"],
       providedFields: ["serviceAccountJson"],
     });
+
+    expect(normalizeAuthMaterial("gmail", {
+      oauthRefreshToken: " example-refresh-token ",
+      oauthAccessToken: "drop-me",
+    })).toEqual({
+      material: {
+        oauthRefreshToken: "example-refresh-token",
+      },
+      requiredFields: ["oauthRefreshToken"],
+      providedFields: ["oauthRefreshToken"],
+    });
   });
 
   it("stores complete auth material and returns only a vault reference summary", async () => {

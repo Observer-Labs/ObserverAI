@@ -2,7 +2,7 @@ import { getDeliveryConnectorDefinition, type DeliveryConnectorProvider } from "
 import { getSupabaseAdmin } from "./supabase";
 
 export type SourceAuthStatus = "pending" | "ready" | "error" | "revoked";
-export type SourceAuthProvider = DeliveryConnectorProvider | "yemeksepeti" | "google_reviews" | "ga4" | "pos";
+export type SourceAuthProvider = DeliveryConnectorProvider | "yemeksepeti" | "google_reviews" | "ga4" | "gmail" | "pos";
 
 export interface SourceAuthSummary {
   mode: "vault_ref";
@@ -44,6 +44,7 @@ const NON_DELIVERY_REQUIRED_FIELDS: Record<Exclude<SourceAuthProvider, DeliveryC
   yemeksepeti: ["integrationUser", "integrationPassword"],
   google_reviews: ["oauthRefreshToken"],
   ga4: ["serviceAccountJson"],
+  gmail: ["oauthRefreshToken"],
   pos: ["integrationRef"],
 };
 

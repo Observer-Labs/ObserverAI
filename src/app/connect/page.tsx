@@ -125,6 +125,16 @@ interface AnalyticsSyncResult {
   error?: string;
 }
 
+interface EmailSyncResult {
+  source_id: string;
+  status: "synced" | "skipped" | "failed";
+  fetched?: number;
+  ingested?: number;
+  existing_duplicates?: number;
+  reason?: "missing_auth_ref";
+  error?: string;
+}
+
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 type SourceCredentialKey = SelfServiceAuthKey | Extract<ActiveSourceKey, "googleanalytics">;
@@ -396,7 +406,6 @@ const SOURCE_AUTH_FIELDS: Record<SourceCredentialKey, FormField[]> = {
 
 function isConnected(key: ActiveSourceKey, workspace: Workspace | null): boolean {
   if (!workspace) return false;
-  if (key === "email") return !!workspace.gmail_token;
   if (key === "slack") return !!workspace.slack_token;
   const config = workspace.integrations_config?.[key as keyof IntegrationsConfig] as Record<string, unknown> | undefined;
   return !!(config?.enabled);
@@ -414,6 +423,7 @@ const BRANCH_SOURCE_TYPES = new Set<ActiveSourceKey>([
   "trendyol",
   "pos",
   "googleanalytics",
+  "email",
 ]);
 
 const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
@@ -423,6 +433,7 @@ const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
   trendyol: ["supplier_id", "store_id", "delivery_type", "sync_window_days"],
   pos: ["system_name", "sync_mode", "sync_window_days"],
   googleanalytics: ["property_id", "event_filter", "sync_window_days"],
+  email: ["sender_domains", "max_age_days"],
 };
 
 function isBranchSourceKey(key: ActiveSourceKey) {
@@ -581,6 +592,8 @@ function ConnectPageContent() {
   const [deliverySyncError, setDeliverySyncError] = useState<string | null>(null);
   const [analyticsSyncResult, setAnalyticsSyncResult] = useState<AnalyticsSyncResult | null>(null);
   const [analyticsSyncError, setAnalyticsSyncError] = useState<string | null>(null);
+  const [emailSyncResult, setEmailSyncResult] = useState<EmailSyncResult | null>(null);
+  const [emailSyncError, setEmailSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -597,6 +610,24 @@ function ConnectPageContent() {
       setPosCsvMapping({});
     }
   }, [posCsvText]);
+
+  useEffect(() => {
+    if (!selectedBranchId || sources.length === 0) return;
+
+    setFormValues((current) => {
+      const next = { ...current };
+      for (const source of sources) {
+        if (source.branch_id !== selectedBranchId) continue;
+        if (!isBranchSourceKey(source.type as ActiveSourceKey)) continue;
+        const key = source.type as ActiveSourceKey;
+        next[key] = {
+          ...DEFAULT_CONFIGS[key],
+          ...(source.config ?? {}),
+        };
+      }
+      return next;
+    });
+  }, [selectedBranchId, sources]);
 
   const loadWorkspace = useCallback(async () => {
     try {
@@ -867,6 +898,44 @@ function ConnectPageContent() {
         setAnalyticsSyncError(result.error ?? "Google Analytics sync failed.");
       } else {
         setAnalyticsSyncResult(result);
+      }
+      await loadWorkspace();
+    } finally {
+      setSyncingSourceId(null);
+    }
+  }
+
+  async function syncEmailSourceNow(source: SourceRow | undefined) {
+    if (!source) return;
+
+    setSyncingSourceId(source.id);
+    setEmailSyncResult(null);
+    setEmailSyncError(null);
+
+    try {
+      const res = await fetch("/api/ingest/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id }),
+      });
+      const data = await res.json().catch(() => ({})) as {
+        error?: string;
+        summary?: EmailSyncResult[];
+      };
+      if (!res.ok) {
+        setEmailSyncError(data.error ?? "Gmail sync failed.");
+        return;
+      }
+
+      const result = data.summary?.find((item) => item.source_id === source.id) ?? null;
+      if (!result) {
+        setEmailSyncError("Sync finished without a source result.");
+        return;
+      }
+      if (result.status === "failed") {
+        setEmailSyncError(result.error ?? "Gmail sync failed.");
+      } else {
+        setEmailSyncResult(result);
       }
       await loadWorkspace();
     } finally {
@@ -1386,24 +1455,19 @@ function ConnectPageContent() {
                 </div>
 
                 {/* Special: Email OAuth */}
-                {selected === "email" && !workspace?.gmail_token ? (
+                {selected === "email" && connected && !authReady ? (
                   <div className="p-6">
                     <p className="mt-0 mb-5 text-[0.82rem] leading-[1.65] text-muted-foreground">
-                      Gmail hesabınızı bağlayarak destek e-postalarını sinyal olarak içeri aktarın. Observer yalnızca okur, hiçbir şey göndermez.
+                      Gmail hesabınızı bu branch kaynağına bağlayarak destek e-postalarını sinyal olarak içeri aktarın. Observer yalnızca okur, hiçbir şey göndermez.
                     </p>
                     <Button asChild className="h-auto gap-2 rounded-lg bg-[#EA4335] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#EA4335]/90">
-                      <a href="/api/auth/gmail">
+                      <a href={`/api/auth/gmail?source_id=${selectedSourceRecord?.id ?? ""}`}>
                         <span>✉️</span> Gmail&apos;i Bağla
                       </a>
                     </Button>
-                    {formValues.email && (
-                      <div className="mt-6 border-t pt-5">
-                        <div className="mb-3.5 font-mono text-[0.65rem] font-bold tracking-[0.1em] text-[var(--muted-dim)] uppercase">Filtreler</div>
-                        <div className="flex flex-col gap-[18px]">
-                          {fields.map((f) => renderField(f, selected, formValues, setFormValues))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                      Filter settings are saved. Complete OAuth to unlock Gmail sync for this branch.
+                    </div>
                   </div>
                 ) : selected === "slack" && !workspace?.slack_token ? (
                   /* Special: Slack OAuth */
@@ -1644,6 +1708,55 @@ function ConnectPageContent() {
                               : analyticsSyncResult.reason === "missing_property_id"
                                 ? "Skipped: GA4 property ID is missing."
                                 : "Skipped: GA4 service account credentials are not ready."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {selected === "email" && connected && (
+                      <div className="mt-5 rounded-lg border bg-muted px-3.5 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-[0.78rem] font-semibold text-foreground">Gmail data sync</div>
+                            <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
+                              Pull matching inbox messages into this branch as email signals.
+                            </div>
+                            <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
+                              Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedSourceRecord && (
+                              <Button asChild variant="outline" className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold">
+                                <a href={`/api/auth/gmail?source_id=${selectedSourceRecord.id}`}>
+                                  {authReady ? "Reauthorize" : "Authorize Gmail"}
+                                </a>
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              onClick={() => void syncEmailSourceNow(selectedSourceRecord)}
+                              disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                              className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
+                            >
+                              {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
+                            </Button>
+                          </div>
+                        </div>
+                        {!authReady && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Authorize Gmail before syncing email data.
+                          </div>
+                        )}
+                        {emailSyncError && (
+                          <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.72rem] text-destructive">
+                            {emailSyncError}
+                          </div>
+                        )}
+                        {emailSyncResult && emailSyncResult.source_id === selectedSourceRecord?.id && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            {emailSyncResult.status === "synced"
+                              ? `Synced ${emailSyncResult.ingested ?? 0} email signal${emailSyncResult.ingested === 1 ? "" : "s"} from ${emailSyncResult.fetched ?? 0} fetched message${emailSyncResult.fetched === 1 ? "" : "s"}. ${emailSyncResult.existing_duplicates ?? 0} already existed.`
+                              : "Skipped: Gmail authorization is not ready."}
                           </div>
                         )}
                       </div>

@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
   const { data: sourceRows, error: sourceError } = await supabase
     .from("sources")
     .select("workspace_id, type")
-    .in("type", ["googlereviews", "google_reviews", "googleanalytics", "ga4"]);
+    .in("type", ["googlereviews", "google_reviews", "googleanalytics", "ga4", "email", "gmail"]);
 
   if (sourceError) {
     return NextResponse.json({ error: sourceError.message }, { status: 500 });
@@ -140,5 +140,6 @@ export async function GET(req: NextRequest) {
 function normalizeSchedulableSourceType(value: string) {
   if (value === "google_reviews") return "googlereviews";
   if (value === "ga4") return "googleanalytics";
+  if (value === "gmail") return "email";
   return value;
 }
