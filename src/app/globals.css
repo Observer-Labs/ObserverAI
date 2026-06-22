@@ -135,7 +135,8 @@
   *, *::before, *::after, *::backdrop, *::file-selector-button {
     border-color: var(--border);
   }
-  button { user-select: none; }
+  button { user-select: none; cursor: pointer; }
+  a, [role="button"], label[for], select, summary { cursor: pointer; }
 }
 
 html, body {
