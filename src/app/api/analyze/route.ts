@@ -172,9 +172,19 @@ export async function POST(req: NextRequest) {
 
       if (distConfig.whatsapp?.enabled) {
         const numbers: string[] = distConfig.whatsapp.recipient_numbers ?? [];
+        let branchName: string | null = null;
+        if (topCluster.branch_id) {
+          const { data: branch } = await supabaseAdmin
+            .from("branches")
+            .select("name")
+            .eq("id", topCluster.branch_id)
+            .eq("workspace_id", wid)
+            .single();
+          branchName = (branch as { name?: string } | null)?.name ?? null;
+        }
         for (const number of numbers) {
           distributes.push(
-            sendWhatsAppAlert(number, topCluster).then(() =>
+            sendWhatsAppAlert(number, topCluster, { branchName }).then(() =>
               logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "sent" })
             ).catch(() =>
               logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "failed" })
