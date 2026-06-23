@@ -12,6 +12,7 @@ export type VerticalType = "saas" | "ecommerce" | "qsr" | "retail" | "auto";
 export type DataCategory = "voice" | "pos" | "analytics" | "social";
 
 export type Severity = "critical" | "high" | "medium" | "low";
+export type ClusterCategory = "musteri" | "operasyon" | "personel";
 export type ClusterStatus = "active" | "reviewed" | "actioned" | "approved" | "dismissed";
 export type DeliveryChannel = "slack" | "whatsapp" | "email";
 export type DeliveryStatus = "sent" | "failed" | "pending";
@@ -63,6 +64,7 @@ export interface Cluster {
   source_breakdown: SourceBreakdown;
   business_case: string;
   recommended_action: string;
+  category?: ClusterCategory;
   root_cause?: string;
   customer_quote?: string;
   projected_impact?: string; // e.g. "~$12k MRR at risk" or "~18% conversion uplift"
@@ -474,6 +476,7 @@ export interface AnalysisResult {
   source_breakdown: SourceBreakdown;
   business_case: string;
   recommended_action: string;
+  category?: ClusterCategory;
   customer_quote?: string;
   projected_impact?: string;
 }

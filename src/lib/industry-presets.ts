@@ -113,6 +113,7 @@ For each cluster return:
 - source_breakdown: object with counts per source type
 - business_case: one sentence with concrete impact (numbers where possible)
 - recommended_action: specific, implementable next step
+- category: one of "musteri" (customer experience, reviews, complaints), "operasyon" (operational issues, delivery, kitchen, logistics), or "personel" (staff behaviour, staffing levels, training)
 - customer_quote: most representative verbatim signal
 - projected_impact: estimated business impact (revenue, conversion, retention), be specific e.g. "~$12k MRR at risk" or "18% return rate reduction if fixed"
 

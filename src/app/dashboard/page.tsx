@@ -89,6 +89,10 @@ function sourceChips(cluster: Cluster): Array<{ name: string; count: number }> {
 }
 
 function clusterCategory(cluster: Cluster): Exclude<CategoryFilter, "all"> {
+  if (cluster.category === "personel" || cluster.category === "musteri" || cluster.category === "operasyon") {
+    return cluster.category;
+  }
+  // Fallback: derive from text for clusters that pre-date the category column
   const text = [
     cluster.title,
     cluster.business_case,
