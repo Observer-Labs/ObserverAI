@@ -5,11 +5,15 @@ import Reveal from "@/components/marketing/Reveal";
 import PricingCards from "@/components/marketing/PricingCards";
 import Link from "next/link";
 import type { PricingPlanData } from "@/components/marketing/PricingCards";
+import { fetchPolarPrices } from "@/lib/polar-prices";
 
 export default async function PricingPage() {
-  const t = await getTranslations("billing");
-  const tPricing = await getTranslations("pricing");
-  const tNav = await getTranslations("nav");
+  const [t, tPricing, tNav, polarPrices] = await Promise.all([
+    getTranslations("billing"),
+    getTranslations("pricing"),
+    getTranslations("nav"),
+    fetchPolarPrices(),
+  ]);
 
   const plans: PricingPlanData[] = [
     {
@@ -79,7 +83,7 @@ export default async function PricingPage() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <PricingCards plans={plans} labels={labels} />
+          <PricingCards plans={plans} labels={labels} prices={polarPrices} />
         </Reveal>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-6 sm:px-12">

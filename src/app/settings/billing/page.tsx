@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Workspace } from "@/lib/types";
+import { FALLBACK_PRICES, formatPrice } from "@/lib/polar-prices";
+import type { AllPlanPrices } from "@/lib/polar-prices";
 
 const TRIAL_LIMIT = 10;
 const PAID_PLANS = ["starter", "growth", "scale", "enterprise", "pro"] as const;
@@ -31,62 +33,44 @@ function planLabel(plan?: string): string {
   return "Trial";
 }
 
-type BillingPlan = {
+type BillingPlanConfig = {
+  id: "starter" | "growth" | "scale";
   name: string;
-  monthlyPrice: string | null;
-  yearlyPrice: string;
   yearlyOnly: boolean;
   description: string;
   features: string[];
   cta: string;
-  fixedHref?: string;
 };
 
-const BILLING_PLANS: BillingPlan[] = [
+const BILLING_PLANS: BillingPlanConfig[] = [
   {
+    id: "starter",
     name: "Starter",
-    monthlyPrice: null,
-    yearlyPrice: "$79",
     yearlyOnly: true,
     description: "1 lokasyon · Tek kafe veya mağaza",
     features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
     cta: "Choose Starter",
   },
   {
+    id: "growth",
     name: "Growth",
-    monthlyPrice: "$149",
-    yearlyPrice: "$119",
     yearlyOnly: false,
     description: "2-5 lokasyon · Küçük zincirler",
     features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
     cta: "Choose Growth",
   },
   {
+    id: "scale",
     name: "Scale",
-    monthlyPrice: "$299",
-    yearlyPrice: "$239",
     yearlyOnly: false,
     description: "6-20 lokasyon · Bölgesel markalar",
     features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
     cta: "Choose Scale",
   },
-  {
-    name: "Enterprise",
-    monthlyPrice: "Özel",
-    yearlyPrice: "Özel",
-    yearlyOnly: false,
-    description: "20+ lokasyon · Franchise'lar & gruplar",
-    features: ["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"],
-    cta: "Contact Sales",
-    fixedHref: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
-  },
 ];
 
-function getPlanHref(plan: BillingPlan, period: "monthly" | "yearly"): string {
-  if (plan.fixedHref) return plan.fixedHref;
-  const slug = plan.name.toLowerCase();
-  const effectivePeriod = plan.yearlyOnly ? "yearly" : period;
-  return `/api/billing/checkout?plan=${slug}&period=${effectivePeriod}`;
+function getPlanHref(id: string, yearlyOnly: boolean, period: "monthly" | "yearly"): string {
+  return `/api/billing/checkout?plan=${id}&period=${yearlyOnly ? "yearly" : period}`;
 }
 
 export default function BillingPage() {
@@ -94,6 +78,7 @@ export default function BillingPage() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
+  const [polarPrices, setPolarPrices] = useState<AllPlanPrices>(FALLBACK_PRICES);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -104,6 +89,11 @@ export default function BillingPage() {
       .then((r) => r.json())
       .then((d) => { setWorkspace(d.workspace); setLoading(false); })
       .catch(() => setLoading(false));
+
+    fetch("/api/billing/prices")
+      .then((r) => r.json())
+      .then((data: AllPlanPrices) => setPolarPrices(data))
+      .catch(() => { /* keep fallback */ });
   }, [router]);
 
   if (loading) {
@@ -125,6 +115,19 @@ export default function BillingPage() {
   const isCancelled = plan === "cancelled" || workspace?.polar_status === "cancelled";
   const isExpired = plan === "expired";
   const isTrial = plan === "trial";
+
+  function getActivePriceStr(option: BillingPlanConfig): string {
+    const p = polarPrices[option.id];
+    const cents = option.yearlyOnly
+      ? p.yearly
+      : period === "yearly" ? p.yearly : (p.monthly ?? p.yearly);
+    return cents !== undefined ? formatPrice(cents) : "—";
+  }
+
+  function getPriceSuffix(option: BillingPlanConfig): string {
+    if (option.yearlyOnly) return "/ ay · yıllık";
+    return period === "yearly" ? "/ ay · yıllık" : "/ ay";
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -281,20 +284,14 @@ export default function BillingPage() {
             </div>
 
             <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+              {/* Polar-priced plans */}
               {BILLING_PLANS.map((option) => {
-                const isEnterprise = option.name === "Enterprise";
-                const activePrice = isEnterprise
-                  ? option.yearlyPrice
-                  : option.yearlyOnly
-                    ? option.yearlyPrice
-                    : period === "yearly" ? option.yearlyPrice : (option.monthlyPrice ?? option.yearlyPrice);
-                const priceSuffix = isEnterprise ? "" : option.yearlyOnly
-                  ? "/ ay · yıllık"
-                  : period === "yearly" ? "/ ay · yıllık" : "/ ay";
-                const href = getPlanHref(option, period);
+                const activePrice = getActivePriceStr(option);
+                const priceSuffix = getPriceSuffix(option);
+                const href = getPlanHref(option.id, option.yearlyOnly, period);
 
                 return (
-                  <div key={option.name} className="rounded-xl border bg-card p-4">
+                  <div key={option.id} className="rounded-xl border bg-card p-4">
                     <div className="mb-1 flex items-start justify-between gap-1">
                       <div className="text-[0.95rem] font-extrabold text-foreground">{option.name}</div>
                       {option.yearlyOnly && (
@@ -303,16 +300,8 @@ export default function BillingPage() {
                         </span>
                       )}
                     </div>
-                    <div className={cn(
-                      "font-extrabold tracking-[-0.03em] text-foreground",
-                      isEnterprise ? "text-[1.25rem]" : "text-[1.6rem]"
-                    )}>
-                      {activePrice}
-                    </div>
-                    {priceSuffix && (
-                      <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
-                    )}
-                    {!priceSuffix && !isEnterprise && <div className="mb-2.5" />}
+                    <div className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-foreground">{activePrice}</div>
+                    <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
                     <div className="mb-3 text-[0.78rem] leading-[1.45] text-muted-foreground">{option.description}</div>
                     <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
                       {option.features.map((feature) => (
@@ -324,10 +313,10 @@ export default function BillingPage() {
                     </ul>
                     <Button
                       asChild
-                      variant={option.name === "Growth" ? "default" : "outline"}
+                      variant={option.id === "growth" ? "default" : "outline"}
                       className={cn(
                         "h-auto w-full rounded-lg px-3 py-[9px] text-center text-[0.78rem] font-bold",
-                        option.name !== "Growth" && "bg-muted text-foreground hover:bg-muted/80"
+                        option.id !== "growth" && "bg-muted text-foreground hover:bg-muted/80"
                       )}
                     >
                       <a href={href}>{option.cta}</a>
@@ -335,6 +324,25 @@ export default function BillingPage() {
                   </div>
                 );
               })}
+
+              {/* Enterprise — fixed */}
+              <div className="rounded-xl border bg-card p-4">
+                <div className="mb-1 text-[0.95rem] font-extrabold text-foreground">Enterprise</div>
+                <div className="text-[1.25rem] font-extrabold tracking-[-0.03em] text-foreground">Özel</div>
+                <div className="mb-2.5" />
+                <div className="mb-3 text-[0.78rem] leading-[1.45] text-muted-foreground">20+ lokasyon · Franchise&apos;lar &amp; gruplar</div>
+                <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
+                  {["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"].map((f) => (
+                    <li key={f} className="flex items-start gap-[7px] text-[0.76rem] leading-[1.35] text-muted-foreground">
+                      <span className="shrink-0 text-foreground">✓</span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild variant="outline" className="h-auto w-full rounded-lg bg-muted px-3 py-[9px] text-center text-[0.78rem] font-bold text-foreground hover:bg-muted/80">
+                  <a href="mailto:hello@observerai.app?subject=ObserverAI%20Enterprise">Contact Sales</a>
+                </Button>
+              </div>
             </div>
           </div>
         )}

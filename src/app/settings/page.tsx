@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { Workspace } from "@/lib/types";
+import { FALLBACK_PRICES, formatPrice } from "@/lib/polar-prices";
+import type { AllPlanPrices } from "@/lib/polar-prices";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -82,8 +84,9 @@ export default function SettingsPage() {
   const [savingThresholds, setSavingThresholds] = useState(false);
   const [savedThresholds, setSavedThresholds] = useState(false);
 
-  // Billing period toggle
+  // Billing period toggle + Polar live prices
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
+  const [polarPrices, setPolarPrices] = useState<AllPlanPrices>(FALLBACK_PRICES);
 
   // Account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -117,6 +120,12 @@ export default function SettingsPage() {
         router.push("/login");
       }
     })();
+
+    // Fetch live Polar prices (non-blocking, falls back to defaults on error)
+    fetch("/api/billing/prices")
+      .then((r) => r.json())
+      .then((data: AllPlanPrices) => setPolarPrices(data))
+      .catch(() => { /* keep fallback */ });
   }, [router]);
 
   const saveProfile = async () => {
@@ -200,53 +209,38 @@ export default function SettingsPage() {
   const isTrial = plan === "trial";
 
   type BillingPlanEntry = {
+    id: "starter" | "growth" | "scale";
     name: string;
-    monthlyPrice: string | null;
-    yearlyPrice: string;
     yearlyOnly: boolean;
     description: string;
     features: string[];
     cta: string;
-    fixedHref?: string;
   };
 
   const billingPlans: BillingPlanEntry[] = [
     {
+      id: "starter",
       name: "Starter",
-      monthlyPrice: null,
-      yearlyPrice: "$79",
       yearlyOnly: true,
       description: "1 lokasyon · Tek kafe veya mağaza",
       features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
       cta: "Choose Starter",
     },
     {
+      id: "growth",
       name: "Growth",
-      monthlyPrice: "$149",
-      yearlyPrice: "$119",
       yearlyOnly: false,
       description: "2-5 lokasyon · Küçük zincirler",
       features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
       cta: "Choose Growth",
     },
     {
+      id: "scale",
       name: "Scale",
-      monthlyPrice: "$299",
-      yearlyPrice: "$239",
       yearlyOnly: false,
       description: "6-20 lokasyon · Bölgesel markalar",
       features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
       cta: "Choose Scale",
-    },
-    {
-      name: "Enterprise",
-      monthlyPrice: "Özel",
-      yearlyPrice: "Özel",
-      yearlyOnly: false,
-      description: "20+ lokasyon · Franchise'lar & gruplar",
-      features: ["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"],
-      cta: "Contact Sales",
-      fixedHref: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
     },
   ];
 
@@ -475,20 +469,18 @@ export default function SettingsPage() {
                       </div>
                       <div className="mt-[18px] grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
                         {billingPlans.map((option) => {
-                          const isEnterprise = option.name === "Enterprise";
-                          const activePrice = isEnterprise
-                            ? option.yearlyPrice
-                            : option.yearlyOnly
-                              ? option.yearlyPrice
-                              : billingPeriod === "yearly" ? option.yearlyPrice : (option.monthlyPrice ?? option.yearlyPrice);
-                          const priceSuffix = isEnterprise ? "" : option.yearlyOnly
+                          const pp = polarPrices[option.id];
+                          const cents = option.yearlyOnly
+                            ? pp?.yearly
+                            : billingPeriod === "yearly" ? pp?.yearly : (pp?.monthly ?? pp?.yearly);
+                          const activePrice = cents !== undefined ? formatPrice(cents) : "—";
+                          const priceSuffix = option.yearlyOnly
                             ? "/ ay · yıllık"
                             : billingPeriod === "yearly" ? "/ ay · yıllık" : "/ ay";
-                          const href = option.fixedHref
-                            ?? `/api/billing/checkout?plan=${option.name.toLowerCase()}&period=${option.yearlyOnly ? "yearly" : billingPeriod}`;
+                          const href = `/api/billing/checkout?plan=${option.id}&period=${option.yearlyOnly ? "yearly" : billingPeriod}`;
 
                           return (
-                            <div key={option.name} className="rounded-xl border bg-card p-4">
+                            <div key={option.id} className="rounded-xl border bg-card p-4">
                               <div className="mb-1 flex items-start justify-between gap-1">
                                 <div className="text-[0.92rem] font-extrabold text-foreground">{option.name}</div>
                                 {option.yearlyOnly && (
@@ -497,14 +489,8 @@ export default function SettingsPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className={cn("font-extrabold tracking-[-0.03em] text-foreground", isEnterprise ? "text-[1.2rem]" : "text-[1.55rem]")}>
-                                {activePrice}
-                              </div>
-                              {priceSuffix ? (
-                                <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
-                              ) : (
-                                <div className="mb-2.5" />
-                              )}
+                              <div className="text-[1.55rem] font-extrabold tracking-[-0.03em] text-foreground">{activePrice}</div>
+                              <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
                               <div className="mb-3 text-[0.76rem] leading-[1.45] text-muted-foreground">{option.description}</div>
                               <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
                                 {option.features.map((feature) => (
@@ -516,10 +502,10 @@ export default function SettingsPage() {
                               </ul>
                               <Button
                                 asChild
-                                variant={option.name === "Growth" ? "default" : "outline"}
+                                variant={option.id === "growth" ? "default" : "outline"}
                                 className={cn(
                                   "h-auto w-full px-3 py-[9px] text-[0.76rem] font-bold",
-                                  option.name !== "Growth" && "border bg-muted text-foreground"
+                                  option.id !== "growth" && "border bg-muted text-foreground"
                                 )}
                               >
                                 <a href={href}>{option.cta}</a>
@@ -527,6 +513,23 @@ export default function SettingsPage() {
                             </div>
                           );
                         })}
+                        {/* Enterprise — fixed */}
+                        <div className="rounded-xl border bg-card p-4">
+                          <div className="mb-1 text-[0.92rem] font-extrabold text-foreground">Enterprise</div>
+                          <div className="text-[1.2rem] font-extrabold tracking-[-0.03em] text-foreground">Özel</div>
+                          <div className="mb-2.5" />
+                          <div className="mb-3 text-[0.76rem] leading-[1.45] text-muted-foreground">20+ lokasyon · Franchise&apos;lar &amp; gruplar</div>
+                          <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
+                            {["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"].map((f) => (
+                              <li key={f} className="flex items-start gap-[7px] text-[0.74rem] leading-[1.35] text-muted-foreground">
+                                <span className="shrink-0 text-foreground">✓</span>{f}
+                              </li>
+                            ))}
+                          </ul>
+                          <Button asChild variant="outline" className="h-auto w-full border bg-muted px-3 py-[9px] text-[0.76rem] font-bold text-foreground">
+                            <a href="mailto:hello@observerai.app?subject=ObserverAI%20Enterprise">Contact Sales</a>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

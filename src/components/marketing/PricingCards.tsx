@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { AllPlanPrices } from "@/lib/polar-prices";
 
 export type PricingPlanData = {
   id: "starter" | "growth" | "scale" | "enterprise";
@@ -27,15 +28,11 @@ type Labels = {
   mostPopular: string;
 };
 
-// Prices indexed by plan id and period
-const PRICES: Record<string, { monthly: string; yearly: string }> = {
-  starter: { monthly: "$79", yearly: "$79" }, // yearly-only plan, same display
-  growth:  { monthly: "$149", yearly: "$119" },
-  scale:   { monthly: "$299", yearly: "$239" },
-  enterprise: { monthly: "Özel", yearly: "Özel" },
-};
+function fmt(cents: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+}
 
-export default function PricingCards({ plans, labels }: { plans: PricingPlanData[]; labels: Labels }) {
+export default function PricingCards({ plans, labels, prices }: { plans: PricingPlanData[]; labels: Labels; prices: AllPlanPrices }) {
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
 
   return (
@@ -70,10 +67,15 @@ export default function PricingCards({ plans, labels }: { plans: PricingPlanData
       {/* Plan cards */}
       <div className="mx-auto grid max-w-[1120px] grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5 px-6 pb-24">
         {plans.map((plan) => {
-          const prices = PRICES[plan.id] ?? { monthly: "—", yearly: "—" };
+          const planPrices = prices[plan.id as keyof AllPlanPrices];
           const isYearlyOnly = plan.id === "starter";
           const isEnterprise = plan.id === "enterprise";
-          const activePrice = isEnterprise ? "Özel" : (period === "yearly" ? prices.yearly : prices.monthly);
+          const rawPrice = isEnterprise
+            ? null
+            : period === "yearly"
+              ? (planPrices?.yearly ?? planPrices?.monthly)
+              : (planPrices?.monthly ?? planPrices?.yearly);
+          const activePrice = isEnterprise ? "Özel" : (rawPrice !== undefined && rawPrice !== null ? fmt(rawPrice) : "—");
           const priceSuffix = isEnterprise
             ? ""
             : isYearlyOnly
