@@ -251,7 +251,13 @@
     "briefSetupChannels": "⚡ Slack · E-posta · WhatsApp Ayarla",
     "briefDistributeNote": "WhatsApp, Slack ve e-posta ile otomatik iletilir, ekibiniz giriş yapmadan hareket eder.",
     "whatsappReply": "Yanıtla {1} detaylar · {2} hallettim · {3} geç",
-    "signalCountSuffix": "müşteri bahsetti"
+    "signalCountSuffix": "müşteri bahsetti",
+    "bannerTrialSoon": "⏳ Deneme {n} gün içinde bitiyor",
+    "bannerUpgrade": "Yükselt →",
+    "bannerTrialEnded": "🚫 Deneme sona erdi",
+    "bannerUpgradeContinue": "Devam etmek için yükselt →",
+    "bannerPaymentFailed": "⚡ Ödeme başarısız",
+    "bannerUpdateBilling": "Ödemeyi güncelle →"
   },
   "sidebar": {
     "runsLeft": "{n} analiz hakkı",

@@ -70,6 +70,10 @@ export default function AdminPage() {
   const [adminError, setAdminError] = useState("");
   const [selfEmail, setSelfEmail] = useState("");
   const adminInputRef = useRef<HTMLInputElement>(null);
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; email: string }>>([]);
+  const [userQuery, setUserQuery] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -90,6 +94,23 @@ export default function AdminPage() {
       .then(async (r) => { if (r.ok) { const d = await r.json(); setSelfEmail(d?.user?.email ?? ""); } })
       .catch(() => {});
   }, [router]);
+
+  useEffect(() => {
+    if (tab !== "admins") return;
+    fetch("/api/admin/users")
+      .then(async (r) => { if (r.ok) { const d = await r.json(); setAllUsers(d.users ?? []); } })
+      .catch(() => {});
+  }, [tab]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -136,11 +157,17 @@ export default function AdminPage() {
       const r2 = await fetch("/api/admin/admins");
       if (r2.ok) { const d2 = await r2.json(); setAdmins(d2.admins ?? []); }
       setAdminEmail("");
+      setUserQuery("");
       adminInputRef.current?.focus();
     } finally {
       setAdminAdding(false);
     }
   }
+
+  const existingAdminEmails = new Set(admins.map((a) => a.email));
+  const filteredUsers = allUsers
+    .filter((u) => u.email.toLowerCase().includes(userQuery.toLowerCase()) && !existingAdminEmails.has(u.email))
+    .slice(0, 15);
 
   async function removeAdmin(email: string) {
     const r = await fetch("/api/admin/admins", {
@@ -289,17 +316,49 @@ export default function AdminPage() {
           <div className="rounded-[12px] border bg-card p-5">
             <h2 className="mb-4 text-[0.82rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">Add admin</h2>
             <div className="flex gap-2">
-              <input
-                ref={adminInputRef}
-                type="email"
-                placeholder="email@example.com"
-                value={adminEmail}
-                onChange={(e) => { setAdminEmail(e.target.value); setAdminError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && addAdmin()}
-                className="h-9 flex-1 rounded-lg border bg-background px-3 text-[0.84rem] text-foreground outline-none focus:ring-1 focus:ring-foreground"
-              />
+              <div ref={dropdownRef} className="relative flex-1">
+                <input
+                  ref={adminInputRef}
+                  type="text"
+                  placeholder="Search users…"
+                  value={userQuery}
+                  onChange={(e) => {
+                    setUserQuery(e.target.value);
+                    setAdminEmail(e.target.value);
+                    setAdminError("");
+                    setDropdownOpen(true);
+                  }}
+                  onFocus={() => setDropdownOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { setDropdownOpen(false); void addAdmin(); }
+                    if (e.key === "Escape") setDropdownOpen(false);
+                  }}
+                  className="h-9 w-full rounded-lg border bg-background px-3 text-[0.84rem] text-foreground outline-none focus:ring-1 focus:ring-foreground"
+                />
+                {dropdownOpen && filteredUsers.length > 0 && (
+                  <div className="absolute left-0 top-full z-50 mt-1 max-h-[220px] w-full overflow-y-auto rounded-lg border bg-card shadow-lg">
+                    {filteredUsers.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setUserQuery(u.email);
+                          setAdminEmail(u.email);
+                          setAdminError("");
+                          setDropdownOpen(false);
+                          adminInputRef.current?.focus();
+                        }}
+                        className="flex w-full items-center px-3 py-2 text-left text-[0.82rem] text-foreground hover:bg-muted"
+                      >
+                        {u.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
-                onClick={addAdmin}
+                onClick={() => { setDropdownOpen(false); void addAdmin(); }}
                 disabled={adminAdding || !adminEmail.trim()}
                 className="h-9 rounded-lg bg-foreground px-4 text-[0.82rem] font-semibold text-background disabled:opacity-40"
               >

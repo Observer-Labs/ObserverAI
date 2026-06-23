@@ -251,7 +251,13 @@
     "briefSetupChannels": "⚡ Set up Slack · Email · WhatsApp",
     "briefDistributeNote": "Auto-delivered via WhatsApp, Slack and email so your team can act without logging in.",
     "whatsappReply": "Reply {1} details · {2} on it · {3} skip",
-    "signalCountSuffix": "customers mentioned this"
+    "signalCountSuffix": "customers mentioned this",
+    "bannerTrialSoon": "⏳ Trial ends in {n} days",
+    "bannerUpgrade": "Upgrade →",
+    "bannerTrialEnded": "🚫 Trial ended",
+    "bannerUpgradeContinue": "Upgrade to continue →",
+    "bannerPaymentFailed": "⚡ Payment failed",
+    "bannerUpdateBilling": "Update billing →"
   },
   "sidebar": {
     "runsLeft": "{n} runs left",

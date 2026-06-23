@@ -152,8 +152,8 @@ export default function Sidebar({
         <div className="px-3 pt-2 pb-1">
           <LocaleSwitcher />
         </div>
-        {/* Plan pill */}
-        {planLabel(plan) && (
+        {/* Plan pill — hidden for admin users */}
+        {!isAdmin && planLabel(plan) && (
           <Link
             href="/settings/billing"
             className="sidebar-plan border-border! bg-muted text-foreground"
@@ -162,7 +162,7 @@ export default function Sidebar({
             {plan !== "trial" && <span className="opacity-65">{tSidebar('proActive')}</span>}
           </Link>
         )}
-        {plan === "expired" && (
+        {!isAdmin && plan === "expired" && (
           <Link
             href="/settings/billing"
             className="sidebar-plan border-[color-mix(in_oklch,var(--destructive)_30%,transparent)]! bg-[color-mix(in_oklch,var(--destructive)_10%,transparent)] text-destructive"
@@ -170,7 +170,7 @@ export default function Sidebar({
             {tSidebar('trialEnded')}
           </Link>
         )}
-        {plan === "past_due" && (
+        {!isAdmin && plan === "past_due" && (
           <Link
             href="/settings/billing"
             className="sidebar-plan border-[color-mix(in_oklch,var(--amber)_35%,transparent)]! bg-[color-mix(in_oklch,var(--amber)_12%,transparent)] text-[oklch(0.55_0.14_70)]"
@@ -178,7 +178,7 @@ export default function Sidebar({
             {tSidebar('paymentFailed')}
           </Link>
         )}
-        {plan === "pro" && (
+        {!isAdmin && plan === "pro" && (
           <div className="sidebar-plan cursor-default border-[color-mix(in_oklch,var(--success)_30%,transparent)]! bg-[color-mix(in_oklch,var(--success)_12%,transparent)] text-[var(--success)]">
             <span className="font-bold">PRO</span>
             <span className="opacity-65">{tSidebar('proActive')}</span>

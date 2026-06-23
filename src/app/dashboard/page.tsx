@@ -612,6 +612,7 @@ export default function DashboardPage() {
   const [approvals, setApprovals] = useState<Record<string, ApprovalState>>({});
   const [toast, setToast] = useState<{ msg: string; tone: "success" | "error" } | null>(null);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const decideCluster = async (clusterId: string, action: "approve" | "reject") => {
     // Optimistic local update for snappy UI
@@ -669,13 +670,15 @@ export default function DashboardPage() {
     Promise.allSettled([
       fetch("/api/workspace").then((r) => r.json()),
       fetch("/api/branches").then((r) => r.json()),
-    ]).then(([workspaceResult, branchesResult]) => {
+      fetch("/api/admin/admins"),
+    ]).then(([workspaceResult, branchesResult, adminResult]) => {
       if (workspaceResult.status === "fulfilled" && workspaceResult.value.workspace) {
         setWorkspace(workspaceResult.value.workspace);
       }
       if (branchesResult.status === "fulfilled" && Array.isArray(branchesResult.value.branches)) {
         setBranches(branchesResult.value.branches);
       }
+      if (adminResult.status === "fulfilled") setIsAdmin((adminResult.value as Response).ok);
     }).catch(() => {});
 
   }, [router]);
@@ -868,29 +871,27 @@ export default function DashboardPage() {
   return (
     <div className="app-shell">
       {/* ── Plan banners ── */}
-      {plan === "trial" && trialDays <= 7 && trialDays > 0 && (
+      {!isAdmin && plan === "trial" && trialDays <= 7 && trialDays > 0 && (
         <div className="flex items-center justify-center gap-3 border-b border-[rgba(251,191,36,0.15)] bg-[rgba(251,191,36,0.06)] px-6 py-2">
-          <span className="text-[0.82rem] text-[#fbbf24]">
-            ⏳ Trial ends in <strong>{trialDays} day{trialDays !== 1 ? "s" : ""}</strong>
-          </span>
+          <span className="text-[0.82rem] text-[#fbbf24]">{t("bannerTrialSoon", { n: trialDays })}</span>
           <Link href="/settings/billing" className="text-[0.82rem] font-semibold text-[#fbbf24] underline">
-            Upgrade →
+            {t("bannerUpgrade")}
           </Link>
         </div>
       )}
-      {(plan === "expired" || (plan === "trial" && trialDays === 0)) && (
+      {!isAdmin && (plan === "expired" || (plan === "trial" && trialDays === 0)) && (
         <div className="flex items-center justify-center gap-3 border-b border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.06)] px-6 py-2">
-          <span className="text-[0.82rem] text-[#f87171]">🚫 Trial ended ,</span>
+          <span className="text-[0.82rem] text-[#f87171]">{t("bannerTrialEnded")}</span>
           <Link href="/settings/billing" className="text-[0.82rem] font-semibold text-[#f87171] underline">
-            Upgrade to continue →
+            {t("bannerUpgradeContinue")}
           </Link>
         </div>
       )}
-      {polar_status === "past_due" && (
+      {!isAdmin && polar_status === "past_due" && (
         <div className="flex items-center justify-center gap-3 border-b border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.06)] px-6 py-2">
-          <span className="text-[0.82rem] text-[#f87171]">⚡ Payment failed ,</span>
+          <span className="text-[0.82rem] text-[#f87171]">{t("bannerPaymentFailed")}</span>
           <a href="/api/billing/portal" className="text-[0.82rem] font-semibold text-[#f87171] underline">
-            Update billing →
+            {t("bannerUpdateBilling")}
           </a>
         </div>
       )}
@@ -947,7 +948,7 @@ export default function DashboardPage() {
                   topCluster={branchTopClusters.get(branch.id) ?? null}
                   issueCount={branchIssueCounts.get(branch.id) ?? 0}
                   selected={selectedBranchId === branch.id}
-                  onClick={() => setSelectedBranchId(branch.id)}
+                  onClick={() => setSelectedBranchId((prev) => prev === branch.id ? "all" : branch.id)}
                 />
               ))}
             </div>
