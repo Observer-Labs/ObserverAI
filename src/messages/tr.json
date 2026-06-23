@@ -328,7 +328,12 @@
     "feature_scale_3": "Bölgesel performans takibi",
     "feature_enterprise_1": "20+ lokasyon",
     "feature_enterprise_2": "Özel fiyatlandırma ve kurulum",
-    "feature_enterprise_3": "Franchise/grup desteği"
+    "feature_enterprise_3": "Franchise/grup desteği",
+    "monthly": "Aylık",
+    "yearly": "Yıllık",
+    "save20": "-%20",
+    "perMonthAnnual": "/ ay · yıllık",
+    "yearlyOnly": "Yalnızca yıllık"
   },
   "sources": {
     "title": "Kaynaklar",

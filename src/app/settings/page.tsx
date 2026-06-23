@@ -82,6 +82,9 @@ export default function SettingsPage() {
   const [savingThresholds, setSavingThresholds] = useState(false);
   const [savedThresholds, setSavedThresholds] = useState(false);
 
+  // Billing period toggle
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
+
   // Account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -196,38 +199,54 @@ export default function SettingsPage() {
   const isPastDue = polarStatus === "past_due";
   const isTrial = plan === "trial";
 
-  const billingPlans = [
+  type BillingPlanEntry = {
+    name: string;
+    monthlyPrice: string | null;
+    yearlyPrice: string;
+    yearlyOnly: boolean;
+    description: string;
+    features: string[];
+    cta: string;
+    fixedHref?: string;
+  };
+
+  const billingPlans: BillingPlanEntry[] = [
     {
       name: "Starter",
-      price: "$79",
+      monthlyPrice: null,
+      yearlyPrice: "$79",
+      yearlyOnly: true,
       description: "1 lokasyon · Tek kafe veya mağaza",
       features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
       cta: "Choose Starter",
-      href: "/api/billing/checkout?plan=starter",
     },
     {
       name: "Growth",
-      price: "$149",
+      monthlyPrice: "$149",
+      yearlyPrice: "$119",
+      yearlyOnly: false,
       description: "2-5 lokasyon · Küçük zincirler",
       features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
       cta: "Choose Growth",
-      href: "/api/billing/checkout?plan=growth",
     },
     {
       name: "Scale",
-      price: "$299",
+      monthlyPrice: "$299",
+      yearlyPrice: "$239",
+      yearlyOnly: false,
       description: "6-20 lokasyon · Bölgesel markalar",
       features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
       cta: "Choose Scale",
-      href: "/api/billing/checkout?plan=scale",
     },
     {
       name: "Enterprise",
-      price: "Özel",
+      monthlyPrice: "Özel",
+      yearlyPrice: "Özel",
+      yearlyOnly: false,
       description: "20+ lokasyon · Franchise'lar & gruplar",
       features: ["20+ lokasyon", "Özel fiyatlandırma (~$500+/ay)", "Franchise/grup desteği"],
       cta: "Contact Sales",
-      href: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
+      fixedHref: "mailto:hello@observerai.app?subject=ObserverAI%20Enterprise",
     },
   ];
 
@@ -426,37 +445,88 @@ export default function SettingsPage() {
                   <div className="relative overflow-hidden rounded-[14px] border border-[rgba(249,115,22,0.2)] bg-[rgba(249,115,22,0.04)] p-7">
                     <div className="absolute top-0 left-1/2 h-px w-1/2 -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(249,115,22,0.5),transparent)]" />
                     <div>
-                      <div className="mb-1.5 text-[1.05rem] font-bold text-foreground">Choose a plan</div>
-                      <div className="mb-[18px] text-[0.82rem] text-muted-foreground">Plans are based on location count and source coverage.</div>
-                      <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
-                        {billingPlans.map((option) => (
-                          <div key={option.name} className="rounded-xl border bg-card p-4">
-                            <div className="mb-2 text-[0.92rem] font-extrabold text-foreground">{option.name}</div>
-                            <div className={cn("mb-1.5 font-extrabold tracking-[-0.03em] text-foreground", option.name === "Enterprise" ? "text-[1.2rem]" : "text-[1.55rem]")}>
-                              {option.price}
-                            </div>
-                            {option.name !== "Enterprise" && <div className="-mt-1 mb-2.5 text-[0.72rem] text-muted-foreground">/ ay</div>}
-                            <div className="mb-3 text-[0.76rem] leading-[1.45] text-muted-foreground">{option.description}</div>
-                            <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
-                              {option.features.map((feature) => (
-                                <li key={feature} className="flex items-start gap-[7px] text-[0.74rem] leading-[1.35] text-muted-foreground">
-                                  <span className="shrink-0 text-foreground">✓</span>
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-                            <Button
-                              asChild
-                              variant={option.name === "Growth" ? "default" : "outline"}
-                              className={cn(
-                                "h-auto w-full px-3 py-[9px] text-[0.76rem] font-bold",
-                                option.name !== "Growth" && "border bg-muted text-foreground"
+                      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="text-[1.05rem] font-bold text-foreground">Choose a plan</div>
+                          <div className="text-[0.82rem] text-muted-foreground">Plans are based on location count and source coverage.</div>
+                        </div>
+                        {/* Period toggle */}
+                        <div className="flex items-center gap-0 rounded-full border bg-muted p-[3px]">
+                          <button
+                            onClick={() => setBillingPeriod("monthly")}
+                            className={cn(
+                              "cursor-pointer rounded-full border-none px-3.5 py-[4px] text-[0.75rem] font-medium transition-all",
+                              billingPeriod === "monthly" ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Aylık
+                          </button>
+                          <button
+                            onClick={() => setBillingPeriod("yearly")}
+                            className={cn(
+                              "flex cursor-pointer items-center gap-1 rounded-full border-none px-3.5 py-[4px] text-[0.75rem] font-medium transition-all",
+                              billingPeriod === "yearly" ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground"
+                            )}
+                          >
+                            Yıllık
+                            <span className="rounded-full bg-[rgba(249,115,22,0.15)] px-[6px] py-[1px] text-[0.62rem] font-bold text-primary">-%20</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-[18px] grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
+                        {billingPlans.map((option) => {
+                          const isEnterprise = option.name === "Enterprise";
+                          const activePrice = isEnterprise
+                            ? option.yearlyPrice
+                            : option.yearlyOnly
+                              ? option.yearlyPrice
+                              : billingPeriod === "yearly" ? option.yearlyPrice : (option.monthlyPrice ?? option.yearlyPrice);
+                          const priceSuffix = isEnterprise ? "" : option.yearlyOnly
+                            ? "/ ay · yıllık"
+                            : billingPeriod === "yearly" ? "/ ay · yıllık" : "/ ay";
+                          const href = option.fixedHref
+                            ?? `/api/billing/checkout?plan=${option.name.toLowerCase()}&period=${option.yearlyOnly ? "yearly" : billingPeriod}`;
+
+                          return (
+                            <div key={option.name} className="rounded-xl border bg-card p-4">
+                              <div className="mb-1 flex items-start justify-between gap-1">
+                                <div className="text-[0.92rem] font-extrabold text-foreground">{option.name}</div>
+                                {option.yearlyOnly && (
+                                  <span className="mt-[2px] shrink-0 rounded-full border border-[rgba(110,168,255,0.3)] bg-[rgba(110,168,255,0.1)] px-[5px] py-[1px] text-[0.58rem] font-bold text-[#6ea8ff]">
+                                    yıllık
+                                  </span>
+                                )}
+                              </div>
+                              <div className={cn("font-extrabold tracking-[-0.03em] text-foreground", isEnterprise ? "text-[1.2rem]" : "text-[1.55rem]")}>
+                                {activePrice}
+                              </div>
+                              {priceSuffix ? (
+                                <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
+                              ) : (
+                                <div className="mb-2.5" />
                               )}
-                            >
-                              <a href={option.href}>{option.cta}</a>
-                            </Button>
-                          </div>
-                        ))}
+                              <div className="mb-3 text-[0.76rem] leading-[1.45] text-muted-foreground">{option.description}</div>
+                              <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
+                                {option.features.map((feature) => (
+                                  <li key={feature} className="flex items-start gap-[7px] text-[0.74rem] leading-[1.35] text-muted-foreground">
+                                    <span className="shrink-0 text-foreground">✓</span>
+                                    {feature}
+                                  </li>
+                                ))}
+                              </ul>
+                              <Button
+                                asChild
+                                variant={option.name === "Growth" ? "default" : "outline"}
+                                className={cn(
+                                  "h-auto w-full px-3 py-[9px] text-[0.76rem] font-bold",
+                                  option.name !== "Growth" && "border bg-muted text-foreground"
+                                )}
+                              >
+                                <a href={href}>{option.cta}</a>
+                              </Button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

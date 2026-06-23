@@ -328,7 +328,12 @@
     "feature_scale_3": "Regional performance tracking",
     "feature_enterprise_1": "20+ locations",
     "feature_enterprise_2": "Custom pricing and setup",
-    "feature_enterprise_3": "Franchise/group support"
+    "feature_enterprise_3": "Franchise/group support",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "save20": "-20%",
+    "perMonthAnnual": "/ mo · annually",
+    "yearlyOnly": "Yearly only"
   },
   "sources": {
     "title": "Sources",

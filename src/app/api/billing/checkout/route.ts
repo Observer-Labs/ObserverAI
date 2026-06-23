@@ -46,16 +46,30 @@ export async function GET(req: NextRequest) {
     // Non-fatal, proceed without email
   }
 
-  // Resolve product ID: plan-specific env var wins, fallback to POLAR_PRODUCT_ID
-  const planParam = req.nextUrl.searchParams.get("plan") ?? "";
-  const planProductEnvKey = `POLAR_PRODUCT_ID_${planParam.toUpperCase()}` as keyof typeof process.env;
-  const productId = (planParam && process.env[planProductEnvKey]) || polarEnv.POLAR_PRODUCT_ID;
+  const planParam = req.nextUrl.searchParams.get("plan")?.toLowerCase() ?? "";
+  const periodParam = (req.nextUrl.searchParams.get("period")?.toLowerCase() ?? "monthly") as "monthly" | "yearly";
+
+  // Resolve product ID — lookup order:
+  //   1. POLAR_{PLAN}_{PERIOD}_PRODUCT_ID  (e.g. POLAR_GROWTH_MONTHLY_PRODUCT_ID)
+  //   2. POLAR_PRODUCT_ID_{PLAN}            (legacy format)
+  //   3. POLAR_PRODUCT_ID                   (global fallback)
+  let productId: string | undefined;
+  if (planParam) {
+    const primaryKey = `POLAR_${planParam.toUpperCase()}_${periodParam.toUpperCase()}_PRODUCT_ID` as keyof typeof process.env;
+    productId = process.env[primaryKey];
+
+    if (!productId) {
+      const legacyKey = `POLAR_PRODUCT_ID_${planParam.toUpperCase()}` as keyof typeof process.env;
+      productId = process.env[legacyKey];
+    }
+  }
+  productId = productId || polarEnv.POLAR_PRODUCT_ID;
 
   // Inject server-side params into the request URL so the SDK handler
   // picks them up (it reads ?products=, ?metadata=, ?customerEmail=)
   const url = new URL(req.url);
   url.searchParams.set("products", productId);
-  url.searchParams.set("metadata", JSON.stringify({ workspace_id: wid, plan: planParam || undefined }));
+  url.searchParams.set("metadata", JSON.stringify({ workspace_id: wid, plan: planParam || undefined, period: periodParam }));
   if (email) url.searchParams.set("customerEmail", email);
 
   const syntheticReq = new NextRequest(url, { headers: req.headers });
