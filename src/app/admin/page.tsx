@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type Tab = "overview" | "customers" | "health" | "admins";
@@ -159,9 +160,17 @@ export default function AdminPage() {
           <h1 className="text-[1.4rem] font-extrabold tracking-[-0.025em] text-foreground">Observer Admin</h1>
           <p className="mt-0.5 text-[0.8rem] text-muted-foreground">Internal operations dashboard</p>
         </div>
-        <span className="rounded-md border border-[rgba(249,115,22,0.3)] bg-[rgba(249,115,22,0.08)] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#f97316]">
-          ADMIN
-        </span>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="rounded-lg border px-3 py-1.5 text-[0.78rem] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+          >
+            ← Dashboard
+          </Link>
+          <span className="rounded-md border border-[rgba(249,115,22,0.3)] bg-[rgba(249,115,22,0.08)] px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#f97316]">
+            ADMIN
+          </span>
+        </div>
       </div>
 
       {/* Tabs */}
