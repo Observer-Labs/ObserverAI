@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -110,17 +111,17 @@ function clusterCategory(cluster: Cluster): Exclude<CategoryFilter, "all"> {
   return "operasyon";
 }
 
-function categoryLabel(category: CategoryFilter) {
+function categoryI18nKey(category: CategoryFilter): "catOperasyon" | "catMusteri" | "catPersonel" | "catAll" {
   switch (category) {
-    case "operasyon": return "Operasyon";
-    case "musteri": return "Müşteri";
-    case "personel": return "Personel";
-    default: return "Tümü";
+    case "operasyon": return "catOperasyon";
+    case "musteri": return "catMusteri";
+    case "personel": return "catPersonel";
+    default: return "catAll";
   }
 }
 
 function branchLocation(branch: DashboardBranch) {
-  return [branch.district, branch.city].filter(Boolean).join(", ") || "Konum eklenmedi";
+  return [branch.district, branch.city].filter(Boolean).join(", ") || "";
 }
 
 function BranchCard({
@@ -136,10 +137,12 @@ function BranchCard({
   selected: boolean;
   onClick: () => void;
 }) {
+  const t = useTranslations("dashboard");
   const sev = topCluster ? severityLabel(topCluster.severity) : "low";
   const priorityText = topCluster ? topCluster.severity_label : "normal";
   const priorityColor = topCluster ? severityColor(sev) : "var(--muted-dim)";
   const category = topCluster ? clusterCategory(topCluster) : null;
+  const location = branchLocation(branch);
 
   return (
     <button
@@ -163,7 +166,7 @@ function BranchCard({
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: priorityColor }} />
           </div>
           <h3 className="truncate text-[0.95rem] font-bold tracking-[-0.01em] text-foreground">{branch.name}</h3>
-          <p className="mt-1 text-[0.75rem] text-muted-foreground">{branchLocation(branch)}</p>
+          {location && <p className="mt-1 text-[0.75rem] text-muted-foreground">{location}</p>}
         </div>
         <span className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold uppercase text-muted-foreground">
           {branch.status}
@@ -175,22 +178,22 @@ function BranchCard({
           <div className="mb-1 text-[0.72rem] font-semibold uppercase text-muted-foreground">{priorityText}</div>
           <p className="line-clamp-2 text-[0.85rem] font-semibold leading-[1.4] text-foreground">{topCluster.title}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.74rem] text-muted-foreground">
-            <span>{topCluster.evidence_count} customer signal{topCluster.evidence_count === 1 ? "" : "s"}</span>
+            <span>{topCluster.evidence_count === 1 ? t("customerSignal", { n: 1 }) : t("customerSignals", { n: topCluster.evidence_count })}</span>
             <span>·</span>
-            <span>{issueCount} issue{issueCount === 1 ? "" : "s"}</span>
+            <span>{issueCount === 1 ? t("issue", { n: 1 }) : t("issues", { n: issueCount })}</span>
             {category && (
               <span className="rounded-md border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold">
-                {categoryLabel(category)}
+                {t(categoryI18nKey(category))}
               </span>
             )}
           </div>
         </div>
       ) : (
         <div>
-          <div className="mb-1 text-[0.72rem] font-semibold uppercase text-muted-foreground">Normal</div>
-          <p className="text-[0.9rem] font-semibold text-foreground">Normal — sinyal yok</p>
+          <div className="mb-1 text-[0.72rem] font-semibold uppercase text-muted-foreground">{t("normalStatus")}</div>
+          <p className="text-[0.9rem] font-semibold text-foreground">{t("normalTitle")}</p>
           <p className="mt-2 text-[0.74rem] text-muted-foreground">
-            {branch.connected_source_count}/{branch.source_count} kaynak bağlı
+            {t("sourcesConnected", { connected: branch.connected_source_count, total: branch.source_count })}
           </p>
         </div>
       )}
@@ -355,6 +358,7 @@ function SignalCard({
   onClick: () => void;
   staggerIndex: number;
 }) {
+  const t = useTranslations("dashboard");
   const score = cluster.severity;
   const sev = severityLabel(score);
   const chips = sourceChips(cluster);
@@ -377,7 +381,7 @@ function SignalCard({
       <div className="flex items-center gap-2.5">
         <span className={`badge badge-${sev}`}>{urgencyLabel(score)}</span>
         <span className="text-[0.78rem] text-[var(--muted-light)]">
-          <span className="font-semibold text-foreground">{cluster.evidence_count}</span> müşteri bahsetti
+          <span className="font-semibold text-foreground">{cluster.evidence_count}</span> {t("signalCountSuffix")}
         </span>
         {chips.length > 0 && (
           <span className="ml-auto text-[0.72rem] text-[var(--muted-dim)]">
@@ -453,12 +457,14 @@ function ExecutionBrief({
   onReject: () => void;
   onViewFull: () => void;
 }) {
+  const t = useTranslations("dashboard");
+
   if (!cluster) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[14px] border bg-card p-8">
         <div className="h-10 w-px bg-gradient-to-b from-transparent via-[rgba(255,255,255,0.08)] to-transparent" />
         <p className="max-w-[160px] text-center font-['JetBrains_Mono',monospace] text-[0.78rem] leading-[1.65] text-[var(--muted-dim)]">
-          Bir sinyal seçin<br />özeti açmak için
+          {t("briefSelectHint").split("—").map((part, i) => i === 0 ? <span key={i}>{part.trim()}<br /></span> : <span key={i}>{part.trim()}</span>)}
         </p>
       </div>
     );
@@ -478,21 +484,21 @@ function ExecutionBrief({
           {cluster.title}
         </h4>
         <p className="text-[0.78rem] text-muted-foreground">
-          {cluster.evidence_count} müşteri bahsetti
+          {cluster.evidence_count} {t("signalCountSuffix")}
           {chips.length > 0 && <span> · {chips.slice(0, 3).map((c) => c.name).join(", ")}</span>}
         </p>
       </div>
 
       {/* What's happening */}
-      <BriefSection label="Neler oluyor">
+      <BriefSection label={t("briefNelerin")}>
         <p className="text-[0.85rem] leading-[1.65] text-[var(--muted-light)]">
-          {cluster.business_case || cluster.recommended_action || ","}
+          {cluster.business_case || cluster.recommended_action || "—"}
         </p>
       </BriefSection>
 
       {/* What it's costing you */}
       {cluster.projected_impact && (
-        <BriefSection label="Size maliyeti" accentColor="#f59e0b">
+        <BriefSection label={t("briefMaliyet")} accentColor="#f59e0b">
           <div className="rounded-lg border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.06)] px-3.5 py-3">
             <div className="text-[0.92rem] font-bold leading-[1.4] text-foreground">
               💰 {cluster.projected_impact}
@@ -502,43 +508,43 @@ function ExecutionBrief({
       )}
 
       {/* What to do */}
-      <BriefSection label="Ne yapmalı" accentColor="#22c55e">
+      <BriefSection label={t("briefNeyapmalı")} accentColor="#22c55e">
         <p className="text-[0.85rem] leading-[1.65] text-[var(--muted-light)]">
-          {cluster.recommended_action || ","}
+          {cluster.recommended_action || "—"}
         </p>
       </BriefSection>
 
       {/* Decision */}
-      <BriefSection label="Kararınız">
+      <BriefSection label={t("briefKarar")}>
         <div className="mb-2.5 flex gap-2">
           <button
             className={`btn-approve ${approval === "approved" ? "approved" : ""}`}
             onClick={onApprove}
           >
-            ✓ {approval === "approved" ? "Onaylandı" : "Önemli görünüyor"}
+            ✓ {approval === "approved" ? t("briefApproved") : t("briefApprove")}
           </button>
           <button
             className={`btn-reject ${approval === "rejected" ? "rejected" : ""}`}
             onClick={onReject}
           >
-            ✕ {approval === "rejected" ? "Atlandı" : "Atla"}
+            ✕ {approval === "rejected" ? t("briefRejected") : t("briefReject")}
           </button>
         </div>
         <button
           onClick={onViewFull}
           className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border bg-transparent px-3.5 py-2 text-[0.8rem] font-semibold text-primary transition-colors duration-[120ms] hover:border-[rgba(249,115,22,0.28)] hover:bg-[rgba(249,115,22,0.06)]"
         >
-          ↗ Detayları gör
+          {t("briefViewFull")}
         </button>
       </BriefSection>
 
       {/* Sent to your phone */}
-      <BriefSection label="Telefonunuza gönderildi" accentColor="#22c55e">
+      <BriefSection label={t("briefSentTo")} accentColor="#22c55e">
         {/* WhatsApp preview, the actual message your team receives */}
         <div className="mb-3 rounded-xl border border-[rgba(37,211,102,0.18)] bg-[#0c1419] p-3">
           <div className="mb-2.5 flex items-center gap-[7px]">
             <span className="text-[0.85rem]">💬</span>
-            <span className="font-['JetBrains_Mono',monospace] text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#4ade80]">WhatsApp · ekibinizin aldığı mesaj</span>
+            <span className="font-['JetBrains_Mono',monospace] text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#4ade80]">{t("briefWhatsAppLabel")}</span>
           </div>
           <div className="rounded-[4px_10px_10px_10px] bg-[#1f2c34] px-3 py-2.5">
             <div className={cn(
@@ -557,21 +563,30 @@ function ExecutionBrief({
               <div className="mb-2 text-[0.72rem] text-[#9fd9bf]">💰 {cluster.projected_impact}</div>
             )}
             <div className="border-t border-[rgba(255,255,255,0.07)] pt-[7px] text-[0.68rem] text-[#8696a0]">
-              Yanıtla <span className="font-bold text-[#22c55e]">1</span> detaylar ·{" "}
-              <span className="font-bold text-[#22c55e]">2</span> hallettim ·{" "}
-              <span className="font-bold text-[#22c55e]">3</span> geç
+              {t("briefDistributeNote").includes("WhatsApp") ? (
+                <>
+                  Yanıtla <span className="font-bold text-[#22c55e]">1</span> detaylar ·{" "}
+                  <span className="font-bold text-[#22c55e]">2</span> hallettim ·{" "}
+                  <span className="font-bold text-[#22c55e]">3</span> geç
+                </>
+              ) : (
+                <>
+                  Reply <span className="font-bold text-[#22c55e]">1</span> details ·{" "}
+                  <span className="font-bold text-[#22c55e]">2</span> on it ·{" "}
+                  <span className="font-bold text-[#22c55e]">3</span> skip
+                </>
+              )}
             </div>
           </div>
         </div>
         <p className="mb-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
-          WhatsApp, Slack ve e-posta ile otomatik iletilir, ekibiniz giriş yapmadan hareket eder.
+          {t("briefDistributeNote")}
         </p>
         <Link
           href="/alerts"
           className="inline-flex items-center gap-1.5 rounded-[7px] border bg-[rgba(255,255,255,0.02)] px-3 py-[7px] text-[0.75rem] font-semibold text-muted-foreground no-underline transition-all duration-[120ms] hover:border-[rgba(249,115,22,0.25)] hover:bg-[rgba(249,115,22,0.07)] hover:text-primary"
         >
-          <span>⚡</span>
-          <span>Slack · E-posta · WhatsApp Ayarla</span>
+          <span>{t("briefSetupChannels")}</span>
           <span className="ml-1 text-[0.62rem] opacity-50">↗</span>
         </Link>
       </BriefSection>
@@ -582,6 +597,7 @@ function ExecutionBrief({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const router = useRouter();
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [branches, setBranches] = useState<DashboardBranch[]>([]);
@@ -763,7 +779,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/seed-demo", { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setToast({ msg: body.error ?? "Demo verisi yüklenemedi.", tone: "error" });
+        setToast({ msg: body.error ?? t("demoError"), tone: "error" });
         setTimeout(() => setToast(null), 3500);
         return;
       }
@@ -776,7 +792,7 @@ export default function DashboardPage() {
       await fetchClusters(true);
       await fetchSignalCount(true);
     } catch {
-      setToast({ msg: "Demo verisi yüklenemedi.", tone: "error" });
+      setToast({ msg: t("demoError"), tone: "error" });
       setTimeout(() => setToast(null), 3500);
     } finally {
       setSeedingDemo(false);
@@ -844,7 +860,7 @@ export default function DashboardPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)]">
         <Loader2 className="h-[38px] w-[38px] animate-spin text-[#f97316]" />
-        <p className="text-[0.82rem] text-muted-foreground">Çalışma alanı yükleniyor...</p>
+        <p className="text-[0.82rem] text-muted-foreground">{t("readingSignals")}</p>
       </div>
     );
   }
@@ -885,10 +901,10 @@ export default function DashboardPage() {
         {/* Page header */}
         <div className="mb-6">
           <h1 className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-foreground">
-            Sinyaller
+            {t("tabSignals")}
           </h1>
           <p className="mt-[3px] text-[0.86rem] text-[var(--muted-light)]">
-            Müşterilerinizin söyledikleri, önce neyi düzelteceğinize göre sıralanmış.
+            {t("noSignalsHint")}
           </p>
         </div>
 
@@ -907,9 +923,9 @@ export default function DashboardPage() {
           <div className="mb-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Şubeler</h2>
+                <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">{t("branchesTitle")}</h2>
                 <p className="mt-1 text-[0.78rem] text-muted-foreground">
-                  {selectedBranch ? `${selectedBranch.name} detayını görüyorsunuz.` : "Tüm şubelerin öncelikli durumları."}
+                  {selectedBranch ? t("branchesSelectedSub", { name: selectedBranch.name }) : t("branchesAllSub")}
                 </p>
               </div>
               {selectedBranchId !== "all" && (
@@ -919,7 +935,7 @@ export default function DashboardPage() {
                   onClick={() => setSelectedBranchId("all")}
                   className="h-auto rounded-lg px-3 py-2 text-[0.78rem] font-semibold"
                 >
-                  Tüm şubeler
+                  {t("allBranchesBtn")}
                 </Button>
               )}
             </div>
@@ -975,13 +991,13 @@ export default function DashboardPage() {
           /* ── No sources connected ── */
           <div className="rounded-[14px] border bg-card px-6 py-8">
             <div className="max-w-[620px]">
-              <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz kaynak bağlanmadı.</p>
+              <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">{t("noSourceTitle")}</p>
               <p className="mt-2 text-[0.86rem] leading-[1.6] text-muted-foreground">
-                Google Reviews, Getir, Yemeksepeti ve diğer kanallardan gelen sinyaller burada analiz edilir. İlk kaynağı bağlamak için birkaç dakikanız yeterli.
+                {t("noSourceBody")}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Button asChild className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]">
-                  <Link href="/connect">Kaynak bağla →</Link>
+                  <Link href="/connect">{t("connectSourceBtn")}</Link>
                 </Button>
                 <Button
                   type="button"
@@ -990,7 +1006,7 @@ export default function DashboardPage() {
                   onClick={_loadDemoData}
                   className="h-auto rounded-lg px-4 py-2 text-[0.82rem] font-semibold tracking-[-0.01em]"
                 >
-                  {seedingDemo ? "Demo yükleniyor..." : "Demo veriyle dene"}
+                  {seedingDemo ? t("demoLoading") : t("demoBtn")}
                 </Button>
               </div>
             </div>
@@ -1000,9 +1016,11 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>
-                <h2 className="text-[1.15rem] font-bold tracking-[-0.02em] text-foreground">Dikkat gereken konular</h2>
+                <h2 className="text-[1.15rem] font-bold tracking-[-0.02em] text-foreground">{t("issuesTitle")}</h2>
                 <p className="mt-[3px] text-[0.82rem] text-muted-foreground">
-                  {selectedBranch ? `${selectedBranch.name} için` : "Müşteri kanallarınızda"} {displayClusters.length} konu bulundu
+                  {selectedBranch
+                    ? t("issuesFoundFor", { n: displayClusters.length, branch: selectedBranch.name })
+                    : t("issuesFoundAll", { n: displayClusters.length })}
                   {lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>}
                 </p>
               </div>
@@ -1011,11 +1029,11 @@ export default function DashboardPage() {
             <div className="mb-4 flex flex-wrap gap-3">
               <div className="flex flex-wrap gap-1.5 rounded-[10px] border bg-card p-1">
                 {([
-                  ["all", "Tüm öncelikler"],
-                  ["critical", "Kritik"],
-                  ["high", "Yüksek"],
-                  ["medium", "Orta"],
-                  ["low", "Düşük"],
+                  ["all", t("allPriorities")],
+                  ["critical", t("criticalLabel")],
+                  ["high", t("highLabel")],
+                  ["medium", t("mediumLabel")],
+                  ["low", t("lowFilterLabel")],
                 ] as Array<[PriorityFilter, string]>).map(([value, label]) => (
                   <button
                     key={value}
@@ -1045,7 +1063,7 @@ export default function DashboardPage() {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    {categoryLabel(value)} · {categoryFilterCounts[value]}
+                    {t(categoryI18nKey(value))} · {categoryFilterCounts[value]}
                   </button>
                 ))}
               </div>
@@ -1054,9 +1072,9 @@ export default function DashboardPage() {
             {displayClusters.length === 0 ? (
               <div className="rounded-[14px] border bg-card px-6 py-8">
                 <div className="max-w-[620px]">
-                  <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Henüz analiz sonucu yok.</p>
+                  <p className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">{t("noResultsTitle")}</p>
                   <p className="mt-2 text-[0.86rem] leading-[1.6] text-muted-foreground">
-                    Bağlı kaynaklardan sinyal geldiğinde Observer otomatik analiz eder.
+                    {t("noResultsBody")}
                   </p>
                 </div>
               </div>
