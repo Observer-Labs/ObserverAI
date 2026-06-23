@@ -81,7 +81,7 @@ async function _fetchPolarPrices(): Promise<AllPlanPrices> {
 }
 
 // Cache across requests for 1 hour — prices change rarely
-export const fetchPolarPrices = unstable_cache(_fetchPolarPrices, ["polar-product-prices"], { revalidate: 3600 });
+export const fetchPolarPrices = unstable_cache(_fetchPolarPrices, ["polar-product-prices"], { revalidate: 86400 });
 
 export function formatPrice(cents: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", {
