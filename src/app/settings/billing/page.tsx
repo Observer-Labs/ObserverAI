@@ -67,7 +67,7 @@ export default function BillingPage() {
       description: "1 lokasyon · Tek kafe veya mağaza",
       features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
       cta: "Choose Starter",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=starter",
     },
     {
       name: "Growth",
@@ -75,7 +75,7 @@ export default function BillingPage() {
       description: "2-5 lokasyon · Küçük zincirler",
       features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
       cta: "Choose Growth",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=growth",
     },
     {
       name: "Scale",
@@ -83,7 +83,7 @@ export default function BillingPage() {
       description: "6-20 lokasyon · Bölgesel markalar",
       features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
       cta: "Choose Scale",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=scale",
     },
     {
       name: "Enterprise",
@@ -130,7 +130,7 @@ export default function BillingPage() {
               <div className="text-[0.8rem] text-muted-foreground">Analysis runs are paused. Choose a plan to continue.</div>
             </div>
             <Button asChild className="h-auto whitespace-nowrap px-4 py-[7px] text-[0.8rem]">
-              <a href="/api/billing/checkout">Upgrade →</a>
+              <a href="/api/billing/checkout?plan=growth">Upgrade →</a>
             </Button>
           </div>
         )}

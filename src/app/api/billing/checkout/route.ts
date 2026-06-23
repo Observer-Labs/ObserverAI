@@ -46,11 +46,16 @@ export async function GET(req: NextRequest) {
     // Non-fatal, proceed without email
   }
 
+  // Resolve product ID: plan-specific env var wins, fallback to POLAR_PRODUCT_ID
+  const planParam = req.nextUrl.searchParams.get("plan") ?? "";
+  const planProductEnvKey = `POLAR_PRODUCT_ID_${planParam.toUpperCase()}` as keyof typeof process.env;
+  const productId = (planParam && process.env[planProductEnvKey]) || polarEnv.POLAR_PRODUCT_ID;
+
   // Inject server-side params into the request URL so the SDK handler
   // picks them up (it reads ?products=, ?metadata=, ?customerEmail=)
   const url = new URL(req.url);
-  url.searchParams.set("products", polarEnv.POLAR_PRODUCT_ID);
-  url.searchParams.set("metadata", JSON.stringify({ workspace_id: wid }));
+  url.searchParams.set("products", productId);
+  url.searchParams.set("metadata", JSON.stringify({ workspace_id: wid, plan: planParam || undefined }));
   if (email) url.searchParams.set("customerEmail", email);
 
   const syntheticReq = new NextRequest(url, { headers: req.headers });

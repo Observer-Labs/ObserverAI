@@ -203,7 +203,7 @@ export default function SettingsPage() {
       description: "1 lokasyon · Tek kafe veya mağaza",
       features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
       cta: "Choose Starter",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=starter",
     },
     {
       name: "Growth",
@@ -211,7 +211,7 @@ export default function SettingsPage() {
       description: "2-5 lokasyon · Küçük zincirler",
       features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
       cta: "Choose Growth",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=growth",
     },
     {
       name: "Scale",
@@ -219,7 +219,7 @@ export default function SettingsPage() {
       description: "6-20 lokasyon · Bölgesel markalar",
       features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
       cta: "Choose Scale",
-      href: "/api/billing/checkout",
+      href: "/api/billing/checkout?plan=scale",
     },
     {
       name: "Enterprise",
@@ -355,7 +355,7 @@ export default function SettingsPage() {
                       <div className="text-[0.78rem] text-muted-foreground">Choose a plan to continue running analyses.</div>
                     </div>
                     <Button asChild className="h-auto px-3.5 py-[7px] text-[0.8rem] whitespace-nowrap">
-                      <a href="/api/billing/checkout">Upgrade →</a>
+                      <a href="/api/billing/checkout?plan=growth">Upgrade →</a>
                     </Button>
                   </div>
                 )}
