@@ -1,9 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type Tab = "overview" | "customers" | "health";
+type Tab = "overview" | "customers" | "health" | "admins";
+
+type AdminEntry = {
+  id: string;
+  email: string;
+  added_by: string | null;
+  created_at: string;
+};
 
 interface AdminStats {
   overview: {
@@ -55,6 +62,12 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
+  const [admins, setAdmins] = useState<AdminEntry[]>([]);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminAdding, setAdminAdding] = useState(false);
+  const [adminError, setAdminError] = useState("");
+  const [selfEmail, setSelfEmail] = useState("");
+  const adminInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -66,6 +79,14 @@ export default function AdminPage() {
       })
       .catch(() => setForbidden(true))
       .finally(() => setLoading(false));
+
+    fetch("/api/admin/admins")
+      .then(async (r) => { if (r.ok) { const d = await r.json(); setAdmins(d.admins ?? []); } })
+      .catch(() => {});
+
+    fetch("/api/auth/session")
+      .then(async (r) => { if (r.ok) { const d = await r.json(); setSelfEmail(d?.user?.email ?? ""); } })
+      .catch(() => {});
   }, [router]);
 
   if (loading) {
@@ -95,7 +116,38 @@ export default function AdminPage() {
     { key: "overview", label: "Overview" },
     { key: "customers", label: `Customers (${stats.overview.workspaceCount})` },
     { key: "health", label: "Health" },
+    { key: "admins", label: `Admins (${admins.length})` },
   ];
+
+  async function addAdmin() {
+    if (!adminEmail.trim()) return;
+    setAdminAdding(true);
+    setAdminError("");
+    try {
+      const r = await fetch("/api/admin/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: adminEmail.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setAdminError(d.error ?? "Failed"); return; }
+      const r2 = await fetch("/api/admin/admins");
+      if (r2.ok) { const d2 = await r2.json(); setAdmins(d2.admins ?? []); }
+      setAdminEmail("");
+      adminInputRef.current?.focus();
+    } finally {
+      setAdminAdding(false);
+    }
+  }
+
+  async function removeAdmin(email: string) {
+    const r = await fetch("/api/admin/admins", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (r.ok) setAdmins((prev) => prev.filter((a) => a.email !== email));
+  }
 
   const totalTokens = stats.tokenUsage30d.inputTokens + stats.tokenUsage30d.outputTokens;
 
@@ -215,6 +267,78 @@ export default function AdminPage() {
               <div className="text-muted-foreground">{fmtDate(ws.created_at)}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Admins tab ── */}
+      {tab === "admins" && (
+        <div className="space-y-4">
+          {/* Add admin */}
+          <div className="rounded-[12px] border bg-card p-5">
+            <h2 className="mb-4 text-[0.82rem] font-bold uppercase tracking-[0.06em] text-muted-foreground">Add admin</h2>
+            <div className="flex gap-2">
+              <input
+                ref={adminInputRef}
+                type="email"
+                placeholder="email@example.com"
+                value={adminEmail}
+                onChange={(e) => { setAdminEmail(e.target.value); setAdminError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && addAdmin()}
+                className="h-9 flex-1 rounded-lg border bg-background px-3 text-[0.84rem] text-foreground outline-none focus:ring-1 focus:ring-foreground"
+              />
+              <button
+                onClick={addAdmin}
+                disabled={adminAdding || !adminEmail.trim()}
+                className="h-9 rounded-lg bg-foreground px-4 text-[0.82rem] font-semibold text-background disabled:opacity-40"
+              >
+                {adminAdding ? "Adding…" : "Add"}
+              </button>
+            </div>
+            {adminError && (
+              <p className="mt-2 text-[0.76rem] text-[#f87171]">{adminError}</p>
+            )}
+          </div>
+
+          {/* Admin list */}
+          <div className="rounded-[12px] border bg-card overflow-hidden">
+            <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-0 border-b bg-muted/40 px-4 py-2.5 text-[0.68rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              <span>Email</span>
+              <span>Added by</span>
+              <span>Date</span>
+              <span />
+            </div>
+            {admins.length === 0 && (
+              <div className="px-4 py-6 text-center text-[0.82rem] text-muted-foreground">No admins yet. Run the seed SQL first.</div>
+            )}
+            {admins.map((admin, i) => {
+              const isSelf = admin.email === selfEmail.toLowerCase();
+              return (
+                <div
+                  key={admin.id}
+                  className={cn(
+                    "grid grid-cols-[2fr_1fr_1fr_auto] items-center gap-0 px-4 py-3 text-[0.82rem]",
+                    i % 2 === 0 ? "bg-card" : "bg-muted/20",
+                  )}
+                >
+                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                    {admin.email}
+                    {isSelf && (
+                      <span className="rounded px-1.5 py-0.5 text-[0.6rem] font-bold uppercase bg-[rgba(249,115,22,0.12)] text-[#f97316]">you</span>
+                    )}
+                  </div>
+                  <div className="text-muted-foreground truncate pr-2">{admin.added_by ?? <span className="italic">seed</span>}</div>
+                  <div className="text-muted-foreground">{fmtDate(admin.created_at)}</div>
+                  <button
+                    onClick={() => removeAdmin(admin.email)}
+                    disabled={isSelf}
+                    className="ml-3 rounded px-2 py-1 text-[0.72rem] font-semibold text-[#f87171] hover:bg-[rgba(239,68,68,0.08)] disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

@@ -17,20 +17,22 @@ export async function getAdminEmail(): Promise<string | null> {
   }
 }
 
-export function isAdminEmail(email: string | null): boolean {
+export async function isAdmin(): Promise<boolean> {
+  const email = await getAdminEmail();
   if (!email) return false;
-  const raw = process.env.OBSERVER_ADMIN_EMAILS ?? "";
-  if (!raw) return false;
-  const list = raw
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return list.includes(email.toLowerCase());
+  try {
+    const { data } = await getSupabaseAdmin()
+      .from("admins")
+      .select("email")
+      .eq("email", email.toLowerCase())
+      .maybeSingle();
+    return !!data;
+  } catch {
+    return false;
+  }
 }
 
 export async function requireAdmin(): Promise<void> {
-  const email = await getAdminEmail();
-  if (!isAdminEmail(email)) {
-    throw new Error("Forbidden");
-  }
+  const ok = await isAdmin();
+  if (!ok) throw new Error("Forbidden");
 }
