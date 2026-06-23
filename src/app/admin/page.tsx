@@ -23,6 +23,7 @@ interface AdminStats {
   customers: Array<{
     id: string;
     name: string;
+    email?: string;
     plan: string;
     analysis_count: number;
     created_at: string;
@@ -152,7 +153,7 @@ export default function AdminPage() {
   const totalTokens = stats.tokenUsage30d.inputTokens + stats.tokenUsage30d.outputTokens;
 
   return (
-    <div className="mx-auto max-w-[1100px] px-6 py-8">
+    <div lang="en" className="mx-auto max-w-[1100px] px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-[1.4rem] font-extrabold tracking-[-0.025em] text-foreground">Observer Admin</h1>
@@ -232,8 +233,9 @@ export default function AdminPage() {
       {/* ── Customers tab ── */}
       {tab === "customers" && (
         <div className="rounded-[12px] border bg-card overflow-hidden">
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-0 border-b bg-muted/40 px-4 py-2.5 text-[0.68rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+          <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr] gap-0 border-b bg-muted/40 px-4 py-2.5 text-[0.68rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
             <span>Workspace</span>
+            <span>Email</span>
             <span>Plan</span>
             <span>Analyses</span>
             <span>Polar</span>
@@ -246,11 +248,12 @@ export default function AdminPage() {
             <div
               key={ws.id}
               className={cn(
-                "grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-0 px-4 py-3 text-[0.82rem]",
+                "grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr] gap-0 px-4 py-3 text-[0.82rem]",
                 i % 2 === 0 ? "bg-card" : "bg-muted/20",
               )}
             >
               <div className="font-semibold text-foreground truncate pr-3">{ws.name || "—"}</div>
+              <div className="text-muted-foreground truncate pr-3">{ws.email ?? "—"}</div>
               <div>
                 <span className={cn(
                   "rounded px-2 py-0.5 text-[0.65rem] font-bold uppercase",

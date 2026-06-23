@@ -14,6 +14,7 @@ interface SidebarProps {
   plan?: "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro" | "past_due" | "expired" | "no_plan";
   runsLeft?: number;
   trialDaysLeft?: number;
+  isAdmin?: boolean;
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -57,6 +58,14 @@ function HistoryIcon() {
     </svg>
   );
 }
+function AdminIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
+      <path d="M6.5 1L11 3.5V7C11 9.5 9 11.5 6.5 12C4 11.5 2 9.5 2 7V3.5L6.5 1Z" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinejoin="round" />
+      <path d="M4.5 6.5L6 8L8.5 5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function SignOutIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
@@ -85,6 +94,7 @@ export default function Sidebar({
   userInitials = "?",
   workspaceName,
   plan,
+  isAdmin = false,
 }: SidebarProps) {
   const t = useTranslations('nav');
   const tSidebar = useTranslations('sidebar');
@@ -100,6 +110,7 @@ export default function Sidebar({
     { href: "/sources", label: t('sources'), icon: <SourcesIcon />, badge: sourceCount > 0 ? sourceCount : undefined },
     { href: "/alerts", label: t('alerts'), icon: <AlertsIcon />, badge: undefined },
     { href: "/history", label: t('history'), icon: <HistoryIcon />, badge: undefined },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: <AdminIcon />, badge: undefined }] : []),
   ];
 
   const isActive = (href: string) => {

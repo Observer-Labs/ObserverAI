@@ -60,6 +60,7 @@ export default function AppSidebarShell() {
   const visible = shouldShowSidebar(pathname);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [userInitials, setUserInitials] = useState("?");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -67,9 +68,10 @@ export default function AppSidebarShell() {
     let cancelled = false;
     async function loadShellData() {
       try {
-        const [sessionRes, workspaceRes] = await Promise.all([
+        const [sessionRes, workspaceRes, adminRes] = await Promise.all([
           fetch("/api/auth/session"),
           fetch("/api/workspace"),
+          fetch("/api/admin/admins"),
         ]);
 
         if (cancelled) return;
@@ -84,6 +86,8 @@ export default function AppSidebarShell() {
           const data = await workspaceRes.json().catch(() => null);
           setWorkspace(data?.workspace ?? null);
         }
+
+        setIsAdmin(adminRes.ok);
       } catch {
         if (!cancelled) setWorkspace(null);
       }
@@ -114,6 +118,7 @@ export default function AppSidebarShell() {
       plan={planStatus?.plan}
       runsLeft={planStatus?.runsLeft}
       trialDaysLeft={planStatus?.daysLeft}
+      isAdmin={isAdmin}
     />
   );
 }
