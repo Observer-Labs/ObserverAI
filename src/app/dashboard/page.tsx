@@ -696,15 +696,17 @@ export default function DashboardPage() {
   }, [authChecked, fetchClusters, fetchSignalCount]);
 
   // Auto-analyze: new signals turn into insights on their own, no manual "Run Analysis".
+  // Guard: skip when showingDemo — signalCount arrives before clusters in demo flow and
+  // would mistakenly trigger a paid AI analysis pass on pre-computed demo data.
   const autoRanRef = useRef(false);
   useEffect(() => {
-    if (!authChecked || loadingClusters || autoRanRef.current) return;
+    if (!authChecked || loadingClusters || autoRanRef.current || showingDemo) return;
     if (clusters.length === 0 && signalCount > 0 && !analyzing) {
       autoRanRef.current = true;
       runAnalysis();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authChecked, loadingClusters, clusters.length, signalCount, analyzing]);
+  }, [authChecked, loadingClusters, clusters.length, signalCount, analyzing, showingDemo]);
 
   const runAnalysis = async (includeDemo = showingDemo) => {
     setAnalyzing(true);
@@ -755,16 +757,23 @@ export default function DashboardPage() {
     setSeedingDemo(true);
     try {
       const res = await fetch("/api/seed-demo", { method: "POST" });
-      if (res.ok) {
-        setShowingDemo(true);
-        // Reload branches to include the newly created demo branches
-        const branchRes = await fetch("/api/branches");
-        const branchData = await branchRes.json().catch(() => ({}));
-        if (Array.isArray(branchData.branches)) setBranches(branchData.branches);
-        // Fetch pre-computed demo clusters directly — no AI analysis needed
-        await fetchClusters(true);
-        await fetchSignalCount(true);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setToast({ msg: body.error ?? "Demo verisi yüklenemedi.", tone: "error" });
+        setTimeout(() => setToast(null), 3500);
+        return;
       }
+      setShowingDemo(true);
+      // Reload branches to include the newly created demo branches
+      const branchRes = await fetch("/api/branches");
+      const branchData = await branchRes.json().catch(() => ({}));
+      if (Array.isArray(branchData.branches)) setBranches(branchData.branches);
+      // Fetch pre-computed demo clusters directly — no AI analysis needed
+      await fetchClusters(true);
+      await fetchSignalCount(true);
+    } catch {
+      setToast({ msg: "Demo verisi yüklenemedi.", tone: "error" });
+      setTimeout(() => setToast(null), 3500);
     } finally {
       setSeedingDemo(false);
     }
