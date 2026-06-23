@@ -46,11 +46,11 @@ function _extractTags(cluster: Cluster): string[] {
   return [...new Set(words)];
 }
 
-function urgencyLabel(s: number): string {
-  if (s >= 80) return "Acil";
-  if (s >= 60) return "Yakında";
-  if (s >= 35) return "Fırsatta";
-  return "Düşük öncelik";
+function urgencyKey(s: number): "urgentLabel" | "soonLabel" | "whenLabel" | "lowLabel" {
+  if (s >= 80) return "urgentLabel";
+  if (s >= 60) return "soonLabel";
+  if (s >= 35) return "whenLabel";
+  return "lowLabel";
 }
 
 function timeSince(d: Date): string {
@@ -379,7 +379,7 @@ function SignalCard({
 
       {/* Meta row, plain language */}
       <div className="flex items-center gap-2.5">
-        <span className={`badge badge-${sev}`}>{urgencyLabel(score)}</span>
+        <span className={`badge badge-${sev}`}>{t(urgencyKey(score))}</span>
         <span className="text-[0.78rem] text-[var(--muted-light)]">
           <span className="font-semibold text-foreground">{cluster.evidence_count}</span> {t("signalCountSuffix")}
         </span>
@@ -478,7 +478,7 @@ function ExecutionBrief({
       {/* Title block, plain header */}
       <div className="px-[18px] pt-[18px] pb-1">
         <span className={`badge badge-${sev} mb-3 inline-block`}>
-          {urgencyLabel(cluster.severity)}
+          {t(urgencyKey(cluster.severity))}
         </span>
         <h4 className="mb-2 text-[1.05rem] font-bold leading-[1.4] tracking-[-0.015em] text-foreground">
           {cluster.title}
@@ -551,7 +551,7 @@ function ExecutionBrief({
               "mb-[5px] text-[0.74rem] font-extrabold",
               sev === "critical" ? "text-[#f87171]" : sev === "high" ? "text-[#fb923c]" : "text-[#fbbf24]",
             )}>
-              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {urgencyLabel(cluster.severity)}
+              {sev === "critical" ? "🔴" : sev === "high" ? "🟠" : "🟡"} {t(urgencyKey(cluster.severity))}
             </div>
             <div className={cn(
               "text-[0.78rem] font-semibold leading-[1.5] text-[#e9edef]",
