@@ -26,6 +26,7 @@ type Labels = {
   perMonthAnnual: string;
   yearlyOnly: string;
   mostPopular: string;
+  perYear: string;
 };
 
 function fmt(cents: number): string {
@@ -70,19 +71,28 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
           const planPrices = prices[plan.id as keyof AllPlanPrices];
           const isYearlyOnly = plan.id === "starter";
           const isEnterprise = plan.id === "enterprise";
-          const rawPrice = isEnterprise
-            ? null
-            : period === "yearly"
-              ? (planPrices?.yearly ?? planPrices?.monthly)
-              : (planPrices?.monthly ?? planPrices?.yearly);
-          const activePrice = isEnterprise ? "Özel" : (rawPrice !== undefined && rawPrice !== null ? fmt(rawPrice) : "—");
-          const priceSuffix = isEnterprise
-            ? ""
-            : isYearlyOnly
-              ? labels.perMonthAnnual
-              : period === "yearly"
-                ? labels.perMonthAnnual
-                : labels.perMonth;
+
+          // Always show monthly-equivalent price; for yearly products divide total by 12
+          let displayCents: number | null = null;
+          let annualTotal: number | null = null;
+          if (!isEnterprise) {
+            if (isYearlyOnly) {
+              const y = planPrices?.yearly;
+              if (y !== undefined) { displayCents = Math.round(y / 12); annualTotal = y; }
+            } else if (period === "yearly") {
+              const y = planPrices?.yearly;
+              if (y !== undefined) { displayCents = Math.round(y / 12); annualTotal = y; }
+              else { displayCents = planPrices?.monthly ?? null; }
+            } else {
+              displayCents = planPrices?.monthly ?? null;
+            }
+          }
+
+          const activePrice = isEnterprise ? "Özel" : (displayCents !== null ? fmt(displayCents) : "—");
+          // Badge only for yearly-only plans when monthly tab is selected
+          const showYearlyOnlyBadge = isYearlyOnly && period === "monthly";
+          // Annual total subtext shown when billing is annual
+          const yearlySubText = annualTotal !== null ? `${fmt(annualTotal)} ${labels.perYear}` : null;
 
           return (
             <Card
@@ -98,7 +108,7 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
                     {labels.mostPopular}
                   </Badge>
                 )}
-                {isYearlyOnly && (
+                {showYearlyOnlyBadge && (
                   <Badge className="absolute right-[18px] top-[18px] rounded-full border border-[rgba(110,168,255,0.3)] bg-[rgba(110,168,255,0.1)] px-2.5 py-[3px] text-[0.68rem] font-bold text-[#6ea8ff]">
                     {labels.yearlyOnly}
                   </Badge>
@@ -114,8 +124,13 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
                   {isEnterprise && (
                     <div className={cn("mt-1.5 text-[0.85rem]", plan.featured ? "text-white/70" : "text-muted-foreground")}>~$500+{labels.perMonth}</div>
                   )}
-                  {priceSuffix && (
-                    <div className={cn("mt-1.5 text-[0.85rem]", plan.featured ? "text-white/70" : "text-muted-foreground")}>{priceSuffix}</div>
+                  {!isEnterprise && displayCents !== null && (
+                    <div className={cn("mt-1 text-[0.85rem]", plan.featured ? "text-white/70" : "text-muted-foreground")}>
+                      {labels.perMonth}
+                      {yearlySubText && (
+                        <span className="ml-2 opacity-60">· {yearlySubText}</span>
+                      )}
+                    </div>
                   )}
                   <p className={cn("mt-4 text-[0.86rem] leading-[1.55]", plan.featured ? "text-white/[0.76]" : "text-muted-foreground")}>
                     {plan.description}

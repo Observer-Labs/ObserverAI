@@ -118,15 +118,26 @@ export default function BillingPage() {
 
   function getActivePriceStr(option: BillingPlanConfig): string {
     const p = polarPrices[option.id];
-    const cents = option.yearlyOnly
-      ? p.yearly
-      : period === "yearly" ? p.yearly : (p.monthly ?? p.yearly);
+    let cents: number | undefined;
+    if (option.yearlyOnly) {
+      cents = p.yearly !== undefined ? Math.round(p.yearly / 12) : undefined;
+    } else if (period === "yearly") {
+      cents = p.yearly !== undefined ? Math.round(p.yearly / 12) : p.monthly;
+    } else {
+      cents = p.monthly ?? p.yearly;
+    }
     return cents !== undefined ? formatPrice(cents) : "—";
   }
 
-  function getPriceSuffix(option: BillingPlanConfig): string {
-    if (option.yearlyOnly) return "/ ay · yıllık";
-    return period === "yearly" ? "/ ay · yıllık" : "/ ay";
+  function getAnnualSub(option: BillingPlanConfig): string | null {
+    const p = polarPrices[option.id];
+    if (option.yearlyOnly && p.yearly !== undefined) return `${formatPrice(p.yearly)} / yıl`;
+    if (!option.yearlyOnly && period === "yearly" && p.yearly !== undefined) return `${formatPrice(p.yearly)} / yıl`;
+    return null;
+  }
+
+  function getPriceSuffix(_option: BillingPlanConfig): string {
+    return "/ ay";
   }
 
   return (
@@ -288,20 +299,24 @@ export default function BillingPage() {
               {BILLING_PLANS.map((option) => {
                 const activePrice = getActivePriceStr(option);
                 const priceSuffix = getPriceSuffix(option);
+                const annualSub = getAnnualSub(option);
                 const href = getPlanHref(option.id, option.yearlyOnly, period);
 
                 return (
                   <div key={option.id} className="rounded-xl border bg-card p-4">
                     <div className="mb-1 flex items-start justify-between gap-1">
                       <div className="text-[0.95rem] font-extrabold text-foreground">{option.name}</div>
-                      {option.yearlyOnly && (
+                      {option.yearlyOnly && period === "monthly" && (
                         <span className="mt-[3px] shrink-0 rounded-full border border-[rgba(110,168,255,0.3)] bg-[rgba(110,168,255,0.1)] px-[6px] py-[1px] text-[0.6rem] font-bold text-[#6ea8ff]">
                           yıllık
                         </span>
                       )}
                     </div>
                     <div className="text-[1.6rem] font-extrabold tracking-[-0.03em] text-foreground">{activePrice}</div>
-                    <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">{priceSuffix}</div>
+                    <div className="-mt-0.5 mb-2.5 text-[0.72rem] text-muted-foreground">
+                      {priceSuffix}
+                      {annualSub && <span className="ml-1.5 opacity-60">· {annualSub}</span>}
+                    </div>
                     <div className="mb-3 text-[0.78rem] leading-[1.45] text-muted-foreground">{option.description}</div>
                     <ul className="m-0 mb-3.5 flex list-none flex-col gap-[7px] p-0">
                       {option.features.map((feature) => (

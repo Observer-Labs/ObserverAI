@@ -339,7 +339,8 @@
     "yearly": "Yearly",
     "save20": "-20%",
     "perMonthAnnual": "/ mo · annually",
-    "yearlyOnly": "Yearly only"
+    "yearlyOnly": "Yearly only",
+    "perYear": "/ year"
   },
   "sources": {
     "title": "Sources",

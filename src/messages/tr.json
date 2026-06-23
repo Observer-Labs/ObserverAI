@@ -339,7 +339,8 @@
     "yearly": "Yıllık",
     "save20": "-%20",
     "perMonthAnnual": "/ ay · yıllık",
-    "yearlyOnly": "Yalnızca yıllık"
+    "yearlyOnly": "Yalnızca yıllık",
+    "perYear": "/ yıl"
   },
   "sources": {
     "title": "Kaynaklar",

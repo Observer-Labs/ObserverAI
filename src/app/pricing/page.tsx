@@ -66,6 +66,7 @@ export default async function PricingPage() {
     perMonthAnnual: t("perMonthAnnual"),
     yearlyOnly: t("yearlyOnly"),
     mostPopular: t("mostPopular"),
+    perYear: t("perYear"),
   };
 
   return (
