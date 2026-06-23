@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     source_breakdown: r.source_breakdown,
     business_case: r.business_case,
     recommended_action: r.recommended_action,
-    category: r.category,
+    ...(r.category !== undefined ? { category: r.category } : {}),
     customer_quote: r.customer_quote,
     projected_impact: r.projected_impact,
     status: "active" as const,

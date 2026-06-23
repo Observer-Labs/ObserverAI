@@ -181,7 +181,14 @@ export async function POST() {
     },
   ];
 
-  const { error: clusterErr } = await supabase.from("clusters").insert(clusters);
+  // Try full insert first; if production DB is missing optional new columns
+  // (candidate_key / category — migrations 011 and 014), retry without them
+  // so the demo button never breaks on a partially-migrated database.
+  let { error: clusterErr } = await supabase.from("clusters").insert(clusters);
+  if (clusterErr && (clusterErr.message.includes("candidate_key") || clusterErr.message.includes("category"))) {
+    const legacyClusters = clusters.map(({ candidate_key: _ck, category: _cat, ...rest }) => rest);
+    ({ error: clusterErr } = await supabase.from("clusters").insert(legacyClusters));
+  }
   if (clusterErr) return NextResponse.json({ error: clusterErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true, branches: 2, signals: signals.length, clusters: clusters.length });
