@@ -69,27 +69,27 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
       <div className="mx-auto grid max-w-[1120px] grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5 px-6 pb-24">
         {plans.map((plan) => {
           const planPrices = prices[plan.id as keyof AllPlanPrices];
-          const isYearlyOnly = plan.id === "starter";
           const isEnterprise = plan.id === "enterprise";
+          // Derive from API: yearly-only if no monthly price exists
+          const isYearlyOnly = !isEnterprise && !planPrices?.monthly && !!planPrices?.yearly;
 
-          // Always show monthly-equivalent price; for yearly products divide total by 12
           let displayCents: number | null = null;
           let annualTotal: number | null = null;
           if (!isEnterprise) {
-            if (isYearlyOnly) {
-              const y = planPrices?.yearly;
-              if (y !== undefined) { displayCents = Math.round(y / 12); annualTotal = y; }
-            } else if (period === "yearly") {
-              const y = planPrices?.yearly;
-              if (y !== undefined) { displayCents = Math.round(y / 12); annualTotal = y; }
-              else { displayCents = planPrices?.monthly ?? null; }
-            } else {
-              displayCents = planPrices?.monthly ?? null;
+            if (period === "yearly" && planPrices?.yearly !== undefined) {
+              displayCents = Math.round(planPrices.yearly / 12);
+              annualTotal = planPrices.yearly;
+            } else if (planPrices?.monthly !== undefined) {
+              displayCents = planPrices.monthly;
+            } else if (planPrices?.yearly !== undefined) {
+              // no monthly option → yearly equivalent in monthly mode too
+              displayCents = Math.round(planPrices.yearly / 12);
+              annualTotal = planPrices.yearly;
             }
           }
 
           const activePrice = isEnterprise ? "Özel" : (displayCents !== null ? fmt(displayCents) : "—");
-          // Badge only for yearly-only plans when monthly tab is selected
+          // Badge only when plan has no monthly option and monthly tab is selected
           const showYearlyOnlyBadge = isYearlyOnly && period === "monthly";
           // Annual total subtext shown when billing is annual
           const yearlySubText = annualTotal !== null ? `${fmt(annualTotal)} ${labels.perYear}` : null;

@@ -16,9 +16,9 @@ export type AllPlanPrices = {
 // Yearly values are ANNUAL TOTALS (matching what Polar returns) so
 // the UI can divide by 12 to show the monthly equivalent consistently.
 export const FALLBACK_PRICES: AllPlanPrices = {
-  starter: { yearly: 75900 },             // $759/yr → $63/mo
-  growth: { monthly: 14900, yearly: 142800 },  // $149/mo · $1,428/yr → $119/mo
-  scale:  { monthly: 29900, yearly: 286800 },  // $299/mo · $2,868/yr → $239/mo
+  starter: { monthly: 7900, yearly: 75900 },   // $79/mo · $759/yr → $63/mo equivalent
+  growth:  { monthly: 14900, yearly: 143000 },  // $149/mo · $1,430/yr → $119/mo
+  scale:   { monthly: 29900, yearly: 287000 },  // $299/mo · $2,870/yr → $239/mo
 };
 
 const PLAN_ENV_KEYS = {

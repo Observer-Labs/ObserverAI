@@ -36,7 +36,6 @@ function planLabel(plan?: string): string {
 type BillingPlanConfig = {
   id: "starter" | "growth" | "scale";
   name: string;
-  yearlyOnly: boolean;
   description: string;
   features: string[];
   cta: string;
@@ -46,7 +45,6 @@ const BILLING_PLANS: BillingPlanConfig[] = [
   {
     id: "starter",
     name: "Starter",
-    yearlyOnly: true,
     description: "1 lokasyon · Tek kafe veya mağaza",
     features: ["1 lokasyon", "Temel kaynak takibi", "E-posta uyarıları"],
     cta: "Choose Starter",
@@ -54,7 +52,6 @@ const BILLING_PLANS: BillingPlanConfig[] = [
   {
     id: "growth",
     name: "Growth",
-    yearlyOnly: false,
     description: "2-5 lokasyon · Küçük zincirler",
     features: ["2-5 lokasyon", "Çok lokasyonlu özet görünüm", "Öncelikli aksiyon listesi"],
     cta: "Choose Growth",
@@ -62,15 +59,14 @@ const BILLING_PLANS: BillingPlanConfig[] = [
   {
     id: "scale",
     name: "Scale",
-    yearlyOnly: false,
     description: "6-20 lokasyon · Bölgesel markalar",
     features: ["6-20 lokasyon", "Tüm aktif kaynaklar", "Bölgesel performans takibi"],
     cta: "Choose Scale",
   },
 ];
 
-function getPlanHref(id: string, yearlyOnly: boolean, period: "monthly" | "yearly"): string {
-  return `/api/billing/checkout?plan=${id}&period=${yearlyOnly ? "yearly" : period}`;
+function getPlanHref(id: string, hasMonthly: boolean, period: "monthly" | "yearly"): string {
+  return `/api/billing/checkout?plan=${id}&period=${!hasMonthly ? "yearly" : period}`;
 }
 
 export default function BillingPage() {
@@ -119,20 +115,21 @@ export default function BillingPage() {
   function getActivePriceStr(option: BillingPlanConfig): string {
     const p = polarPrices[option.id];
     let cents: number | undefined;
-    if (option.yearlyOnly) {
-      cents = p.yearly !== undefined ? Math.round(p.yearly / 12) : undefined;
-    } else if (period === "yearly") {
-      cents = p.yearly !== undefined ? Math.round(p.yearly / 12) : p.monthly;
-    } else {
-      cents = p.monthly ?? p.yearly;
+    if (period === "yearly" && p.yearly !== undefined) {
+      cents = Math.round(p.yearly / 12);
+    } else if (p.monthly !== undefined) {
+      cents = p.monthly;
+    } else if (p.yearly !== undefined) {
+      cents = Math.round(p.yearly / 12);
     }
     return cents !== undefined ? formatPrice(cents) : "—";
   }
 
   function getAnnualSub(option: BillingPlanConfig): string | null {
     const p = polarPrices[option.id];
-    if (option.yearlyOnly && p.yearly !== undefined) return `${formatPrice(p.yearly)} / yıl`;
-    if (!option.yearlyOnly && period === "yearly" && p.yearly !== undefined) return `${formatPrice(p.yearly)} / yıl`;
+    if ((period === "yearly" || p.monthly === undefined) && p.yearly !== undefined) {
+      return `${formatPrice(p.yearly)} / yıl`;
+    }
     return null;
   }
 
@@ -297,16 +294,18 @@ export default function BillingPage() {
             <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
               {/* Polar-priced plans */}
               {BILLING_PLANS.map((option) => {
+                const p = polarPrices[option.id];
+                const hasMonthly = p.monthly !== undefined;
                 const activePrice = getActivePriceStr(option);
                 const priceSuffix = getPriceSuffix(option);
                 const annualSub = getAnnualSub(option);
-                const href = getPlanHref(option.id, option.yearlyOnly, period);
+                const href = getPlanHref(option.id, hasMonthly, period);
 
                 return (
                   <div key={option.id} className="rounded-xl border bg-card p-4">
                     <div className="mb-1 flex items-start justify-between gap-1">
                       <div className="text-[0.95rem] font-extrabold text-foreground">{option.name}</div>
-                      {option.yearlyOnly && period === "monthly" && (
+                      {!hasMonthly && period === "monthly" && (
                         <span className="mt-[3px] shrink-0 rounded-full border border-[rgba(110,168,255,0.3)] bg-[rgba(110,168,255,0.1)] px-[6px] py-[1px] text-[0.6rem] font-bold text-[#6ea8ff]">
                           yıllık
                         </span>
