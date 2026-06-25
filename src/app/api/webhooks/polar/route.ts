@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { Webhooks } from "@polar-sh/nextjs";
 import { updateWorkspaceBilling, getWorkspaceIdByEmail } from "@/lib/supabase";
+import { PLAN_BRANCH_LIMITS, resolvePlanFromProductId } from "@/lib/polar-plan";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -30,8 +31,10 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_subscription_id: data.id,
       polar_customer_id: data.customerId,
       polar_status: "active",
@@ -46,8 +49,10 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_status: "active",
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
@@ -101,8 +106,10 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_status: "active",
     });
   },
