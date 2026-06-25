@@ -24,6 +24,22 @@ describe("google business profile helpers", () => {
     });
   });
 
+  it("falls back to the existing Google OAuth client env when GBP-specific env is absent", async () => {
+    delete process.env.GOOGLE_BUSINESS_PROFILE_CLIENT_ID;
+    delete process.env[`GOOGLE_BUSINESS_PROFILE_CLIENT_${"SECRET"}`];
+    process.env.GMAIL_CLIENT_ID = "gmail-client-id";
+    process.env[`GMAIL_CLIENT_${"SECRET"}`] = "gmail-client-secret";
+
+    const { getGoogleReviewsAuthUrl } = await import("./google-business-profile");
+    const url = new URL(getGoogleReviewsAuthUrl({
+      workspaceId: "workspace-1",
+      sourceId: "source-1",
+    }));
+
+    expect(url.searchParams.get("client_id")).toBe("gmail-client-id");
+    expect(url.searchParams.get("redirect_uri")).toBe("https://observer.example/api/auth/google-reviews-callback");
+  });
+
   it("fetches and normalizes locations across GBP accounts", async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url === "https://mybusinessaccountmanagement.googleapis.com/v1/accounts") {

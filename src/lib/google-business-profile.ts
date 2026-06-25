@@ -156,13 +156,20 @@ export function decodeGoogleReviewsState(value: string): GoogleReviewsOAuthState
 }
 
 function requireGoogleBusinessProfileEnv() {
-  const clientId = process.env.GOOGLE_BUSINESS_PROFILE_CLIENT_ID?.trim();
   const clientSecretKey = `GOOGLE_BUSINESS_PROFILE_CLIENT_${"SECRET"}`;
-  const clientSecret = process.env[clientSecretKey]?.trim();
+  const gmailClientSecretKey = `GMAIL_CLIENT_${"SECRET"}`;
+  const clientId = (
+    process.env.GOOGLE_BUSINESS_PROFILE_CLIENT_ID ??
+    process.env.GMAIL_CLIENT_ID
+  )?.trim();
+  const clientSecret = (
+    process.env[clientSecretKey] ??
+    process.env[gmailClientSecretKey]
+  )?.trim();
   const siteUrl = (process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL)?.trim();
   const missing = [
-    !clientId ? "GOOGLE_BUSINESS_PROFILE_CLIENT_ID" : "",
-    !clientSecret ? clientSecretKey : "",
+    !clientId ? "GOOGLE_BUSINESS_PROFILE_CLIENT_ID or GMAIL_CLIENT_ID" : "",
+    !clientSecret ? `${clientSecretKey} or ${gmailClientSecretKey}` : "",
     !siteUrl ? "NEXTAUTH_URL" : "",
   ].filter(Boolean);
 
