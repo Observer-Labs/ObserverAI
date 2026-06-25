@@ -68,10 +68,15 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId);
     await updateWorkspaceBilling(wid, {
+      ...(plan ? { plan, branch_limit: PLAN_BRANCH_LIMITS[plan] } : {}),
       polar_status: data.status,
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    if (plan) {
+      await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
+    }
   },
 
   onSubscriptionCanceled: async ({ data }) => {
