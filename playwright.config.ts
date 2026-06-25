@@ -15,6 +15,13 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
+    env: {
+      ...process.env,
+      VERCEL_ENV: "preview",
+      PREVIEW_AUTH_BYPASS_ENABLED: "true",
+      PREVIEW_AUTH_BYPASS_TOKEN: "placeholder-e2e-token",
+      PREVIEW_WORKSPACE_ID: "workspace-e2e",
+    },
   },
   projects: [
     {

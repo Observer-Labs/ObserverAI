@@ -158,6 +158,13 @@ const CSV_MAPPING_FIELDS: { key: CsvMappingField; label: string; helper: string 
 ];
 
 const CSV_AUTO_VALUE = "__auto__";
+const SAMPLE_SIGNAL_CSV = [
+  "timestamp,channel,sender,content",
+  "2026-06-18T08:00:00Z,review,Aylin,Queue was too slow during breakfast rush",
+  "2026-06-18T08:20:00Z,review,Mert,Order arrived cold and delivery took too long",
+  "2026-06-18T09:00:00Z,pos,POS Terminal,,order_count,42",
+  "2026-06-18T09:00:00Z,pos,POS Terminal,,cancel_count,7",
+].join("\n");
 
 function normalizeCsvHeaderForGuess(value: string) {
   return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
@@ -1126,6 +1133,15 @@ function ConnectPageContent() {
     setCsvError(null);
   }
 
+  function loadSampleCsv() {
+    setCsvName("Sample signal test");
+    setCsvText(SAMPLE_SIGNAL_CSV);
+    setCsvMapping(guessCsvMapping(parseCsvHeaders(SAMPLE_SIGNAL_CSV)));
+    setCsvFileName("");
+    setCsvResult(null);
+    setCsvError(null);
+  }
+
   function updatePosCsvText(value: string) {
     setPosCsvText(value);
     setPosResult(null);
@@ -1345,13 +1361,24 @@ function ConnectPageContent() {
                 <div className="text-[0.75rem] text-muted-foreground">
                   {branches.length === 0 ? "Create a branch first." : "Rows with no content or metric are skipped safely."}
                 </div>
-                <Button
-                  onClick={importCsv}
-                  disabled={csvImporting || !selectedBranchId || !csvText.trim()}
-                  className="h-auto rounded-lg px-4 py-2.5 text-[0.82rem] font-bold"
-                >
-                  {csvImporting ? "Importing..." : "Import CSV"}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={loadSampleCsv}
+                    disabled={csvImporting || branches.length === 0}
+                    className="h-auto rounded-lg px-4 py-2.5 text-[0.82rem] font-bold"
+                  >
+                    Load sample CSV
+                  </Button>
+                  <Button
+                    onClick={importCsv}
+                    disabled={csvImporting || !selectedBranchId || !csvText.trim()}
+                    className="h-auto rounded-lg px-4 py-2.5 text-[0.82rem] font-bold"
+                  >
+                    {csvImporting ? "Importing..." : "Import CSV"}
+                  </Button>
+                </div>
               </div>
               {csvError && (
                 <div className="rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-2 text-[0.78rem] text-destructive">
@@ -1359,8 +1386,21 @@ function ConnectPageContent() {
                 </div>
               )}
               {csvResult && (
-                <div className="rounded-lg border border-[color-mix(in_oklch,var(--success)_30%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-3 py-2 text-[0.78rem] text-[var(--success)]">
-                  Imported {csvResult.ingested} signal{csvResult.ingested === 1 ? "" : "s"}. Skipped {csvResult.skipped}; duplicates in file {csvResult.duplicateRows}; already existing {csvResult.existingDuplicates}.
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color-mix(in_oklch,var(--success)_30%,transparent)] bg-[color-mix(in_oklch,var(--success)_10%,transparent)] px-3 py-2 text-[0.78rem] text-[var(--success)]">
+                  <span>
+                    Imported {csvResult.ingested} signal{csvResult.ingested === 1 ? "" : "s"}. Skipped {csvResult.skipped}; duplicates in file {csvResult.duplicateRows}; already existing {csvResult.existingDuplicates}.
+                  </span>
+                  {csvResult.ingested > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => router.push("/dashboard")}
+                      className="h-auto rounded-md border-[color-mix(in_oklch,var(--success)_35%,transparent)] bg-background px-3 py-1.5 text-[0.72rem] font-bold text-foreground"
+                    >
+                      Open dashboard
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
