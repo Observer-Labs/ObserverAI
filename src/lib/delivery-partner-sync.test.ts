@@ -155,6 +155,38 @@ describe("delivery partner sync shell", () => {
     });
   });
 
+  it("allows connection discovery plans before a delivery store is mapped", async () => {
+    const { buildDeliveryPartnerSyncPlan, DeliveryPartnerSyncError } = await loadDeliveryPartnerSyncModule();
+    sourceRow = {
+      ...sourceRow!,
+      config: {
+        supplier_id: "supplier-1",
+        sync_window_days: 7,
+      },
+    };
+
+    expect(() => buildDeliveryPartnerSyncPlan({
+      source: sourceRow!,
+      authRef: authRefRow!,
+      provider: "trendyol",
+      now: new Date("2026-06-21T00:00:00.000Z"),
+    })).toThrow(DeliveryPartnerSyncError);
+
+    expect(buildDeliveryPartnerSyncPlan({
+      source: sourceRow!,
+      authRef: authRefRow!,
+      provider: "trendyol",
+      now: new Date("2026-06-21T00:00:00.000Z"),
+      requireExternalStoreId: false,
+    })).toMatchObject({
+      provider: "trendyol",
+      externalStoreId: "",
+      config: {
+        supplier_id: "supplier-1",
+      },
+    });
+  });
+
   it("blocks sync plans when auth refs are incomplete", async () => {
     const { buildDeliveryPartnerSyncPlan, DeliveryPartnerSyncError } = await loadDeliveryPartnerSyncModule();
     authRefRow = {

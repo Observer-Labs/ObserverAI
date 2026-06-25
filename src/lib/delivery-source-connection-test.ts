@@ -46,6 +46,7 @@ export async function testDeliverySourceConnection(
   const plan = await loadDeliveryPartnerSyncPlan({
     workspaceId: input.workspaceId,
     sourceId: input.sourceId,
+    requireExternalStoreId: false,
   });
   const material = await resolveDeliveryAuthMaterial(plan, input.resolver);
   const checkedAt = input.checkedAt ?? new Date().toISOString();
@@ -74,15 +75,18 @@ async function testTrendyolConnection(
     Authorization: basicAuth(material.apiKey, material.apiSecretKey),
     "User-Agent": "ObserverAI/1.0",
   };
-  const statsPath = `/integrator/review/meal/suppliers/${encodeURIComponent(supplierId)}/stores/${encodeURIComponent(plan.externalStoreId)}/reviews/stats`;
-  const statsResponse = await http.request({ method: "GET", path: statsPath, headers });
+  const storesPath = `/integrator/store/meal/suppliers/${encodeURIComponent(supplierId)}/stores`;
+  const storesResponse = await http.request({ method: "GET", path: storesPath, headers });
+  const stores = extractRows(storesResponse).map(toStoreCandidate).filter((store) => store.external_id);
+  const fallback = stores.length > 0
+    ? stores
+    : plan.externalStoreId
+      ? [{ external_id: plan.externalStoreId, name: plan.displayName }]
+      : [];
 
   return {
-    checks: [{ id: "review_stats", status: "ok" }],
-    store_candidates: [{
-      external_id: plan.externalStoreId,
-      name: stringFromRecord(statsResponse, ["storeName", "restaurantName", "name"]) || plan.displayName,
-    }],
+    checks: [{ id: "stores", status: "ok", item_count: stores.length }],
+    store_candidates: fallback,
   };
 }
 
@@ -100,6 +104,7 @@ async function testGetirConnection(
   });
   const accessToken = extractAccessToken(loginResponse);
   if (!accessToken) throw new DeliverySourceConnectionTestError("Getir auth response did not include an access token");
+  const loginRestaurantId = stringFromRecordDeep(loginResponse, ["restaurantId", "restaurant_id"]);
 
   const restaurantsResponse = await http.request({
     method: "GET",
@@ -109,7 +114,11 @@ async function testGetirConnection(
   const stores = extractRows(restaurantsResponse).map(toStoreCandidate).filter((store) => store.external_id);
   const fallback = stores.length > 0
     ? stores
-    : [{ external_id: plan.externalStoreId, name: plan.displayName }];
+    : loginRestaurantId
+      ? [{ external_id: loginRestaurantId, name: plan.displayName }]
+      : plan.externalStoreId
+        ? [{ external_id: plan.externalStoreId, name: plan.displayName }]
+        : [];
 
   return {
     checks: [
@@ -122,8 +131,8 @@ async function testGetirConnection(
 
 function toStoreCandidate(row: Record<string, unknown>): DeliverySourceStoreCandidate {
   return {
-    external_id: stringFromRecord(row, ["id", "restaurantId", "restaurant_id", "storeId"]) || "",
-    name: stringFromRecord(row, ["name", "restaurantName", "title"]),
+    external_id: stringFromRecord(row, ["id", "restaurantId", "restaurant_id", "storeId", "store_id", "externalId"]) || "",
+    name: stringFromRecord(row, ["name", "restaurantName", "storeName", "title"]),
     status: stringFromRecord(row, ["status", "state"]),
   };
 }
@@ -160,6 +169,20 @@ function stringFromRecord(value: unknown, keys: string[]): string | undefined {
     if (typeof child === "string" && child.trim()) return child.trim();
     if (typeof child === "number" && Number.isFinite(child)) return String(child);
   }
+  return undefined;
+}
+
+function stringFromRecordDeep(value: unknown, keys: string[]): string | undefined {
+  const current = stringFromRecord(value, keys);
+  if (current) return current;
+  if (!isRecord(value)) return undefined;
+
+  for (const key of ["data", "result", "restaurant", "store"]) {
+    const nested = value[key];
+    const found = stringFromRecordDeep(nested, keys);
+    if (found) return found;
+  }
+
   return undefined;
 }
 

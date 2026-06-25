@@ -40,7 +40,7 @@ describe("delivery source connection test", () => {
     loadDeliveryPartnerSyncPlan.mockResolvedValue(trendyolPlan);
   });
 
-  it("tests Trendyol review stats without exposing auth material", async () => {
+  it("tests Trendyol store discovery without exposing auth material", async () => {
     const { testDeliverySourceConnection } = await import("./delivery-source-connection-test");
     const resolver = {
       resolve: vi.fn(async () => ({
@@ -48,7 +48,9 @@ describe("delivery source connection test", () => {
         apiSecretKey: "example-api-secret",
       })),
     };
-    const requestMock = vi.fn(async (_request: DeliveryPartnerHttpRequest) => ({ overall: 4.2, restaurantName: "Moda Store" }));
+    const requestMock = vi.fn(async (_request: DeliveryPartnerHttpRequest) => ({
+      stores: [{ id: "store-1", name: "Moda Store", status: "open" }],
+    }));
     const http: DeliveryPartnerHttpClient = {
       async request<T = unknown>(request: DeliveryPartnerHttpRequest) {
         return await requestMock(request) as T;
@@ -66,13 +68,13 @@ describe("delivery source connection test", () => {
       provider: "trendyol",
       sourceId: "source-1",
       checkedAt: "2026-06-21T12:00:00.000Z",
-      checks: [{ id: "review_stats", status: "ok" }],
-      store_candidates: [{ external_id: "store-1", name: "Moda Store" }],
+      checks: [{ id: "stores", status: "ok", item_count: 1 }],
+      store_candidates: [{ external_id: "store-1", name: "Moda Store", status: "open" }],
     });
 
     expect(requestMock).toHaveBeenCalledWith(expect.objectContaining({
       method: "GET",
-      path: "/integrator/review/meal/suppliers/supplier-1/stores/store-1/reviews/stats",
+      path: "/integrator/store/meal/suppliers/supplier-1/stores",
       headers: expect.objectContaining({
         "User-Agent": "ObserverAI/1.0",
       }),
