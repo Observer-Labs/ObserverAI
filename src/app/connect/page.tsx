@@ -308,7 +308,6 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
     { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "30", type: "number", hint: "İlk senkronizasyonda kaç günlük yorum geçmişi taransın." },
   ],
   getir: [
-    { key: "restaurant_id", label: "Getir restoran kimliği", placeholder: "örn. restoran-123", hint: "Getir iş ortağı panelindeki restoran kimliği. API anahtarları daha sonra güvenli credential adımında alınır." },
     { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
   yemeksepeti: [
@@ -318,7 +317,6 @@ const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   ],
   trendyol: [
     { key: "supplier_id", label: "Trendyol supplier ID", placeholder: "örn. supplier-123", hint: "Satıcı panelindeki entegrasyon bilgilerinde görünür. API key/secret burada tutulmaz." },
-    { key: "store_id", label: "Store ID", placeholder: "örn. store-456", hint: "Restoran yorum endpoint'i için kullanılacak şube/store kimliği." },
     { key: "delivery_type", label: "Teslimat tipi", placeholder: "GO", hint: "Trendyol Go operasyon türünü ayırmak için güvenli metadata." },
     { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
   ],
@@ -709,7 +707,7 @@ function ConnectPageContent() {
           return;
         }
 
-        if (isSourceCredentialKey(key) && (hasCredentialInput(authValues[key]) || !isSourceAuthReady(data.source))) {
+        if (isSourceCredentialKey(key) && hasCredentialInput(authValues[key])) {
           const sourceId = data.source?.id;
           if (!sourceId) {
             setSourceSaveError("Source was saved but credential setup could not start.");
@@ -1475,6 +1473,10 @@ function ConnectPageContent() {
             const fields = SOURCE_FIELDS[selected];
             const hasMappedLocation = typeof selectedSourceRecord?.config?.location_id === "string" &&
               selectedSourceRecord.config.location_id.trim().length > 0;
+            const deliveryMappingField = sourceMappingField(selected);
+            const hasMappedDeliveryStore = isDeliveryConnectionTestKey(selected) &&
+              typeof selectedSourceRecord?.config?.[deliveryMappingField ?? ""] === "string" &&
+              String(selectedSourceRecord.config[deliveryMappingField ?? ""]).trim().length > 0;
             return (
               <div className="sticky top-[88px] overflow-hidden rounded-xl border bg-card">
                 {/* Panel Header */}
@@ -1679,7 +1681,7 @@ function ConnectPageContent() {
                           <div>
                             <div className="text-[0.78rem] font-semibold text-foreground">Delivery data sync</div>
                             <div className="mt-1 text-[0.7rem] leading-[1.5] text-muted-foreground">
-                              Pull order and review data into normalized delivery tables for this branch.
+                              Pull order and review data into normalized delivery tables for the mapped restaurant.
                             </div>
                             <div className="mt-1 font-mono text-[0.65rem] text-muted-foreground">
                               Last sync: {formatLastSync(selectedSourceRecord?.last_sync_at)}
@@ -1688,7 +1690,7 @@ function ConnectPageContent() {
                           <Button
                             type="button"
                             onClick={() => void syncDeliverySourceNow(selectedSourceRecord)}
-                            disabled={!authReady || syncingSourceId === selectedSourceRecord?.id}
+                            disabled={!authReady || !hasMappedDeliveryStore || syncingSourceId === selectedSourceRecord?.id}
                             className="h-auto rounded-lg px-3.5 py-2 text-[0.75rem] font-bold"
                           >
                             {syncingSourceId === selectedSourceRecord?.id ? "Syncing..." : "Sync now"}
@@ -1697,6 +1699,11 @@ function ConnectPageContent() {
                         {!authReady && (
                           <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
                             Save secure API credentials before syncing delivery data.
+                          </div>
+                        )}
+                        {authReady && !hasMappedDeliveryStore && (
+                          <div className="mt-3 rounded-md border bg-background px-3 py-2 text-[0.72rem] leading-[1.55] text-muted-foreground">
+                            Test the connection and choose a restaurant before syncing delivery data.
                           </div>
                         )}
                         {deliverySyncError && (

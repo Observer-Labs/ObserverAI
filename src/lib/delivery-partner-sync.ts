@@ -54,6 +54,7 @@ export interface LoadDeliveryPartnerSyncPlanInput {
   workspaceId: string;
   sourceId: string;
   now?: Date;
+  requireExternalStoreId?: boolean;
 }
 
 export interface DeliveryAuthMaterialResolver {
@@ -82,6 +83,7 @@ export async function loadDeliveryPartnerSyncPlan(
     authRef,
     provider,
     now: input.now ?? new Date(),
+    requireExternalStoreId: input.requireExternalStoreId ?? true,
   });
 }
 
@@ -90,6 +92,7 @@ export function buildDeliveryPartnerSyncPlan(input: {
   authRef: DeliveryPartnerAuthRefRow;
   provider: DeliveryConnectorProvider;
   now: Date;
+  requireExternalStoreId?: boolean;
 }): DeliveryPartnerSyncPlan {
   const definition = getDeliveryConnectorDefinition(input.provider);
   const requiredFields = getRequiredAuthFields(input.provider);
@@ -101,7 +104,7 @@ export function buildDeliveryPartnerSyncPlan(input: {
   if (input.authRef.status !== "ready" || missingFields.length > 0) {
     throw new DeliveryPartnerSyncError("Delivery source auth is not ready");
   }
-  if (!externalStoreId) {
+  if ((input.requireExternalStoreId ?? true) && !externalStoreId) {
     throw new DeliveryPartnerSyncError("Delivery source external store id is required");
   }
 
