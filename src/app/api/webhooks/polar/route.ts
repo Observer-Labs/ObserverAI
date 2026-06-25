@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 import { Webhooks } from "@polar-sh/nextjs";
 import { updateWorkspaceBilling, getWorkspaceIdByEmail } from "@/lib/supabase";
+import { PLAN_BRANCH_LIMITS, resolvePlanFromProductId } from "@/lib/polar-plan";
+import { enforceWorkspaceBranchLimit } from "@/lib/branch-limit-enforcement";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -30,13 +32,16 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_subscription_id: data.id,
       polar_customer_id: data.customerId,
       polar_status: "active",
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 
   onSubscriptionActive: async ({ data }) => {
@@ -46,11 +51,14 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_status: "active",
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 
   onSubscriptionUpdated: async ({ data }) => {
@@ -60,10 +68,15 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId);
     await updateWorkspaceBilling(wid, {
+      ...(plan ? { plan, branch_limit: PLAN_BRANCH_LIMITS[plan] } : {}),
       polar_status: data.status,
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    if (plan) {
+      await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
+    }
   },
 
   onSubscriptionCanceled: async ({ data }) => {
@@ -101,9 +114,12 @@ export const POST = Webhooks({
     );
     if (!wid) return;
 
+    const plan = resolvePlanFromProductId(data.productId) ?? "starter";
     await updateWorkspaceBilling(wid, {
-      plan: "pro",
+      plan,
+      branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_status: "active",
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 });
