@@ -253,14 +253,6 @@ const ACTIVE_SOURCES: ActiveSource[] = [
     description: "Web siteniz varsa trafik düşüşlerini ve sepet terk oranını takip edin",
     category: "Web sitesi",
   },
-  {
-    key: "email",
-    label: "Gmail",
-    icon: "✉️",
-    color: "#EA4335",
-    description: "Müşteri e-postalarını ve destek taleplerini sinyal olarak içeri aktarın",
-    category: "E-posta",
-  },
 ];
 
 const COMING_SOON = [

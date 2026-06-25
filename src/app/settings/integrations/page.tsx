@@ -139,8 +139,6 @@ export default function IntegrationsPage() {
   }
 
   const slackConnected = !!workspace.slack_token;
-  const emailConnected = !!workspace.gmail_token;
-
   return (
     <div className="min-h-screen bg-background">
       {/* Background */}
@@ -253,49 +251,6 @@ export default function IntegrationsPage() {
                 <Input placeholder="bug, crash, feedback" value={config.slack.keyword_filter}
                   onChange={(e) => updateField("slack", "keyword_filter", e.target.value)} />
                 <p className={hintClass}>Comma-separated, empty = all messages</p>
-              </div>
-            </div>
-          </IntegrationCard>
-
-          {/* ── Email / Gmail (OAuth source) ── */}
-          <IntegrationCard
-            name="Email" icon="✉️" color="#6ea8ff"
-            description="Pull inbox emails as signals. Gmail OAuth, reads subject, sender, and body snippet."
-            enabled={config.email.enabled}
-            lastSync={config.email.last_sync}
-            onToggle={(v) => updateField("email", "enabled", v)}
-            onSave={() => saveIntegration("email")}
-            onSync={() => syncNow("email")}
-            saving={saving === "email"}
-            syncing={syncing === "email"}
-            saved={savedSource === "email"}
-            badge={emailConnected ? "OAuth Connected" : undefined}
-          >
-            {!emailConnected ? (
-              <div className="mb-4">
-                <Button asChild>
-                  <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`}>✉️ Connect Gmail</a>
-                </Button>
-                <p className={hintClass}>You need to connect Gmail via OAuth before enabling ingestion.</p>
-              </div>
-            ) : (
-              <div className="mb-4 flex items-center gap-2.5">
-                <span className="text-[0.8rem] font-semibold text-[var(--accent-green)]">✓ Gmail connected</span>
-                <a href={`/api/auth/gmail?state=${workspace.id ?? ""}`} className="text-[0.78rem] text-muted-foreground no-underline">Re-authenticate →</a>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className={labelClass}>Days back</Label>
-                <Input type="number" min={1} max={90} value={config.email.max_age_days}
-                  onChange={(e) => updateField("email", "max_age_days", Number(e.target.value))} />
-                <p className={hintClass}>Only pull emails from last N days</p>
-              </div>
-              <div>
-                <Label className={labelClass}>Sender domains <span className="text-[0.7rem] normal-case">(optional)</span></Label>
-                <Input placeholder="acmecorp.com, partner.io" value={config.email.sender_domains}
-                  onChange={(e) => updateField("email", "sender_domains", e.target.value)} />
-                <p className={hintClass}>Comma-separated, empty = all senders</p>
               </div>
             </div>
           </IntegrationCard>
