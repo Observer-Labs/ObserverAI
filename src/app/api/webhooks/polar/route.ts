@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { Webhooks } from "@polar-sh/nextjs";
 import { updateWorkspaceBilling, getWorkspaceIdByEmail } from "@/lib/supabase";
 import { PLAN_BRANCH_LIMITS, resolvePlanFromProductId } from "@/lib/polar-plan";
+import { enforceWorkspaceBranchLimit } from "@/lib/branch-limit-enforcement";
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ export const POST = Webhooks({
       polar_status: "active",
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 
   onSubscriptionActive: async ({ data }) => {
@@ -56,6 +58,7 @@ export const POST = Webhooks({
       polar_status: "active",
       polar_renews_at: data.currentPeriodEnd?.toISOString() ?? undefined,
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 
   onSubscriptionUpdated: async ({ data }) => {
@@ -112,5 +115,6 @@ export const POST = Webhooks({
       branch_limit: PLAN_BRANCH_LIMITS[plan],
       polar_status: "active",
     });
+    await enforceWorkspaceBranchLimit(wid, PLAN_BRANCH_LIMITS[plan]);
   },
 });
