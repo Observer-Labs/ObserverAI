@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   GOOGLE_REVIEWS_MAX_SYNC_WINDOW_DAYS,
   googleReviewDedupeKey,
+  googleReviewsSummaryToSignal,
+  googleReviewSummarySignalToAnalysisResult,
   googleReviewToSignal,
   isGoogleReviewActionable,
   normalizeGoogleReviewsSyncWindowDays,
@@ -57,5 +59,67 @@ describe("google reviews ingest helpers", () => {
     expect(isGoogleReviewActionable({ rating: 3 })).toBe(true);
     expect(isGoogleReviewActionable({ rating: 4 })).toBe(false);
     expect(isGoogleReviewActionable({ rating: null })).toBe(false);
+  });
+
+  it("builds a general Google review summary signal", () => {
+    const signal = googleReviewsSummaryToSignal({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      reviews: [
+        {
+          external_review_id: "review-1",
+          reviewer_name: "Aylin",
+          comment: "Harika hizmet.",
+          rating: 5,
+          reviewed_at: "2026-02-20T09:00:00.000Z",
+        },
+        {
+          external_review_id: "review-2",
+          reviewer_name: "Mert",
+          comment: "",
+          rating: 4,
+          reviewed_at: "2026-02-21T09:00:00.000Z",
+        },
+      ],
+    });
+
+    expect(signal).toMatchObject({
+      source: "googlereviews",
+      channel: "review_summary",
+      sender: "Google Reviews",
+      sentiment: "positive",
+      tags: ["google_reviews_summary:source-1", "google_reviews_total:2", "google_reviews_average:4.5"],
+    });
+    expect(signal?.content).toContain("Genel Yorum Özeti");
+    expect(signal?.content).toContain("Puan dağılımı: 5 yıldız: 1, 4 yıldız: 1");
+  });
+
+  it("converts a Google review summary signal to a deterministic analysis result", () => {
+    const signal = googleReviewsSummaryToSignal({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      reviews: [{
+        external_review_id: "review-1",
+        reviewer_name: "Aylin",
+        comment: "Harika hizmet.",
+        rating: 5,
+        reviewed_at: "2026-02-20T09:00:00.000Z",
+      }],
+    });
+
+    expect(signal && googleReviewSummarySignalToAnalysisResult({
+      ...signal,
+      id: "signal-1",
+      branch_id: "branch-1",
+      created_at: "2026-06-26T00:00:00.000Z",
+    })).toMatchObject({
+      title: "Genel Yorum Özeti",
+      severity: 20,
+      evidence_count: 1,
+      category: "musteri",
+      source_breakdown: expect.objectContaining({ googlereviews: 1 }),
+    });
   });
 });

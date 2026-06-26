@@ -9,7 +9,8 @@ import { checkAnalyzeAllowed, recordAnalyzeCall } from "@/lib/rate-limit";
 import { postToSlack } from "@/lib/slack";
 import { sendEmailBrief } from "@/lib/email";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
-import type { Cluster } from "@/lib/types";
+import { googleReviewSummarySignalToAnalysisResult } from "@/lib/google-reviews-ingest";
+import type { AnalysisResult, Cluster, Signal } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   let wid: string;
@@ -86,9 +87,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "No signals to analyze", clusters: [] });
   }
 
+  const summaryResults = signals
+    .map((signal) => googleReviewSummarySignalToAnalysisResult(signal as Signal))
+    .filter((result): result is AnalysisResult => Boolean(result));
+  const aiSignals = signals.filter((signal) => !(signal.source === "googlereviews" && signal.channel === "review_summary"));
+
   // Run Claude analysis with workspace vertical preset (stored on workspace directly)
   const vertical = (freshWorkspace as { vertical?: string }).vertical as import("@/lib/types").VerticalType ?? "auto";
-  const { results, usage } = await analyzeSignals(signals, vertical);
+  const { results: aiResults, usage } = aiSignals.length > 0
+    ? await analyzeSignals(aiSignals, vertical)
+    : { results: [] as AnalysisResult[], usage: { inputTokens: 0, outputTokens: 0 } };
+  const results = [...summaryResults, ...aiResults];
 
   // Record usage for spend cap + audit log (non-blocking on failure)
   recordAnalyzeCall(wid, usage.inputTokens, usage.outputTokens).catch((err) =>
