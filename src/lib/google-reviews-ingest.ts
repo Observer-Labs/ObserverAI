@@ -16,9 +16,7 @@ export function googleReviewToSignal(input: {
   review: GoogleBusinessReview;
 }): GoogleReviewSignalInput {
   const ratingText = typeof input.review.rating === "number" ? `Google rating: ${input.review.rating}` : "Google review";
-  const content = input.review.comment
-    ? `${ratingText}: ${input.review.comment}`
-    : ratingText;
+  const content = input.review.comment || ratingText;
   const timestamp = input.review.update_time ?? input.review.reviewed_at;
 
   return {
