@@ -3,7 +3,13 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 import { fetchGoogleBusinessReviewsFromAuthRef } from "@/lib/google-business-profile";
-import { googleReviewDedupeKey, googleReviewToSignal, type GoogleReviewSignalInput } from "@/lib/google-reviews-ingest";
+import {
+  googleReviewDedupeKey,
+  googleReviewToSignal,
+  isGoogleReviewActionable,
+  normalizeGoogleReviewsSyncWindowDays,
+  type GoogleReviewSignalInput,
+} from "@/lib/google-reviews-ingest";
 import { getSupabaseAdmin, insertSignals } from "@/lib/supabase";
 
 type GoogleReviewsSourceRow = {
@@ -12,6 +18,7 @@ type GoogleReviewsSourceRow = {
   branch_id: string;
   type: string;
   config: Record<string, unknown>;
+  last_sync_at: string | null;
 };
 
 type GoogleReviewsAuthRefRow = {
@@ -19,7 +26,7 @@ type GoogleReviewsAuthRefRow = {
   status: string;
 };
 
-type ExistingGoogleReviewSignal = Pick<GoogleReviewSignalInput, "source_id" | "timestamp" | "sender" | "content">;
+type ExistingGoogleReviewSignal = Pick<GoogleReviewSignalInput, "source_id" | "timestamp" | "sender" | "content" | "tags">;
 
 export async function POST(req: NextRequest) {
   let workspaceId: string;
@@ -50,15 +57,25 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
+      const syncWindowDays = normalizeGoogleReviewsSyncWindowDays(source.config.sync_window_days);
+      const isBackfillSync = !source.last_sync_at;
+      const cutoff = new Date(Date.now() - syncWindowDays * 24 * 60 * 60 * 1000);
       const reviews = await fetchGoogleBusinessReviewsFromAuthRef({
         authRef,
         locationName,
+        pageSize: 100,
+        maxReviews: 500,
       });
-      const parsedSignals = reviews.map((review) => googleReviewToSignal({
-        workspaceId,
-        branchId: source.branch_id,
-        sourceId: source.id,
-        review,
+      const reviewsInWindow = reviews.filter((review) => reviewTimestamp(review).getTime() >= cutoff.getTime());
+      const signalReviews = reviewsInWindow.filter((review) => isBackfillSync || isGoogleReviewActionable(review));
+      const parsedSignals = signalReviews.map((review) => ({
+        ...googleReviewToSignal({
+          workspaceId,
+          branchId: source.branch_id,
+          sourceId: source.id,
+          review,
+        }),
+        reviewed: isBackfillSync ? false : !isGoogleReviewActionable(review),
       }));
       const newSignals = await filterExistingSignals(workspaceId, source.branch_id, source.id, parsedSignals);
       const inserted = await insertSignals(newSignals);
@@ -76,6 +93,10 @@ export async function POST(req: NextRequest) {
         source_id: source.id,
         status: "synced",
         fetched: reviews.length,
+        in_window: reviewsInWindow.length,
+        mode: isBackfillSync ? "historical_backfill" : "incremental_actionable",
+        sync_window_days: syncWindowDays,
+        actionable_reviews: reviewsInWindow.filter(isGoogleReviewActionable).length,
         ingested: inserted?.length ?? 0,
         existing_duplicates: parsedSignals.length - newSignals.length,
       });
@@ -98,7 +119,7 @@ export async function POST(req: NextRequest) {
 function buildSourceQuery(workspaceId: string, sourceId: string) {
   let query = getSupabaseAdmin()
     .from("sources")
-    .select("id, workspace_id, branch_id, type, config")
+    .select("id, workspace_id, branch_id, type, config, last_sync_at")
     .eq("workspace_id", workspaceId)
     .in("type", ["googlereviews", "google_reviews"]);
 
@@ -130,7 +151,7 @@ async function filterExistingSignals(
   const timestamps = Array.from(new Set(signals.map((signal) => signal.timestamp))).slice(0, 500);
   const { data, error } = await getSupabaseAdmin()
     .from("signals")
-    .select("source_id, timestamp, sender, content")
+    .select("source_id, timestamp, sender, content, tags")
     .eq("workspace_id", workspaceId)
     .eq("branch_id", branchId)
     .eq("source_id", sourceId)
@@ -140,13 +161,27 @@ async function filterExistingSignals(
 
   if (error) throw error;
 
-  const existingKeys = new Set(
-    ((data ?? []) as ExistingGoogleReviewSignal[]).map((signal) => googleReviewDedupeKey(signal)),
-  );
+  const existingKeys = new Set<string>();
+  const existingReviewTags = new Set<string>();
 
-  return signals.filter((signal) => !existingKeys.has(googleReviewDedupeKey(signal)));
+  for (const signal of (data ?? []) as ExistingGoogleReviewSignal[]) {
+    existingKeys.add(googleReviewDedupeKey(signal));
+    for (const tag of signal.tags ?? []) {
+      if (tag.startsWith("google_review:")) existingReviewTags.add(tag);
+    }
+  }
+
+  return signals.filter((signal) => {
+    const reviewTag = signal.tags?.find((tag) => tag.startsWith("google_review:"));
+    if (reviewTag && existingReviewTags.has(reviewTag)) return false;
+    return !existingKeys.has(googleReviewDedupeKey(signal));
+  });
 }
 
 function stringConfig(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function reviewTimestamp(review: { update_time?: string; reviewed_at: string }) {
+  return new Date(review.update_time ?? review.reviewed_at);
 }

@@ -114,4 +114,46 @@ describe("google business profile helpers", () => {
       }),
     );
   });
+
+  it("paginates Google reviews up to the configured maximum", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      const parsed = new URL(url);
+      if (!parsed.searchParams.get("pageToken")) {
+        return Response.json({
+          reviews: [{
+            reviewId: "review-1",
+            reviewer: { displayName: "Aylin" },
+            comment: "Servis cok yavas.",
+            starRating: "ONE",
+            createTime: "2026-06-20T09:00:00Z",
+          }],
+          nextPageToken: "page-2",
+        });
+      }
+
+      return Response.json({
+        reviews: [{
+          reviewId: "review-2",
+          reviewer: { displayName: "Mert" },
+          comment: "Genel olarak iyi.",
+          starRating: "FOUR",
+          createTime: "2026-06-19T09:00:00Z",
+        }],
+      });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    const { fetchGoogleBusinessReviews } = await import("./google-business-profile");
+
+    await expect(fetchGoogleBusinessReviews({
+      accessToken: "example-access-token",
+      locationName: "accounts/123/locations/456",
+      pageSize: 1,
+      maxReviews: 2,
+    })).resolves.toHaveLength(2);
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "https://mybusiness.googleapis.com/v4/accounts/123/locations/456/reviews?pageSize=1&orderBy=updateTime+desc&pageToken=page-2",
+      expect.any(Object),
+    );
+  });
 });
