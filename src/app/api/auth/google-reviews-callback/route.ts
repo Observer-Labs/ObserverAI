@@ -6,6 +6,7 @@ import {
   decodeGoogleReviewsState,
   exchangeGoogleReviewsCode,
   fetchGoogleBusinessLocations,
+  type GoogleBusinessLocationCandidate,
   GoogleBusinessProfileError,
 } from "@/lib/google-business-profile";
 import { storeSourceAuthMaterial } from "@/lib/source-auth-secret-store";
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     await markSourceConnected(parsedState.workspaceId, parsedState.sourceId);
 
     if (locations.length === 1) {
-      await updateSourceLocation(parsedState.workspaceId, parsedState.sourceId, locations[0].external_id);
+      await updateSourceLocation(parsedState.workspaceId, parsedState.sourceId, locations[0]);
     }
 
     return NextResponse.redirect(`${siteUrl}/connect?google_reviews=connected&source_id=${parsedState.sourceId}`);
@@ -72,10 +73,14 @@ async function assertGoogleReviewsSource(workspaceId: string, sourceId: string) 
   if (error || !data) throw new GoogleBusinessProfileError("Google Reviews source not found");
 }
 
-async function updateSourceLocation(workspaceId: string, sourceId: string, locationId: string) {
+async function updateSourceLocation(
+  workspaceId: string,
+  sourceId: string,
+  location: GoogleBusinessLocationCandidate,
+) {
   const { data } = await getSupabaseAdmin()
     .from("sources")
-    .select("config")
+    .select("branch_id, config")
     .eq("id", sourceId)
     .eq("workspace_id", workspaceId)
     .single();
@@ -86,9 +91,29 @@ async function updateSourceLocation(workspaceId: string, sourceId: string, locat
 
   await getSupabaseAdmin()
     .from("sources")
-    .update({ config: { ...config, location_id: locationId }, status: "connected" })
+    .update({
+      config: {
+        ...config,
+        location_id: location.external_id,
+        location_name: location.name,
+        ...(location.store_code ? { store_code: location.store_code } : {}),
+      },
+      status: "connected",
+    })
     .eq("id", sourceId)
     .eq("workspace_id", workspaceId);
+
+  if (typeof data?.branch_id === "string" && location.name) {
+    await getSupabaseAdmin()
+      .from("branches")
+      .update({
+        name: location.name,
+        ...(location.district ? { district: location.district } : {}),
+        ...(location.city ? { city: location.city } : {}),
+      })
+      .eq("id", data.branch_id)
+      .eq("workspace_id", workspaceId);
+  }
 }
 
 async function markSourceConnected(workspaceId: string, sourceId: string) {
