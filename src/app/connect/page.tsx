@@ -135,6 +135,17 @@ interface EmailSyncResult {
   error?: string;
 }
 
+interface IngestSummaryItem {
+  status?: string;
+  error?: string;
+  reason?: string;
+}
+
+interface IngestResponse {
+  error?: string;
+  summary?: IngestSummaryItem[];
+}
+
 type CsvMappingField = keyof CsvColumnMapping;
 type SelfServiceAuthKey = Extract<ActiveSourceKey, "getir" | "trendyol" | "yemeksepeti">;
 type SourceCredentialKey = SelfServiceAuthKey | Extract<ActiveSourceKey, "googleanalytics">;
@@ -522,6 +533,19 @@ function sourceMappingField(key: ActiveSourceKey): "restaurant_id" | "store_id" 
   return null;
 }
 
+function sourceLabel(key: ActiveSourceKey) {
+  return ACTIVE_SOURCES.find((source) => source.key === key)?.label ?? key;
+}
+
+function syncFailureMessage(key: ActiveSourceKey, response: IngestResponse) {
+  if (response.error) return response.error;
+
+  const failed = response.summary?.find((item) => item.status === "failed");
+  if (failed) return failed.error ?? `${sourceLabel(key)} sync failed.`;
+
+  return null;
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ConnectPageContent() {
@@ -560,6 +584,7 @@ function ConnectPageContent() {
   const [saving, setSaving] = useState(false);
   const [savedKey, setSavedKey] = useState<ActiveSourceKey | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncAllError, setSyncAllError] = useState<string | null>(null);
   const [csvName, setCsvName] = useState("Manual CSV upload");
   const [csvFileName, setCsvFileName] = useState("");
   const [csvText, setCsvText] = useState("");
@@ -987,11 +1012,41 @@ function ConnectPageContent() {
 
   async function syncAll() {
     setSyncing(true);
+    setSyncAllError(null);
     try {
       const connected = ACTIVE_SOURCES.filter((s) => isConnected(s.key, workspace));
-      await Promise.allSettled(
-        connected.map((s) => fetch(ingestRoute(s.key), { method: "POST" }))
+      const results = await Promise.all(
+        connected.map(async (source) => {
+          try {
+            const res = await fetch(ingestRoute(source.key), { method: "POST" });
+            const data = await res.json().catch(() => ({})) as IngestResponse;
+            if (!res.ok) {
+              return {
+                key: source.key,
+                error: data.error ?? `${source.label} sync failed.`,
+              };
+            }
+
+            return {
+              key: source.key,
+              error: syncFailureMessage(source.key, data),
+            };
+          } catch {
+            return {
+              key: source.key,
+              error: `${source.label} sync failed.`,
+            };
+          }
+        }),
       );
+
+      const failed = results.find((result) => result.error);
+      if (failed?.error) {
+        setSyncAllError(`${sourceLabel(failed.key)}: ${failed.error}`);
+        await loadWorkspace();
+        return;
+      }
+
       router.push("/dashboard");
     } finally {
       setSyncing(false);
@@ -1214,6 +1269,11 @@ function ConnectPageContent() {
             )}
           </div>
         </div>
+        {syncAllError && (
+          <div className="mb-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
+            {syncAllError}
+          </div>
+        )}
 
         <Card className="mb-8 gap-0 rounded-xl py-0">
           <CardHeader className="border-b px-5 py-4">
