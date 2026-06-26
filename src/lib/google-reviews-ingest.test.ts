@@ -29,7 +29,7 @@ describe("google reviews ingest helpers", () => {
       source_type: "googlereviews",
       channel: "review",
       sender: "Aylin",
-      content: "Google rating: 1: Servis cok yavas.",
+      content: "Servis cok yavas.",
       timestamp: "2026-06-20T09:30:00.000Z",
       sentiment: "negative",
       reviewed: false,
