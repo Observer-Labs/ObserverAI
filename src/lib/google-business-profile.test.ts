@@ -50,6 +50,10 @@ describe("google business profile helpers", () => {
           name: "locations/456",
           title: "Moda Branch",
           storeCode: "MODA",
+          storefrontAddress: {
+            locality: "Istanbul",
+            sublocality: "Kadikoy",
+          },
         }],
       });
     });
@@ -61,10 +65,12 @@ describe("google business profile helpers", () => {
       name: "Moda Branch",
       account_name: "accounts/123",
       store_code: "MODA",
+      city: "Istanbul",
+      district: "Kadikoy",
     }]);
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      "https://mybusinessbusinessinformation.googleapis.com/v1/accounts/123/locations?readMask=name%2Ctitle%2CstoreCode&pageSize=100",
+      "https://mybusinessbusinessinformation.googleapis.com/v1/accounts/123/locations?readMask=name%2Ctitle%2CstoreCode%2CstorefrontAddress&pageSize=100",
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer example-access-token",

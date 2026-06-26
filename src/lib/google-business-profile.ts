@@ -20,6 +20,8 @@ export interface GoogleBusinessLocationCandidate {
   name: string;
   account_name: string;
   store_code?: string;
+  city?: string;
+  district?: string;
 }
 
 export interface GoogleBusinessReview {
@@ -203,7 +205,7 @@ async function fetchGoogleBusinessLocationsForAccount(
   accountName: string,
 ): Promise<GoogleBusinessLocationCandidate[]> {
   const url = new URL(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations`);
-  url.searchParams.set("readMask", "name,title,storeCode");
+  url.searchParams.set("readMask", "name,title,storeCode,storefrontAddress");
   url.searchParams.set("pageSize", "100");
   const json = await googleJson(url.toString(), accessToken);
   const locations = Array.isArray(json.locations) ? json.locations : [];
@@ -258,6 +260,9 @@ function normalizeLocation(value: unknown, accountName: string): GoogleBusinessL
   const row = value as Record<string, unknown>;
   const locationName = typeof row.name === "string" ? row.name : "";
   const title = typeof row.title === "string" && row.title.trim() ? row.title.trim() : locationName;
+  const address = row.storefrontAddress && typeof row.storefrontAddress === "object" && !Array.isArray(row.storefrontAddress)
+    ? row.storefrontAddress as Record<string, unknown>
+    : {};
   if (!locationName) return null;
   const externalId = locationName.startsWith("accounts/")
     ? locationName
@@ -267,6 +272,8 @@ function normalizeLocation(value: unknown, accountName: string): GoogleBusinessL
     name: title,
     account_name: accountName,
     store_code: typeof row.storeCode === "string" ? row.storeCode : undefined,
+    city: stringValue(address.locality),
+    district: stringValue(address.sublocality),
   };
 }
 
