@@ -40,6 +40,7 @@ export interface SourceBreakdown {
   slack: number;
   email: number;
   whatsapp: number;
+  googlereviews?: number;
   zendesk: number;
   intercom: number;
   jira: number;

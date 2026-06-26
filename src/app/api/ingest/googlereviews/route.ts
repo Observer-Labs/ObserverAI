@@ -6,6 +6,7 @@ import { fetchGoogleBusinessReviewsFromAuthRef } from "@/lib/google-business-pro
 import {
   googleReviewDedupeKey,
   googleReviewToSignal,
+  googleReviewsSummaryToSignal,
   isGoogleReviewActionable,
   normalizeGoogleReviewsSyncWindowDays,
   type GoogleReviewSignalInput,
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       });
       const reviewsInWindow = reviews.filter((review) => reviewTimestamp(review).getTime() >= cutoff.getTime());
       const signalReviews = reviewsInWindow.filter((review) => isBackfillSync || isGoogleReviewActionable(review));
-      const parsedSignals = signalReviews.map((review) => ({
+      const reviewSignals = signalReviews.map((review) => ({
         ...googleReviewToSignal({
           workspaceId,
           branchId: source.branch_id,
@@ -77,6 +78,13 @@ export async function POST(req: NextRequest) {
         }),
         reviewed: isBackfillSync ? false : !isGoogleReviewActionable(review),
       }));
+      const summarySignal = googleReviewsSummaryToSignal({
+        workspaceId,
+        branchId: source.branch_id,
+        sourceId: source.id,
+        reviews,
+      });
+      const parsedSignals = summarySignal ? [...reviewSignals, summarySignal] : reviewSignals;
       const newSignals = await filterExistingSignals(workspaceId, source.branch_id, source.id, parsedSignals);
       const inserted = await insertSignals(newSignals);
 
