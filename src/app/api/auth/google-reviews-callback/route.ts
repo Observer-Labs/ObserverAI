@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
       lastVerifiedAt: new Date().toISOString(),
     });
 
+    await markSourceConnected(parsedState.workspaceId, parsedState.sourceId);
+
     if (locations.length === 1) {
       await updateSourceLocation(parsedState.workspaceId, parsedState.sourceId, locations[0].external_id);
     }
@@ -84,7 +86,15 @@ async function updateSourceLocation(workspaceId: string, sourceId: string, locat
 
   await getSupabaseAdmin()
     .from("sources")
-    .update({ config: { ...config, location_id: locationId } })
+    .update({ config: { ...config, location_id: locationId }, status: "connected" })
+    .eq("id", sourceId)
+    .eq("workspace_id", workspaceId);
+}
+
+async function markSourceConnected(workspaceId: string, sourceId: string) {
+  await getSupabaseAdmin()
+    .from("sources")
+    .update({ status: "connected" })
     .eq("id", sourceId)
     .eq("workspace_id", workspaceId);
 }

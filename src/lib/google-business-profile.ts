@@ -33,6 +33,12 @@ export interface GoogleBusinessReview {
 
 export class GoogleBusinessProfileError extends Error {
   status = 400;
+
+  constructor(message: string, public reason?: string, status?: number) {
+    super(message);
+    this.name = "GoogleBusinessProfileError";
+    if (status) this.status = status;
+  }
 }
 
 const GOOGLE_REVIEWS_SCOPE = "https://www.googleapis.com/auth/business.manage";
@@ -215,9 +221,36 @@ async function googleJson(url: string, accessToken: string): Promise<Record<stri
   });
   const json = await res.json().catch(() => ({})) as Record<string, unknown>;
   if (!res.ok) {
-    throw new GoogleBusinessProfileError("Google Business Profile request failed");
+    throw googleBusinessProfileRequestError(json, res.status);
   }
   return json;
+}
+
+function googleBusinessProfileRequestError(json: Record<string, unknown>, status: number) {
+  const error = json.error && typeof json.error === "object" && !Array.isArray(json.error)
+    ? json.error as Record<string, unknown>
+    : {};
+  const details = Array.isArray(error.details) ? error.details : [];
+  const errorInfo = details.find((detail) => (
+    detail &&
+    typeof detail === "object" &&
+    !Array.isArray(detail) &&
+    (detail as Record<string, unknown>)["@type"] === "type.googleapis.com/google.rpc.ErrorInfo"
+  )) as Record<string, unknown> | undefined;
+  const metadata = errorInfo?.metadata && typeof errorInfo.metadata === "object" && !Array.isArray(errorInfo.metadata)
+    ? errorInfo.metadata as Record<string, unknown>
+    : {};
+  const reason = typeof errorInfo?.reason === "string" ? errorInfo.reason : undefined;
+  const serviceTitle = typeof metadata.serviceTitle === "string" ? metadata.serviceTitle : undefined;
+
+  if (reason === "SERVICE_DISABLED" && serviceTitle) {
+    return new GoogleBusinessProfileError(`${serviceTitle} is not enabled for this Google Cloud project.`, reason, status);
+  }
+
+  const message = typeof error.message === "string" && error.message.trim()
+    ? error.message.trim()
+    : "Google Business Profile request failed";
+  return new GoogleBusinessProfileError(message, reason, status);
 }
 
 function normalizeLocation(value: unknown, accountName: string): GoogleBusinessLocationCandidate | null {
