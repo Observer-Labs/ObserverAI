@@ -546,6 +546,18 @@ function syncFailureMessage(key: ActiveSourceKey, response: IngestResponse) {
   return null;
 }
 
+function syncableSourcesForBranch(sources: SourceRow[], branchId: string) {
+  return ACTIVE_SOURCES.flatMap((source) => {
+    if (!isBranchSourceKey(source.key)) return [];
+
+    const sourceRecord = branchSourceForKey(sources, branchId, source.key);
+    if (!sourceRecord) return [];
+    if (source.key === "pos") return [];
+
+    return [{ ...source, sourceId: sourceRecord.id }];
+  });
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ConnectPageContent() {
@@ -1014,11 +1026,15 @@ function ConnectPageContent() {
     setSyncing(true);
     setSyncAllError(null);
     try {
-      const connected = ACTIVE_SOURCES.filter((s) => isConnected(s.key, workspace));
+      const connected = syncableSourcesForBranch(sources, selectedBranchId);
       const results = await Promise.all(
         connected.map(async (source) => {
           try {
-            const res = await fetch(ingestRoute(source.key), { method: "POST" });
+            const res = await fetch(ingestRoute(source.key), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ source_id: source.sourceId }),
+            });
             const data = await res.json().catch(() => ({})) as IngestResponse;
             if (!res.ok) {
               return {
