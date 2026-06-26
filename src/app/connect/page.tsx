@@ -276,7 +276,7 @@ const COMING_SOON = [
 // ── Default configs ───────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIGS: Record<ActiveSourceKey, Record<string, unknown>> = {
-  googlereviews:   { enabled: false, sync_window_days: 30, last_sync: null },
+  googlereviews:   { enabled: false, sync_window_days: 150, last_sync: null },
   getir:           { enabled: false, store_id: "", last_sync: null },
   yemeksepeti:     { enabled: false, restaurant_id: "", last_sync: null },
   trendyol:        { enabled: false, store_id: "", last_sync: null },
@@ -308,7 +308,7 @@ interface FormField {
 
 const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   googlereviews: [
-    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "30", type: "number", hint: "İlk senkronizasyonda kaç günlük yorum geçmişi taransın." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "150", type: "number", hint: "İlk senkronizasyonda en fazla 150 günlük yorum geçmişi taranır." },
   ],
   getir: [
     { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
@@ -435,7 +435,7 @@ const BRANCH_SOURCE_TYPES = new Set<ActiveSourceKey>([
 ]);
 
 const SOURCE_CONFIG_ALLOWLIST: Partial<Record<ActiveSourceKey, string[]>> = {
-  googlereviews: ["location_id", "sync_window_days"],
+  googlereviews: ["location_id", "location_name", "store_code", "sync_window_days"],
   getir: ["restaurant_id", "restaurant_ids", "sync_window_days"],
   yemeksepeti: ["vendor_id", "store_id", "sync_window_days"],
   trendyol: ["supplier_id", "store_id", "delivery_type", "sync_window_days"],

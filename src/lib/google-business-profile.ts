@@ -115,22 +115,38 @@ export async function fetchGoogleBusinessReviews(input: {
   accessToken: string;
   locationName: string;
   pageSize?: number;
+  maxReviews?: number;
 }): Promise<GoogleBusinessReview[]> {
   const parent = normalizeReviewParent(input.locationName);
-  const url = new URL(`https://mybusiness.googleapis.com/v4/${parent}/reviews`);
-  url.searchParams.set("pageSize", String(input.pageSize ?? 50));
-  url.searchParams.set("orderBy", "updateTime desc");
-  const json = await googleJson(url.toString(), input.accessToken);
-  const reviews = Array.isArray(json.reviews) ? json.reviews : [];
-  return reviews
-    .map(normalizeReview)
-    .filter((review): review is GoogleBusinessReview => Boolean(review));
+  const reviews: GoogleBusinessReview[] = [];
+  const pageSize = Math.min(Math.max(input.pageSize ?? 50, 1), 100);
+  const maxReviews = Math.min(Math.max(input.maxReviews ?? 500, pageSize), 1000);
+  let pageToken: string | undefined;
+
+  do {
+    const url = new URL(`https://mybusiness.googleapis.com/v4/${parent}/reviews`);
+    url.searchParams.set("pageSize", String(Math.min(pageSize, maxReviews - reviews.length)));
+    url.searchParams.set("orderBy", "updateTime desc");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const json = await googleJson(url.toString(), input.accessToken);
+    const pageReviews = Array.isArray(json.reviews) ? json.reviews : [];
+    reviews.push(...pageReviews
+      .map(normalizeReview)
+      .filter((review): review is GoogleBusinessReview => Boolean(review)));
+    pageToken = typeof json.nextPageToken === "string" && json.nextPageToken.trim()
+      ? json.nextPageToken.trim()
+      : undefined;
+  } while (pageToken && reviews.length < maxReviews);
+
+  return reviews.slice(0, maxReviews);
 }
 
 export async function fetchGoogleBusinessReviewsFromAuthRef(input: {
   authRef: Pick<SourceAuthRef, "vault_ref">;
   locationName: string;
   pageSize?: number;
+  maxReviews?: number;
 }) {
   const material = await resolveSourceAuthMaterialFromVault({
     vaultRef: input.authRef.vault_ref,
@@ -143,6 +159,7 @@ export async function fetchGoogleBusinessReviewsFromAuthRef(input: {
     accessToken,
     locationName: input.locationName,
     pageSize: input.pageSize,
+    maxReviews: input.maxReviews,
   });
 }
 
