@@ -164,7 +164,6 @@ async function filterExistingSignals(
     .eq("branch_id", branchId)
     .eq("source_id", sourceId)
     .eq("source", "googlereviews")
-    .eq("channel", "review")
     .in("timestamp", timestamps);
 
   if (error) throw error;

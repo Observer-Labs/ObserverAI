@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { clusterId } = await req.json();
+  const { clusterId, locale: requestedLocale } = await req.json() as {
+    clusterId?: string;
+    locale?: string;
+  };
+  const locale = requestedLocale === "en" ? "en" : "tr";
 
   const { data: cluster } = await supabaseAdmin
     .from("clusters")
@@ -26,6 +30,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Cluster not found" }, { status: 404 });
   }
 
-  const snapshot = await generateIntentSnapshot(cluster as Cluster);
+  const snapshot = await generateIntentSnapshot(cluster as Cluster, locale);
   return NextResponse.json({ snapshot, cluster });
 }

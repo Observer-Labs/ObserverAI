@@ -60,8 +60,8 @@ export function googleReviewsSummaryToSignal(input: {
   const newest = timestamps.at(-1) ? new Date(timestamps.at(-1)!).toISOString().slice(0, 10) : "bilinmiyor";
   const samples = input.reviews
     .filter((review) => review.comment.trim())
-    .slice(0, 5)
-    .map((review) => `- ${review.rating ?? "?"}/5: ${review.comment.trim()}`);
+    .slice(0, 100)
+    .map((review) => `- ${review.rating ?? "?"}/5: ${review.comment.trim().slice(0, 400)}`);
 
   const content = [
     "Genel Yorum Özeti",
@@ -107,6 +107,7 @@ export function googleReviewSummarySourceId(signal: Pick<Signal, "source_id" | "
 export function googleReviewSummarySignalToAnalysisResult(
   signal: Signal,
   previous?: Pick<Signal, "content"> | { business_case?: string | null; recommended_action?: string | null } | null,
+  locale: "tr" | "en" = "tr",
 ): AnalysisResult | null {
   if (signal.source !== "googlereviews" || signal.channel !== "review_summary") return null;
 
@@ -118,17 +119,22 @@ export function googleReviewSummarySignalToAnalysisResult(
     : previous && "content" in previous
       ? previous.content
       : undefined;
-  const businessCase = previousText?.trim()
-    ? [
-        signal.content,
-        "",
-        "Önceki genel analizle karşılaştırma:",
-        summarizePreviousSummary(previousText),
-      ].join("\n")
-    : signal.content;
+  const previousSummary = previousText?.trim() ? summarizePreviousSummary(previousText) : "";
+  const ratingContext = averageRating === undefined
+    ? locale === "tr"
+      ? `${evidenceCount} yorumun genel görünümü değerlendirildi.`
+      : `The overall pattern across ${evidenceCount} reviews was evaluated.`
+    : locale === "tr"
+      ? `${evidenceCount} yorumun genel görünümü ${averageRating >= 4 ? "güçlü müşteri memnuniyetine" : averageRating >= 3 ? "karışık bir müşteri deneyimine" : "iyileştirme gerektiren bir müşteri deneyimine"} işaret ediyor.`
+      : `The overall pattern across ${evidenceCount} reviews indicates ${averageRating >= 4 ? "strong customer satisfaction" : averageRating >= 3 ? "a mixed customer experience" : "a customer experience that needs improvement"}.`;
+  const businessCase = previousSummary
+    ? locale === "tr"
+      ? `${ratingContext} Önceki genel analizle karşılaştırıldığında ana eğilim: ${previousSummary}`
+      : `${ratingContext} Compared with the previous general analysis, the main pattern is: ${previousSummary}`
+    : ratingContext;
 
   return {
-    title: "Genel Yorum Özeti",
+    title: locale === "tr" ? "Genel Yorum Özeti" : "Overall Review Summary",
     severity,
     confidence: 0.92,
     evidence_count: evidenceCount,
@@ -150,11 +156,17 @@ export function googleReviewSummarySignalToAnalysisResult(
     },
     business_case: businessCase,
     recommended_action: averageRating !== undefined && averageRating >= 4
-      ? "Acil aksiyon sinyali yok. Yeni 3 yıldız ve altı yorumlar geldiğinde aksiyon akışına alın; genel itibarı önceki özetle birlikte düzenli izleyin."
-      : "Yorum özetindeki düşük puan ve tekrar eden temaları önceki özetle karşılaştırıp ayrı aksiyon başlıklarına ayırın.",
+      ? locale === "tr"
+        ? "Acil aksiyon gerekmiyor; yeni düşük puanlı yorumları izleyin ve tekrar eden temaları ayrı aksiyonlara dönüştürün."
+        : "No urgent action is required; monitor new low-rated reviews and turn recurring themes into separate actions."
+      : locale === "tr"
+        ? "Tekrar eden memnuniyetsizlik temalarını belirleyip her biri için ayrı bir iyileştirme aksiyonu oluşturun."
+        : "Identify recurring dissatisfaction themes and create a separate improvement action for each.",
     category: "musteri",
-    customer_quote: signal.content.split("\n").find((line) => line.startsWith("- "))?.replace(/^- /, ""),
-    projected_impact: "Google işletme itibarının genel görünümü",
+    customer_quote: undefined,
+    projected_impact: locale === "tr"
+      ? "Google işletme itibarının genel görünümü"
+      : "Overall Google Business reputation",
   };
 }
 
@@ -216,6 +228,9 @@ function summarizePreviousSummary(value: string) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-    .filter((line) => !line.startsWith("Önceki genel analizle karşılaştırma:"));
-  return lines.slice(0, 6).join("\n");
+    .filter((line) => (
+      !line.startsWith("- ") &&
+      !/^(Genel Yorum Özeti|Overall Review Summary|Toplam Google yorumu|Ortalama puan|Puan dağılımı|Tarih aralığı|Öne çıkan yorum örnekleri|Yorum metni yok|Önceki genel analizle karşılaştırma:)/i.test(line)
+    ));
+  return lines.slice(0, 3).join(" ");
 }

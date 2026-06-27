@@ -121,6 +121,7 @@ describe("google reviews ingest helpers", () => {
       severity: 20,
       evidence_count: 1,
       category: "musteri",
+      customer_quote: undefined,
       source_breakdown: expect.objectContaining({ googlereviews: 1 }),
     });
   });
@@ -145,11 +146,39 @@ describe("google reviews ingest helpers", () => {
       branch_id: "branch-1",
       created_at: "2026-06-26T00:00:00.000Z",
     }, {
-      business_case: "Ortalama puan: 4.8/5\nPuan dağılımı: 5 yıldız: 10",
+      business_case: "Müşteriler özellikle hızlı iletişim ve uzmanlığı vurguluyor.",
       recommended_action: null,
     });
 
-    expect(result?.business_case).toContain("Önceki genel analizle karşılaştırma:");
-    expect(result?.recommended_action).toContain("önceki özetle");
+    expect(result?.business_case).toContain("Önceki genel analizle karşılaştırıldığında");
+    expect(result?.business_case).not.toContain("Puan dağılımı:");
+    expect(result?.recommended_action).toContain("tekrar eden temaları");
+  });
+
+  it("localizes the safe general summary fallback without exposing review text", () => {
+    const signal = googleReviewsSummaryToSignal({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      reviews: [{
+        external_review_id: "review-1",
+        reviewer_name: "Aylin",
+        comment: "Harika hizmet.",
+        rating: 5,
+        reviewed_at: "2026-02-20T09:00:00.000Z",
+      }],
+    });
+
+    const result = signal && googleReviewSummarySignalToAnalysisResult({
+      ...signal,
+      id: "signal-1",
+      branch_id: "branch-1",
+      created_at: "2026-06-26T00:00:00.000Z",
+    }, null, "en");
+
+    expect(result?.title).toBe("Overall Review Summary");
+    expect(result?.business_case).toContain("strong customer satisfaction");
+    expect(result?.business_case).not.toContain("Harika hizmet");
+    expect(result?.customer_quote).toBeUndefined();
   });
 });
