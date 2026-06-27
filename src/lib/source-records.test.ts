@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type QueryOperation = "insert" | "update";
+type QueryOperation = "insert" | "update" | "delete";
 
 type QueryCall = {
   table: string;
@@ -19,6 +19,7 @@ let branchLookup: { id: string; status: "active" | "paused" } | null = {
 let branchError: Error | null = null;
 let sourceError: Error | null = null;
 let existingSource: { id: string } | null = null;
+let sourceLookup: { id: string; branch_id: string; type: string; display_name: string } | null = null;
 
 function createQuery(table: string) {
   const call: QueryCall = { table, filters: [] };
@@ -41,6 +42,10 @@ function createQuery(table: string) {
     update: vi.fn((payload: Record<string, unknown>) => {
       call.operation = "update";
       call.updatePayload = payload;
+      return query;
+    }),
+    delete: vi.fn(() => {
+      call.operation = "delete";
       return query;
     }),
     maybeSingle: vi.fn(async () => {
@@ -79,7 +84,14 @@ function createQuery(table: string) {
         };
       }
 
+      if (table === "sources") {
+        return { data: sourceLookup, error: sourceError };
+      }
+
       return { data: null, error: null };
+    }),
+    then: vi.fn((resolve: (value: { count: number; error: Error | null }) => void) => {
+      resolve({ count: call.operation === "delete" ? 2 : 0, error: null });
     }),
   };
 
@@ -107,6 +119,12 @@ describe("source record helpers", () => {
     branchError = null;
     sourceError = null;
     existingSource = null;
+    sourceLookup = {
+      id: "source-1",
+      branch_id: "branch-1",
+      type: "googlereviews",
+      display_name: "Google Reviews",
+    };
   });
 
   it("sanitizes Trendyol source config and keeps delivery sources pending", async () => {
@@ -346,5 +364,52 @@ describe("source record helpers", () => {
       type: "csv",
       display_name: "Manual CSV",
     })).rejects.toBeInstanceOf(SourceNotFoundError);
+  });
+
+  it("deletes a source with its imported signals and general analysis", async () => {
+    const { deleteSourceRecord } = await loadSourceRecordsModule();
+
+    await expect(deleteSourceRecord("workspace-1", "source-1")).resolves.toMatchObject({
+      source: {
+        id: "source-1",
+        branch_id: "branch-1",
+        type: "googlereviews",
+      },
+      deletedSignals: 2,
+    });
+
+    const lookupCall = calls.find((call) => call.table === "sources" && call.selected === "id, branch_id, type, display_name");
+    expect(lookupCall?.filters).toEqual([
+      ["id", "source-1"],
+      ["workspace_id", "workspace-1"],
+    ]);
+
+    expect(calls).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        table: "signals",
+        operation: "delete",
+        filters: [
+          ["workspace_id", "workspace-1"],
+          ["source_id", "source-1"],
+        ],
+      }),
+      expect.objectContaining({
+        table: "clusters",
+        operation: "delete",
+        filters: [
+          ["workspace_id", "workspace-1"],
+          ["branch_id", "branch-1"],
+          ["candidate_key", "general_review_summary:source-1"],
+        ],
+      }),
+      expect.objectContaining({
+        table: "sources",
+        operation: "delete",
+        filters: [
+          ["id", "source-1"],
+          ["workspace_id", "workspace-1"],
+        ],
+      }),
+    ]));
   });
 });

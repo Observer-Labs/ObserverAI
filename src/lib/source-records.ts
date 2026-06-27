@@ -1,4 +1,5 @@
 import { sanitizeDeliverySourceConfig, type DeliveryConnectorProvider } from "./delivery-connectors";
+import { googleReviewSummaryCandidateKey } from "./google-reviews-ingest";
 import { getSupabaseAdmin } from "./supabase";
 import type { SignalSource, Source } from "./types";
 
@@ -20,6 +21,11 @@ export interface CreateSourceInput {
   type?: unknown;
   display_name?: unknown;
   config?: unknown;
+}
+
+export interface DeleteSourceResult {
+  source: Pick<Source, "id" | "branch_id" | "type" | "display_name">;
+  deletedSignals: number;
 }
 
 export async function createSourceRecord(workspaceId: string, input: CreateSourceInput): Promise<Source> {
@@ -69,6 +75,40 @@ export async function createSourceRecord(workspaceId: string, input: CreateSourc
 
   if (error) throw error;
   return data as Source;
+}
+
+export async function deleteSourceRecord(workspaceId: string, sourceId: string): Promise<DeleteSourceResult> {
+  const id = stringField(sourceId);
+  if (!id) throw new SourceValidationError("source_id is required");
+
+  const supabase = getSupabaseAdmin();
+  const { data: source, error: sourceError } = await supabase
+    .from("sources")
+    .select("id, branch_id, type, display_name")
+    .eq("id", id)
+    .eq("workspace_id", workspaceId)
+    .single();
+
+  if (sourceError || !source) throw new SourceNotFoundError("Source not found");
+
+  const sourceRow = source as Pick<Source, "id" | "branch_id" | "type" | "display_name">;
+  const deletedSignals = await deleteRowsBySourceId(workspaceId, sourceRow.id, "signals");
+
+  await Promise.all([
+    deleteRowsBySourceId(workspaceId, sourceRow.id, "delivery_reviews"),
+    deleteRowsBySourceId(workspaceId, sourceRow.id, "delivery_orders"),
+    deleteRowsBySourceId(workspaceId, sourceRow.id, "delivery_daily_metrics"),
+    deleteGeneralAnalysisClusters(workspaceId, sourceRow),
+  ]);
+
+  const { error: deleteError } = await supabase
+    .from("sources")
+    .delete()
+    .eq("id", sourceRow.id)
+    .eq("workspace_id", workspaceId);
+
+  if (deleteError) throw deleteError;
+  return { source: sourceRow, deletedSignals };
 }
 
 export function parseSourceInput(input: CreateSourceInput): {
@@ -153,6 +193,32 @@ function isAllowedSourceType(value: string): value is SignalSource {
     "slack", "whatsapp", "zendesk", "intercom", "jira", "appstore",
     "googleplay", "github", "reddit", "shopify", "trustpilot",
   ].includes(value);
+}
+
+async function deleteRowsBySourceId(workspaceId: string, sourceId: string, table: string) {
+  const { count, error } = await getSupabaseAdmin()
+    .from(table)
+    .delete({ count: "exact" })
+    .eq("workspace_id", workspaceId)
+    .eq("source_id", sourceId);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function deleteGeneralAnalysisClusters(
+  workspaceId: string,
+  source: Pick<Source, "id" | "branch_id" | "type">,
+) {
+  const candidateKey = googleReviewSummaryCandidateKey(source.id);
+  const { error } = await getSupabaseAdmin()
+    .from("clusters")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("branch_id", source.branch_id)
+    .eq("candidate_key", candidateKey);
+
+  if (error) throw error;
 }
 
 function stringField(value: unknown): string {

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { Trash2 } from "lucide-react";
 import { parseCsvHeaders } from "@/lib/csv-ingest";
 import type { IntegrationsConfig } from "@/lib/types";
 import type { CsvColumnMapping } from "@/lib/csv-ingest";
@@ -276,7 +277,7 @@ const COMING_SOON = [
 // ── Default configs ───────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIGS: Record<ActiveSourceKey, Record<string, unknown>> = {
-  googlereviews:   { enabled: false, sync_window_days: 150, last_sync: null },
+  googlereviews:   { enabled: false, sync_window_days: 7, last_sync: null },
   getir:           { enabled: false, store_id: "", last_sync: null },
   yemeksepeti:     { enabled: false, restaurant_id: "", last_sync: null },
   trendyol:        { enabled: false, store_id: "", last_sync: null },
@@ -308,7 +309,7 @@ interface FormField {
 
 const SOURCE_FIELDS: Record<ActiveSourceKey, FormField[]> = {
   googlereviews: [
-    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "150", type: "number", hint: "İlk senkronizasyonda en fazla 150 günlük yorum geçmişi taranır." },
+    { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "7", type: "number", hint: "İlk senkronizasyonda 1-150 gün arası yorum geçmişi taranır." },
   ],
   getir: [
     { key: "sync_window_days", label: "Geriye dönük süre (gün)", placeholder: "14", type: "number", hint: "İlk senkronizasyonda kaç günlük sipariş ve yorum geçmişi taransın." },
@@ -628,6 +629,8 @@ function ConnectPageContent() {
   const [analyticsSyncError, setAnalyticsSyncError] = useState<string | null>(null);
   const [emailSyncResult, setEmailSyncResult] = useState<EmailSyncResult | null>(null);
   const [emailSyncError, setEmailSyncError] = useState<string | null>(null);
+  const [deletingSourceId, setDeletingSourceId] = useState<string | null>(null);
+  const [deleteSourceError, setDeleteSourceError] = useState<string | null>(null);
 
   useEffect(() => {
     const headers = parseCsvHeaders(csvText);
@@ -798,6 +801,34 @@ function ConnectPageContent() {
       body: JSON.stringify({ updates: { integrations_config: mergedConfig } }),
     });
     await loadWorkspace();
+  }
+
+  async function deleteSource(source: SourceRow | undefined) {
+    if (!source) return;
+    const confirmed = window.confirm(
+      `${source.display_name} kaynağı silinsin mi? Bu kaynaktan çekilmiş eski yorumlar ve genel analiz de silinir.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingSourceId(source.id);
+    setDeleteSourceError(null);
+    try {
+      const res = await fetch(`/api/sources/${source.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (!res.ok) {
+        setDeleteSourceError(data.error ?? "Source could not be deleted.");
+        return;
+      }
+
+      setSelected(null);
+      setSourceSyncResult(null);
+      setDeliverySyncResult(null);
+      setAnalyticsSyncResult(null);
+      setEmailSyncResult(null);
+      await loadWorkspace();
+    } finally {
+      setDeletingSourceId(null);
+    }
   }
 
   async function testSourceConnection(source: SourceRow | undefined) {
@@ -1557,10 +1588,24 @@ function ConnectPageContent() {
                     </div>
                   </div>
                   {connected && (
-                    <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
-                      <div className="size-[5px] rounded-full bg-[#22c55e]" />
-                      {authReady ? "Kimlik hazır" : selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 rounded-md border border-[rgba(34,197,94,0.2)] bg-[rgba(34,197,94,0.1)] px-2 py-[3px] text-[0.65rem] font-bold text-[#4ade80]">
+                        <div className="size-[5px] rounded-full bg-[#22c55e]" />
+                        {authReady ? "Kimlik hazır" : selectedSourceRecord?.status === "pending" ? "Onay bekliyor" : "Bağlı"}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Kaynağı sil"
+                        aria-label="Kaynağı sil"
+                        onClick={() => void deleteSource(selectedSourceRecord)}
+                        disabled={!selectedSourceRecord || deletingSourceId === selectedSourceRecord.id}
+                        className="size-8 rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -1884,6 +1929,11 @@ function ConnectPageContent() {
                     {sourceSaveError && (
                       <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
                         {sourceSaveError}
+                      </div>
+                    )}
+                    {deleteSourceError && (
+                      <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/10 px-3.5 py-2.5 text-[0.78rem] text-destructive">
+                        {deleteSourceError}
                       </div>
                     )}
                     {isLocationListKey(selected) && connected && (

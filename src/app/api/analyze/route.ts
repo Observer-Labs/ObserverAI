@@ -9,8 +9,14 @@ import { checkAnalyzeAllowed, recordAnalyzeCall } from "@/lib/rate-limit";
 import { postToSlack } from "@/lib/slack";
 import { sendEmailBrief } from "@/lib/email";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
-import { googleReviewSummarySignalToAnalysisResult } from "@/lib/google-reviews-ingest";
+import {
+  googleReviewSummaryCandidateKey,
+  googleReviewSummarySignalToAnalysisResult,
+  googleReviewSummarySourceId,
+} from "@/lib/google-reviews-ingest";
 import type { AnalysisResult, Cluster, Signal } from "@/lib/types";
+
+type AnalysisResultWithCandidateKey = AnalysisResult & { candidate_key?: string };
 
 export async function POST(req: NextRequest) {
   let wid: string;
@@ -87,9 +93,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "No signals to analyze", clusters: [] });
   }
 
-  const summaryResults = signals
-    .map((signal) => googleReviewSummarySignalToAnalysisResult(signal as Signal))
-    .filter((result): result is AnalysisResult => Boolean(result));
+  const summarySignals = signals.filter((signal) => signal.source === "googlereviews" && signal.channel === "review_summary") as Signal[];
+  const previousSummaryClusters = await fetchPreviousSummaryClusters(wid, branchId, summarySignals);
+  const summaryResults: AnalysisResultWithCandidateKey[] = summarySignals
+    .flatMap((signal) => {
+      const sourceId = googleReviewSummarySourceId(signal);
+      const candidateKey = sourceId ? googleReviewSummaryCandidateKey(sourceId) : undefined;
+      const result = googleReviewSummarySignalToAnalysisResult(
+        signal,
+        candidateKey ? previousSummaryClusters.get(candidateKey) : null,
+      );
+      return result ? [{ ...result, ...(candidateKey ? { candidate_key: candidateKey } : {}) }] : [];
+    });
   const aiSignals = signals.filter((signal) => !(signal.source === "googlereviews" && signal.channel === "review_summary"));
 
   // Run Claude analysis with workspace vertical preset (stored on workspace directly)
@@ -97,7 +112,7 @@ export async function POST(req: NextRequest) {
   const { results: aiResults, usage } = aiSignals.length > 0
     ? await analyzeSignals(aiSignals, vertical)
     : { results: [] as AnalysisResult[], usage: { inputTokens: 0, outputTokens: 0 } };
-  const results = [...summaryResults, ...aiResults];
+  const results: AnalysisResultWithCandidateKey[] = [...summaryResults, ...aiResults];
 
   // Record usage for spend cap + audit log (non-blocking on failure)
   recordAnalyzeCall(wid, usage.inputTokens, usage.outputTokens).catch((err) =>
@@ -116,6 +131,7 @@ export async function POST(req: NextRequest) {
     source_breakdown: r.source_breakdown,
     business_case: r.business_case,
     recommended_action: r.recommended_action,
+    ...(r.candidate_key ? { candidate_key: r.candidate_key } : {}),
     ...(r.category !== undefined ? { category: r.category } : {}),
     customer_quote: r.customer_quote,
     projected_impact: r.projected_impact,
@@ -217,6 +233,45 @@ export async function POST(req: NextRequest) {
     totalSignals: allSignals.length,
     runsLeft: planStatus.runsLeft,
   });
+}
+
+async function fetchPreviousSummaryClusters(
+  workspaceId: string,
+  branchId: string | undefined,
+  summarySignals: Signal[],
+) {
+  const candidateKeys = Array.from(new Set(
+    summarySignals
+      .map((signal) => {
+        const sourceId = googleReviewSummarySourceId(signal);
+        return sourceId ? googleReviewSummaryCandidateKey(sourceId) : null;
+      })
+      .filter((value): value is string => Boolean(value)),
+  ));
+
+  if (candidateKeys.length === 0) return new Map<string, Pick<Cluster, "business_case" | "recommended_action">>();
+
+  let query = supabaseAdmin
+    .from("clusters")
+    .select("candidate_key, business_case, recommended_action")
+    .eq("workspace_id", workspaceId)
+    .in("candidate_key", candidateKeys);
+
+  if (branchId) query = query.eq("branch_id", branchId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return new Map(
+    (data ?? [])
+      .filter((row): row is { candidate_key: string; business_case: string | null; recommended_action: string | null } => (
+        typeof row.candidate_key === "string"
+      ))
+      .map((row) => [row.candidate_key, {
+        business_case: row.business_case,
+        recommended_action: row.recommended_action,
+      }]),
+  );
 }
 
 export async function GET(req: NextRequest) {

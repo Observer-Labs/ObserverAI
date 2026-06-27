@@ -19,6 +19,7 @@ type DashboardBranch = Branch & {
 
 type PriorityFilter = "all" | "critical" | "high" | "medium" | "low";
 type CategoryFilter = "all" | "operasyon" | "musteri" | "personel";
+const GENERAL_ANALYSIS_CANDIDATE_PREFIX = "general_review_summary:";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -109,6 +110,23 @@ function clusterCategory(cluster: Cluster): Exclude<CategoryFilter, "all"> {
     return "musteri";
   }
   return "operasyon";
+}
+
+function isGeneralAnalysisCluster(cluster: Cluster) {
+  return (
+    cluster.candidate_key?.startsWith(GENERAL_ANALYSIS_CANDIDATE_PREFIX) ||
+    cluster.title.trim().toLowerCase() === "genel yorum özeti"
+  );
+}
+
+function compactGeneralAnalysisText(value: string | undefined) {
+  if (!value) return "Henüz genel analiz metni yok.";
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 10)
+    .join("\n");
 }
 
 function categoryI18nKey(category: CategoryFilter): "catOperasyon" | "catMusteri" | "catPersonel" | "catAll" {
@@ -802,7 +820,13 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredClusters = clusters
+  const issueClusters = clusters.filter((cluster) => !isGeneralAnalysisCluster(cluster));
+  const generalAnalysisClusters = clusters
+    .filter(isGeneralAnalysisCluster)
+    .filter((cluster) => selectedBranchId === "all" || cluster.branch_id === selectedBranchId)
+    .sort((a, b) => new Date(b.updated_at ?? b.created_at).getTime() - new Date(a.updated_at ?? a.created_at).getTime());
+
+  const filteredClusters = issueClusters
     .filter((c) => {
       if (selectedBranchId !== "all" && c.branch_id !== selectedBranchId) return false;
       if (severityFilter === "all") return true;
@@ -824,7 +848,7 @@ export default function DashboardPage() {
   const branchIssueCounts = new Map<string, number>();
   const branchTopClusters = new Map<string, Cluster>();
 
-  for (const cluster of clusters) {
+  for (const cluster of issueClusters) {
     branchIssueCounts.set(cluster.branch_id, (branchIssueCounts.get(cluster.branch_id) ?? 0) + 1);
     const current = branchTopClusters.get(cluster.branch_id);
     if (!current || cluster.severity > current.severity) {
@@ -833,9 +857,10 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    if (snapshotOpen && selectedCluster && isGeneralAnalysisCluster(selectedCluster)) return;
     if (selectedCluster && displayClusters.some((cluster) => cluster.id === selectedCluster.id)) return;
     setSelectedCluster(displayClusters[0] ?? null);
-  }, [selectedBranchId, clusters, selectedCluster, displayClusters]);
+  }, [selectedBranchId, clusters, selectedCluster, displayClusters, snapshotOpen]);
 
   const hasAnyConnectedSource = branches.some((b) => b.connected_source_count > 0);
 
@@ -843,8 +868,8 @@ export default function DashboardPage() {
   const polar_status = workspace?.polar_status;
   const trialDays = daysLeft(workspace?.trial_ends_at);
   const branchScopedClusters = selectedBranchId === "all"
-    ? clusters
-    : clusters.filter((cluster) => cluster.branch_id === selectedBranchId);
+    ? issueClusters
+    : issueClusters.filter((cluster) => cluster.branch_id === selectedBranchId);
   const priorityFilterCounts: Record<PriorityFilter, number> = {
     all: branchScopedClusters.length,
     critical: branchScopedClusters.filter((c) => severityLabel(c.severity) === "critical").length,
@@ -1014,6 +1039,45 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {generalAnalysisClusters.length > 0 && (
+              <div className="mb-5 rounded-[14px] border bg-card px-5 py-4">
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Genel analiz</h2>
+                    <p className="mt-1 text-[0.78rem] text-muted-foreground">
+                      Kaynak bağlandığında veya yeni veri geldiğinde yenilenen genel yorum özeti.
+                    </p>
+                  </div>
+                  <span className="rounded-md border bg-muted px-2 py-1 font-mono text-[0.65rem] font-semibold text-muted-foreground">
+                    {generalAnalysisClusters.length} özet
+                  </span>
+                </div>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {generalAnalysisClusters.map((cluster) => (
+                    <button
+                      key={cluster.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCluster(cluster);
+                        setSnapshotOpen(true);
+                      }}
+                      className="rounded-[10px] border bg-background px-4 py-3 text-left transition hover:border-primary/40"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="text-[0.86rem] font-bold text-foreground">{cluster.title}</div>
+                        <div className="font-mono text-[0.68rem] text-muted-foreground">
+                          {cluster.evidence_count} yorum
+                        </div>
+                      </div>
+                      <p className="whitespace-pre-line text-[0.78rem] leading-[1.6] text-muted-foreground">
+                        {compactGeneralAnalysisText(cluster.business_case)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Header */}
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
               <div>

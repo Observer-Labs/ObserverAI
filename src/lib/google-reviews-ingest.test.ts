@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   GOOGLE_REVIEWS_MAX_SYNC_WINDOW_DAYS,
   googleReviewDedupeKey,
+  googleReviewSummaryCandidateKey,
   googleReviewsSummaryToSignal,
   googleReviewSummarySignalToAnalysisResult,
   googleReviewToSignal,
@@ -49,7 +50,7 @@ describe("google reviews ingest helpers", () => {
   });
 
   it("caps the Google review history window at 150 days", () => {
-    expect(normalizeGoogleReviewsSyncWindowDays(undefined)).toBe(150);
+    expect(normalizeGoogleReviewsSyncWindowDays(undefined)).toBe(7);
     expect(normalizeGoogleReviewsSyncWindowDays("120")).toBe(120);
     expect(normalizeGoogleReviewsSyncWindowDays("999")).toBe(GOOGLE_REVIEWS_MAX_SYNC_WINDOW_DAYS);
     expect(normalizeGoogleReviewsSyncWindowDays("-5")).toBe(1);
@@ -93,6 +94,7 @@ describe("google reviews ingest helpers", () => {
     });
     expect(signal?.content).toContain("Genel Yorum Özeti");
     expect(signal?.content).toContain("Puan dağılımı: 5 yıldız: 1, 4 yıldız: 1");
+    expect(googleReviewSummaryCandidateKey("source-1")).toBe("general_review_summary:source-1");
   });
 
   it("converts a Google review summary signal to a deterministic analysis result", () => {
@@ -121,5 +123,33 @@ describe("google reviews ingest helpers", () => {
       category: "musteri",
       source_breakdown: expect.objectContaining({ googlereviews: 1 }),
     });
+  });
+
+  it("carries previous general analysis context into the next summary result", () => {
+    const signal = googleReviewsSummaryToSignal({
+      workspaceId: "workspace-1",
+      branchId: "branch-1",
+      sourceId: "source-1",
+      reviews: [{
+        external_review_id: "review-1",
+        reviewer_name: "Aylin",
+        comment: "Hizmet iyi.",
+        rating: 5,
+        reviewed_at: "2026-02-20T09:00:00.000Z",
+      }],
+    });
+
+    const result = signal && googleReviewSummarySignalToAnalysisResult({
+      ...signal,
+      id: "signal-1",
+      branch_id: "branch-1",
+      created_at: "2026-06-26T00:00:00.000Z",
+    }, {
+      business_case: "Ortalama puan: 4.8/5\nPuan dağılımı: 5 yıldız: 10",
+      recommended_action: null,
+    });
+
+    expect(result?.business_case).toContain("Önceki genel analizle karşılaştırma:");
+    expect(result?.recommended_action).toContain("önceki özetle");
   });
 });
