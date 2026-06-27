@@ -407,6 +407,7 @@ export interface WhatsAppConfig {
   verified?: boolean;
   verified_at?: string;
   last_inbound_at?: string;
+  initial_analysis_sent_at?: string;
 }
 
 export interface DistributionConfig {

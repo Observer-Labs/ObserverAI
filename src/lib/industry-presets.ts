@@ -99,11 +99,18 @@ export function getPreset(vertical: VerticalType = "auto"): IndustryPreset {
   return INDUSTRY_PRESETS[vertical] ?? INDUSTRY_PRESETS.auto;
 }
 
-export function buildSystemPrompt(vertical: VerticalType = "auto"): string {
+export function buildSystemPrompt(vertical: VerticalType = "auto", locale: "tr" | "en" = "tr"): string {
   const preset = getPreset(vertical);
+  const languageInstruction =
+    locale === "tr"
+      ? "Write every user-visible string in natural Turkish. Keep JSON keys unchanged. Do not translate or repeat verbatim customer quotes unless the customer quote field explicitly requires one."
+      : "Write every user-visible string in natural English. Keep JSON keys unchanged. Do not translate or repeat verbatim customer quotes unless the customer quote field explicitly requires one.";
   return `You are Observer, a cross-vertical decision intelligence engine.
 
 You analyze raw signals from ANY combination of: customer support, app store reviews, social media, POS/sales data, and analytics, and cluster them into ranked, actionable gaps.
+
+Output language:
+${languageInstruction}
 
 For each cluster return:
 - title: clear, specific problem statement (not generic)

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Signal, AnalysisResult, VerticalType } from "./types";
 import { buildSystemPrompt } from "./industry-presets";
 import { requireEnvGroup } from "@/env";
+import { googleReviewSummarySignalToAnalysisResult } from "./google-reviews-ingest";
 
 function getClient() {
   const env = requireEnvGroup("core");
@@ -18,7 +19,13 @@ export interface AnalyzeOutput {
   usage: AnalyzeUsage;
 }
 
-export async function analyzeSignals(signals: Signal[], vertical: VerticalType = "auto"): Promise<AnalyzeOutput> {
+type AnalysisLocale = "tr" | "en";
+
+export async function analyzeSignals(
+  signals: Signal[],
+  vertical: VerticalType = "auto",
+  locale: AnalysisLocale = "tr",
+): Promise<AnalyzeOutput> {
   const signalTexts = signals
     .map((s) => `[${s.source.toUpperCase()}][${s.channel}] ${s.content}`)
     .join("\n");
@@ -26,7 +33,7 @@ export async function analyzeSignals(signals: Signal[], vertical: VerticalType =
   const message = await getClient().messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 4096,
-    system: buildSystemPrompt(vertical),
+    system: buildSystemPrompt(vertical, locale),
     messages: [
       {
         role: "user",
@@ -57,11 +64,56 @@ export async function analyzeSignals(signals: Signal[], vertical: VerticalType =
   };
 }
 
-export async function generateIntentSnapshot(cluster: import("./types").Cluster) {
+export async function summarizeGoogleReviewSignal(
+  signal: Signal,
+  locale: AnalysisLocale = "tr",
+): Promise<{ result: AnalysisResult; usage: AnalyzeUsage }> {
+  const fallback = googleReviewSummarySignalToAnalysisResult(signal, null, locale);
+  if (!fallback) throw new Error("Invalid Google review summary signal");
+
+  const languageName = locale === "tr" ? "Turkish" : "English";
+  const message = await getClient().messages.create({
+    model: "claude-sonnet-4-5",
+    max_tokens: 900,
+    system: `You summarize aggregate Google Business reviews for an owner.
+Return one valid JSON object with keys: summary, recommended_action.
+Write in ${languageName}.
+The summary must synthesize recurring themes in 2-3 concise sentences.
+Do not show rating distribution, review examples, reviewer names, original quotes, or translations.
+Do not claim a theme unless the input supports it.
+The recommended action must be one concise next step.`,
+    messages: [{ role: "user", content: signal.content }],
+  });
+  const rawText = message.content[0].type === "text" ? message.content[0].text : "{}";
+  const text = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  const parsed = JSON.parse(text) as { summary?: unknown; recommended_action?: unknown };
+  if (typeof parsed.summary !== "string" || typeof parsed.recommended_action !== "string") {
+    throw new Error("AI returned an unexpected Google review summary format.");
+  }
+
+  return {
+    result: {
+      ...fallback,
+      business_case: parsed.summary.trim(),
+      recommended_action: parsed.recommended_action.trim(),
+      customer_quote: undefined,
+    },
+    usage: {
+      inputTokens: message.usage?.input_tokens ?? 0,
+      outputTokens: message.usage?.output_tokens ?? 0,
+    },
+  };
+}
+
+export async function generateIntentSnapshot(
+  cluster: import("./types").Cluster,
+  locale: AnalysisLocale = "tr",
+) {
+  const languageName = locale === "tr" ? "Turkish" : "English";
   const message = await getClient().messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 2048,
-    system: "You are a senior product manager. Generate a precise intent snapshot for the given product gap. Return valid JSON only.",
+    system: `You are a senior product manager. Generate a precise intent snapshot for the given product gap in ${languageName}. Return valid JSON only. Keep JSON keys unchanged.`,
     messages: [
       {
         role: "user",

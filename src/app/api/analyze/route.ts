@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { analyzeSignals } from "@/lib/anthropic";
+import { getLocale } from "next-intl/server";
+import { analyzeSignals, summarizeGoogleReviewSignal } from "@/lib/anthropic";
 import { getPendingSignals, upsertClusters, supabaseAdmin, getWorkspace, logDelivery, incrementAnalysisCount, resetAnalysisCountIfNeeded } from "@/lib/supabase";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
 import { getPlanStatus } from "@/lib/polar";
@@ -9,6 +10,7 @@ import { checkAnalyzeAllowed, recordAnalyzeCall } from "@/lib/rate-limit";
 import { postToSlack } from "@/lib/slack";
 import { sendEmailBrief } from "@/lib/email";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
+import { selectTopAnalysisCluster, shouldSendInitialWhatsApp } from "@/lib/analysis-delivery";
 import {
   googleReviewSummaryCandidateKey,
   googleReviewSummarySignalToAnalysisResult,
@@ -29,6 +31,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as { branch_id?: string; include_demo?: boolean };
   const branchId = body.branch_id;
   const includeDemo = body.include_demo === true;
+  const locale = (await getLocale()) === "en" ? "en" : "tr";
 
   if (includeDemo) {
     let realSignalsQuery = supabaseAdmin
@@ -93,25 +96,65 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "No signals to analyze", clusters: [] });
   }
 
-  const summarySignals = signals.filter((signal) => signal.source === "googlereviews" && signal.channel === "review_summary") as Signal[];
+  const summarySignalMap = new Map<string, Signal>();
+  for (const signal of signals as Signal[]) {
+    if (signal.source !== "googlereviews" || signal.channel !== "review_summary") continue;
+    const sourceId = googleReviewSummarySourceId(signal);
+    if (!sourceId) continue;
+    const current = summarySignalMap.get(sourceId);
+    if (!current || new Date(signal.created_at).getTime() > new Date(current.created_at).getTime()) {
+      summarySignalMap.set(sourceId, signal);
+    }
+  }
+  const summarySignals = Array.from(summarySignalMap.values());
   const previousSummaryClusters = await fetchPreviousSummaryClusters(wid, branchId, summarySignals);
-  const summaryResults: AnalysisResultWithCandidateKey[] = summarySignals
-    .flatMap((signal) => {
+  const summaryOutputsPromise = Promise.all(summarySignals.map(async (signal) => {
+    const sourceId = googleReviewSummarySourceId(signal);
+    const candidateKey = sourceId ? googleReviewSummaryCandidateKey(sourceId) : undefined;
+    try {
+      const { result, usage } = await summarizeGoogleReviewSignal(signal, locale);
+      return {
+        result: { ...result, ...(candidateKey ? { candidate_key: candidateKey } : {}) },
+        usage,
+      };
+    } catch (error) {
+      console.error("[analyze] Google review synthesis failed, using fallback:", error);
       const sourceId = googleReviewSummarySourceId(signal);
       const candidateKey = sourceId ? googleReviewSummaryCandidateKey(sourceId) : undefined;
       const result = googleReviewSummarySignalToAnalysisResult(
         signal,
         candidateKey ? previousSummaryClusters.get(candidateKey) : null,
+        locale,
       );
-      return result ? [{ ...result, ...(candidateKey ? { candidate_key: candidateKey } : {}) }] : [];
-    });
+      return {
+        result: result ? { ...result, ...(candidateKey ? { candidate_key: candidateKey } : {}) } : null,
+        usage: { inputTokens: 0, outputTokens: 0 },
+      };
+    }
+  }));
   const aiSignals = signals.filter((signal) => !(signal.source === "googlereviews" && signal.channel === "review_summary"));
 
   // Run Claude analysis with workspace vertical preset (stored on workspace directly)
   const vertical = (freshWorkspace as { vertical?: string }).vertical as import("@/lib/types").VerticalType ?? "auto";
-  const { results: aiResults, usage } = aiSignals.length > 0
-    ? await analyzeSignals(aiSignals, vertical)
-    : { results: [] as AnalysisResult[], usage: { inputTokens: 0, outputTokens: 0 } };
+  const aiOutputPromise = aiSignals.length > 0
+    ? analyzeSignals(aiSignals, vertical, locale)
+    : Promise.resolve({ results: [] as AnalysisResult[], usage: { inputTokens: 0, outputTokens: 0 } });
+  const [summaryOutputs, aiOutput] = await Promise.all([summaryOutputsPromise, aiOutputPromise]);
+  const summaryResults = summaryOutputs
+    .map((output) => output.result)
+    .filter((result): result is AnalysisResultWithCandidateKey => result !== null);
+  const summaryUsage = summaryOutputs.reduce(
+    (total, output) => ({
+      inputTokens: total.inputTokens + output.usage.inputTokens,
+      outputTokens: total.outputTokens + output.usage.outputTokens,
+    }),
+    { inputTokens: 0, outputTokens: 0 },
+  );
+  const usage = {
+    inputTokens: aiOutput.usage.inputTokens + summaryUsage.inputTokens,
+    outputTokens: aiOutput.usage.outputTokens + summaryUsage.outputTokens,
+  };
+  const aiResults = aiOutput.results;
   const results: AnalysisResultWithCandidateKey[] = [...summaryResults, ...aiResults];
 
   // Record usage for spend cap + audit log (non-blocking on failure)
@@ -143,60 +186,68 @@ export async function POST(req: NextRequest) {
   // Increment usage counter
   await incrementAnalysisCount(wid);
 
-  // Mark only the signal class used in this run as reviewed.
-  let reviewedQuery = supabaseAdmin
+  // Mark only the exact capped signal set used in this run as reviewed.
+  await supabaseAdmin
     .from("signals")
     .update({ reviewed: true })
     .eq("workspace_id", wid)
-    .eq("reviewed", false);
-
-  reviewedQuery = includeDemo
-    ? reviewedQuery.eq("channel", "demo")
-    : reviewedQuery.neq("channel", "demo");
-
-  await reviewedQuery;
+    .in("id", signals.map((signal) => signal.id));
 
   // Auto-distribute if enabled, call libraries directly (not via HTTP, which lacks auth cookies)
   try {
     const distConfig = freshWorkspace.distribution_config;
-    if (distConfig?.auto_distribute && inserted && inserted.length > 0) {
-      const topCluster = inserted[0] as Cluster;
-      const distributes: Promise<unknown>[] = [];
+    const initialAnalysisAlreadySent = Boolean(freshWorkspace.whatsapp_config?.initial_analysis_sent_at);
+    const initialWhatsAppEnabled = shouldSendInitialWhatsApp({
+      includeDemo,
+      initialAnalysisSentAt: initialAnalysisAlreadySent
+        ? freshWorkspace.whatsapp_config?.initial_analysis_sent_at
+        : undefined,
+      enabled: distConfig?.whatsapp?.enabled,
+      recipientNumbers: distConfig?.whatsapp?.recipient_numbers,
+    });
+    if ((distConfig?.auto_distribute || initialWhatsAppEnabled) && inserted && inserted.length > 0) {
+      const topCluster = selectTopAnalysisCluster(inserted as Cluster[]);
+      if (!topCluster) return NextResponse.json({ error: "No analysis cluster was created." }, { status: 500 });
+      const distributes: Promise<{ channel: string; success: boolean }>[] = [];
 
-      if (distConfig.slack?.enabled) {
+      if (distConfig?.auto_distribute && distConfig.slack?.enabled) {
         const token = freshWorkspace.slack_bot_token ?? freshWorkspace.slack_token;
         const channels: string[] = distConfig.slack.channels ?? [];
         if (token && channels.length > 0) {
           for (const channel of channels) {
             distributes.push(
-              postToSlack(token, channel, topCluster).then(() =>
-                logDelivery({ cluster_id: topCluster.id, channel: "slack", recipient: channel, sent_at: new Date().toISOString(), status: "sent" })
-              ).catch(() =>
-                logDelivery({ cluster_id: topCluster.id, channel: "slack", recipient: channel, sent_at: new Date().toISOString(), status: "failed" })
-              )
+              postToSlack(token, channel, topCluster).then(async () => {
+                await logDelivery({ cluster_id: topCluster.id, channel: "slack", recipient: channel, sent_at: new Date().toISOString(), status: "sent" });
+                return { channel: "slack", success: true };
+              }).catch(async () => {
+                await logDelivery({ cluster_id: topCluster.id, channel: "slack", recipient: channel, sent_at: new Date().toISOString(), status: "failed" });
+                return { channel: "slack", success: false };
+              })
             );
           }
         }
       }
 
-      if (distConfig.email?.enabled) {
+      if (distConfig?.auto_distribute && distConfig.email?.enabled) {
         const recipients: string[] = distConfig.email.recipients ?? [];
         if (recipients.length > 0) {
           distributes.push(
-            sendEmailBrief(recipients, inserted as Cluster[]).then(() => {
+            sendEmailBrief(recipients, inserted as Cluster[], undefined, locale).then(async () => {
               for (const c of inserted!) {
-                logDelivery({ cluster_id: c.id, channel: "email", recipient: recipients.join(", "), sent_at: new Date().toISOString(), status: "sent" });
+                await logDelivery({ cluster_id: c.id, channel: "email", recipient: recipients.join(", "), sent_at: new Date().toISOString(), status: "sent" });
               }
-            }).catch(() => {
+              return { channel: "email", success: true };
+            }).catch(async () => {
               for (const c of inserted!) {
-                logDelivery({ cluster_id: c.id, channel: "email", recipient: recipients.join(", "), sent_at: new Date().toISOString(), status: "failed" });
+                await logDelivery({ cluster_id: c.id, channel: "email", recipient: recipients.join(", "), sent_at: new Date().toISOString(), status: "failed" });
               }
+              return { channel: "email", success: false };
             })
           );
         }
       }
 
-      if (distConfig.whatsapp?.enabled) {
+      if ((distConfig?.auto_distribute || initialWhatsAppEnabled) && distConfig?.whatsapp?.enabled) {
         const numbers: string[] = distConfig.whatsapp.recipient_numbers ?? [];
         let branchName: string | null = null;
         if (topCluster.branch_id) {
@@ -210,16 +261,29 @@ export async function POST(req: NextRequest) {
         }
         for (const number of numbers) {
           distributes.push(
-            sendWhatsAppAlert(number, topCluster, { branchName }).then(() =>
-              logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "sent" })
-            ).catch(() =>
-              logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "failed" })
-            )
+            sendWhatsAppAlert(number, topCluster, { branchName, locale }).then(async () => {
+              await logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "sent" });
+              return { channel: "whatsapp", success: true };
+            }).catch(async () => {
+              await logDelivery({ cluster_id: topCluster.id, channel: "whatsapp", recipient: number, sent_at: new Date().toISOString(), status: "failed" });
+              return { channel: "whatsapp", success: false };
+            })
           );
         }
       }
 
-      await Promise.allSettled(distributes);
+      const deliveryResults = await Promise.all(distributes);
+      if (initialWhatsAppEnabled && deliveryResults.some((result) => result.channel === "whatsapp" && result.success)) {
+        await supabaseAdmin
+          .from("workspaces")
+          .update({
+            whatsapp_config: {
+              ...(freshWorkspace.whatsapp_config ?? {}),
+              initial_analysis_sent_at: new Date().toISOString(),
+            },
+          })
+          .eq("id", wid);
+      }
     }
   } catch {
     // Auto-distribute failure must not block the analysis response

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,13 +54,13 @@ function urgencyKey(s: number): "urgentLabel" | "soonLabel" | "whenLabel" | "low
   return "lowLabel";
 }
 
-function timeSince(d: Date): string {
+function timeSince(d: Date, locale: string): string {
   const mins = Math.floor((Date.now() - d.getTime()) / 60000);
-  if (mins < 1) return "az önce";
-  if (mins < 60) return `${mins}dk önce`;
+  if (mins < 1) return locale === "tr" ? "az önce" : "just now";
+  if (mins < 60) return locale === "tr" ? `${mins}dk önce` : `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}sa önce`;
-  return `${Math.floor(hrs / 24)}g önce`;
+  if (hrs < 24) return locale === "tr" ? `${hrs}sa önce` : `${hrs}h ago`;
+  return locale === "tr" ? `${Math.floor(hrs / 24)}g önce` : `${Math.floor(hrs / 24)}d ago`;
 }
 
 function _revenueImpact(business_case?: string): string {
@@ -115,18 +115,23 @@ function clusterCategory(cluster: Cluster): Exclude<CategoryFilter, "all"> {
 function isGeneralAnalysisCluster(cluster: Cluster) {
   return (
     cluster.candidate_key?.startsWith(GENERAL_ANALYSIS_CANDIDATE_PREFIX) ||
-    cluster.title.trim().toLowerCase() === "genel yorum özeti"
+    ["genel yorum özeti", "overall review summary"].includes(cluster.title.trim().toLowerCase())
   );
 }
 
-function compactGeneralAnalysisText(value: string | undefined) {
-  if (!value) return "Henüz genel analiz metni yok.";
-  return value
+function compactGeneralAnalysisText(value: string | undefined, emptyText: string) {
+  if (!value) return emptyText;
+  const compact = value
     .split("\n")
     .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 10)
+    .filter((line) => (
+      Boolean(line) &&
+      !line.startsWith("- ") &&
+      !/^(Genel Yorum Özeti|Overall Review Summary|Toplam Google yorumu|Ortalama puan|Puan dağılımı|Tarih aralığı|Öne çıkan yorum örnekleri|Yorum metni yok)/i.test(line)
+    ))
+    .slice(0, 4)
     .join("\n");
+  return compact || emptyText;
 }
 
 function categoryI18nKey(category: CategoryFilter): "catOperasyon" | "catMusteri" | "catPersonel" | "catAll" {
@@ -616,6 +621,7 @@ function ExecutionBrief({
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
+  const locale = useLocale();
   const router = useRouter();
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [branches, setBranches] = useState<DashboardBranch[]>([]);
@@ -1043,13 +1049,13 @@ export default function DashboardPage() {
               <div className="mb-5 rounded-[14px] border bg-card px-5 py-4">
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">Genel analiz</h2>
+                    <h2 className="text-[1rem] font-bold tracking-[-0.01em] text-foreground">{t("generalAnalysisTitle")}</h2>
                     <p className="mt-1 text-[0.78rem] text-muted-foreground">
-                      Kaynak bağlandığında veya yeni veri geldiğinde yenilenen genel yorum özeti.
+                      {t("generalAnalysisBody")}
                     </p>
                   </div>
                   <span className="rounded-md border bg-muted px-2 py-1 font-mono text-[0.65rem] font-semibold text-muted-foreground">
-                    {generalAnalysisClusters.length} özet
+                    {t("generalAnalysisCount", { n: generalAnalysisClusters.length })}
                   </span>
                 </div>
                 <div className="grid gap-3 lg:grid-cols-2">
@@ -1064,13 +1070,13 @@ export default function DashboardPage() {
                       className="rounded-[10px] border bg-background px-4 py-3 text-left transition hover:border-primary/40"
                     >
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <div className="text-[0.86rem] font-bold text-foreground">{cluster.title}</div>
+                        <div className="text-[0.86rem] font-bold text-foreground">{t("generalAnalysisTitle")}</div>
                         <div className="font-mono text-[0.68rem] text-muted-foreground">
                           {cluster.evidence_count} yorum
                         </div>
                       </div>
                       <p className="whitespace-pre-line text-[0.78rem] leading-[1.6] text-muted-foreground">
-                        {compactGeneralAnalysisText(cluster.business_case)}
+                        {compactGeneralAnalysisText(cluster.business_case, t("generalAnalysisEmpty"))}
                       </p>
                     </button>
                   ))}
@@ -1086,7 +1092,7 @@ export default function DashboardPage() {
                   {selectedBranch
                     ? t("issuesFoundFor", { n: displayClusters.length, branch: selectedBranch.name })
                     : t("issuesFoundAll", { n: displayClusters.length })}
-                  {lastRun && <span className="text-[var(--muted-dim)]"> · güncellendi {timeSince(lastRun)}</span>}
+                  {lastRun && <span className="text-[var(--muted-dim)]"> · {timeSince(lastRun, locale)}</span>}
                 </p>
               </div>
             </div>
