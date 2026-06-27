@@ -1,9 +1,10 @@
 import type { GoogleBusinessReview } from "./google-business-profile";
 import type { AnalysisResult, Signal } from "./types";
 
-export const GOOGLE_REVIEWS_DEFAULT_SYNC_WINDOW_DAYS = 150;
+export const GOOGLE_REVIEWS_DEFAULT_SYNC_WINDOW_DAYS = 7;
 export const GOOGLE_REVIEWS_MAX_SYNC_WINDOW_DAYS = 150;
 export const GOOGLE_REVIEWS_ACTIONABLE_MAX_RATING = 3;
+export const GOOGLE_REVIEWS_SUMMARY_CANDIDATE_PREFIX = "general_review_summary";
 
 export type GoogleReviewSignalInput = Omit<Signal, "id" | "created_at" | "branch_id"> & {
   branch_id?: string;
@@ -93,12 +94,38 @@ export function googleReviewsSummaryToSignal(input: {
   };
 }
 
-export function googleReviewSummarySignalToAnalysisResult(signal: Signal): AnalysisResult | null {
+export function googleReviewSummaryCandidateKey(sourceId: string) {
+  return `${GOOGLE_REVIEWS_SUMMARY_CANDIDATE_PREFIX}:${sourceId}`;
+}
+
+export function googleReviewSummarySourceId(signal: Pick<Signal, "source_id" | "tags">) {
+  const tag = signal.tags?.find((value) => value.startsWith("google_reviews_summary:"));
+  if (tag) return tag.slice("google_reviews_summary:".length);
+  return signal.source_id ?? null;
+}
+
+export function googleReviewSummarySignalToAnalysisResult(
+  signal: Signal,
+  previous?: Pick<Signal, "content"> | { business_case?: string | null; recommended_action?: string | null } | null,
+): AnalysisResult | null {
   if (signal.source !== "googlereviews" || signal.channel !== "review_summary") return null;
 
   const evidenceCount = numberFromTag(signal.tags, "google_reviews_total") ?? 1;
   const averageRating = numberFromTag(signal.tags, "google_reviews_average");
   const severity = averageRating === undefined ? 25 : averageRating >= 4 ? 20 : averageRating >= 3 ? 35 : 55;
+  const previousText = previous && "business_case" in previous
+    ? previous.business_case
+    : previous && "content" in previous
+      ? previous.content
+      : undefined;
+  const businessCase = previousText?.trim()
+    ? [
+        signal.content,
+        "",
+        "Önceki genel analizle karşılaştırma:",
+        summarizePreviousSummary(previousText),
+      ].join("\n")
+    : signal.content;
 
   return {
     title: "Genel Yorum Özeti",
@@ -121,10 +148,10 @@ export function googleReviewSummarySignalToAnalysisResult(signal: Signal): Analy
       shopify: 0,
       trustpilot: 0,
     },
-    business_case: signal.content,
+    business_case: businessCase,
     recommended_action: averageRating !== undefined && averageRating >= 4
-      ? "Acil aksiyon sinyali yok. Yeni 3 yıldız ve altı yorumlar geldiğinde aksiyon akışına alın; genel itibarı düzenli izleyin."
-      : "Yorum özetindeki düşük puan ve tekrar eden temaları ayrı aksiyon başlıklarına ayırıp takip edin.",
+      ? "Acil aksiyon sinyali yok. Yeni 3 yıldız ve altı yorumlar geldiğinde aksiyon akışına alın; genel itibarı önceki özetle birlikte düzenli izleyin."
+      : "Yorum özetindeki düşük puan ve tekrar eden temaları önceki özetle karşılaştırıp ayrı aksiyon başlıklarına ayırın.",
     category: "musteri",
     customer_quote: signal.content.split("\n").find((line) => line.startsWith("- "))?.replace(/^- /, ""),
     projected_impact: "Google işletme itibarının genel görünümü",
@@ -182,4 +209,13 @@ function numberFromTag(tags: string[] | undefined, prefix: string) {
   if (!tag) return undefined;
   const value = Number(tag.slice(prefix.length + 1));
   return Number.isFinite(value) ? value : undefined;
+}
+
+function summarizePreviousSummary(value: string) {
+  const lines = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith("Önceki genel analizle karşılaştırma:"));
+  return lines.slice(0, 6).join("\n");
 }
