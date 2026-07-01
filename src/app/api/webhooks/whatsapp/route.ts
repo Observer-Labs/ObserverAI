@@ -110,7 +110,9 @@ export async function POST(req: NextRequest) {
   const payload = JSON.parse(rawBody) as Parameters<typeof parseInboundWhatsApp>[0];
   const messages = parseInboundWhatsApp(payload);
   const statuses = extractWhatsAppDeliveryStatuses(payload);
-  const explicitWorkspaceId = req.nextUrl.searchParams.get("workspaceId");
+  // workspaceId must not be taken from the URL (outside signature scope);
+  // use number-based lookup which operates on signed payload data only.
+  const explicitWorkspaceId: string | null = null;
   const supabase = getSupabaseAdmin();
 
   for (const status of statuses) {
