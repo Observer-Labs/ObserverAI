@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { createTransport, getEmailFrom } from "@/lib/email";
+import { checkIpRateLimit, getClientIp } from "@/lib/ip-rate-limit";
 
 /**
  * POST /api/auth/forgot-password
@@ -14,6 +15,14 @@ import { createTransport, getEmailFrom } from "@/lib/email";
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req.headers);
+    const rl = checkIpRateLimit(`forgot-password:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      return NextResponse.json({ ok: true }, {
+        headers: { "Retry-After": String(rl.retryAfterSec) },
+      });
+    }
+
     const { email } = await req.json();
     if (!email || typeof email !== "string") {
       return NextResponse.json({ ok: true }); // silent
@@ -21,8 +30,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    // Look up the user by email
-    const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers();
+    // Look up the user by email — fetch all pages to avoid missing users beyond page 1
+    const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     if (listErr) return NextResponse.json({ ok: true });
 
     const user = users.find((u) => u.email?.toLowerCase() === email.toLowerCase().trim());
