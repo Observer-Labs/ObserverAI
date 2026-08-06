@@ -33,9 +33,17 @@
   gerektirdigi Radix, class-variance-authority, clsx, tailwind-merge,
   lucide-react ve tw-animate-css gibi yardimci paketler bu sistemin parcasi
   sayilir.
-- GSAP app icinde yalnizca kucuk, premium hissi veren mikro animasyonlar ve
-  yuklenme gecisleri icin kullanilabilir. Farkli UI component kutuphaneleri,
-  ayri tasarim dili veya app icinde yeni UI framework'u ekleme.
+- Genel motion kutuphanesi **beui**'dir (beui.dev, MIT; Motion/framer-motion
+  tabanli, shadcn registry uyumlu copy-paste). Bilesenler
+  `src/components/motion/` altinda yasar; easing/spring token'lari
+  `src/lib/ease.ts`'ten import edilir, kod icinde curve hardcode edilmez.
+  Yeni animasyon isi beui/Motion ile yapilir; mikro animasyonlar sakin ve
+  kucuk kalir, `prefers-reduced-motion`'a saygi duyar.
+- GSAP yalnizca mevcut landing/marketing animasyonlarinda kalir (legacy);
+  app icine yeni GSAP ekleme. Farkli UI component kutuphaneleri, ayri
+  tasarim dili veya app icinde yeni UI framework'u ekleme (beui bilesenleri
+  repoya kopyalandigi ve shadcn/Tailwind sistemine uydugu icin bu kuralin
+  istisnasi degil, parcasidir).
 - Branch/Settings/Dashboard gibi app ekranlari mevcut app estetik sistemiyle
   ayni gorunmeli; pazarlama/landing sayfasi gibi degil, operasyonel urun
   arayuzu gibi yogun, okunabilir ve sakin olmali.
@@ -79,3 +87,13 @@ Kod bir sonraki adim icin senin saglaman gereken bir env/anahtar istiyorsa:
 3. Kullanici "ekledim" diyene kadar o entegrasyonu canli saymadan devam et;
    ilgili ozelligi "bagli degil" durumunda birak, build'i kirma.
 4. Aldigin degiskeni LAST_UPDATES.md'de "dikkat" satirina not dus.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
