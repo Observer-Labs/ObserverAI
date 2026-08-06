@@ -70,7 +70,18 @@ async function sendMetaTextMessage(toNumber: string, body: string) {
   return payload;
 }
 
-async function sendMetaTemplateMessage(toNumber: string, templateName: string, languageCode: string) {
+export async function sendWhatsAppTextMessage(toNumber: string, body: string) {
+  return sendMetaTextMessage(toNumber, body);
+}
+
+type MetaTemplateBodyParam = { type: "text"; text: string };
+
+async function sendMetaTemplateMessage(
+  toNumber: string,
+  templateName: string,
+  languageCode: string,
+  bodyParams: string[] = [],
+) {
   const env = requireEnvGroup("whatsapp");
   const recipient = toMetaRecipient(toNumber);
   if (!recipient) throw new Error("Invalid WhatsApp recipient number");
@@ -89,6 +100,16 @@ async function sendMetaTemplateMessage(toNumber: string, templateName: string, l
       template: {
         name: templateName,
         language: { code: languageCode },
+        ...(bodyParams.length > 0
+          ? {
+              components: [
+                {
+                  type: "body",
+                  parameters: bodyParams.map((text): MetaTemplateBodyParam => ({ type: "text", text })),
+                },
+              ],
+            }
+          : {}),
       },
     }),
   });
@@ -195,6 +216,48 @@ ${labels.view}: ${viewUrl}
 ${labels.reply}`;
 }
 
+/**
+ * Meta template parameters must be single-line (no newlines/tabs, no 4+
+ * consecutive spaces), otherwise the API rejects the send.
+ */
+function sanitizeTemplateParam(value: string) {
+  return value.replace(/\s+/g, " ").trim() || "-";
+}
+
+export function isWhatsAppAlertTemplateConfigured() {
+  return Boolean(process.env.META_WHATSAPP_ALERT_TEMPLATE_NAME?.trim());
+}
+
+/**
+ * Body parameter contract for the approved proactive alert template.
+ * The Meta template must declare exactly these positional params:
+ * {{1}} branch · {{2}} severity label · {{3}} title · {{4}} what is happening
+ * {{5}} root cause · {{6}} action · {{7}} dashboard URL
+ * The reply instructions (1 details · 2 on it · 3 skip) live in the
+ * template's fixed text.
+ */
+export function buildWhatsAppAlertTemplateParams(
+  cluster: Cluster,
+  input: { baseUrl: string; locale?: string; branchName?: string | null },
+): string[] {
+  const locale = input.locale ?? "tr";
+  const labels = alertLabels(locale);
+  const severityLabel =
+    cluster.severity >= 70 ? labels.severityHigh : cluster.severity >= 40 ? labels.severityMedium : labels.severityLow;
+  const branchLabel = input.branchName?.trim() || (locale === "tr" ? "Şube" : "Branch");
+  const impactSuffix = cluster.projected_impact ? ` (${labels.impact}: ${cluster.projected_impact})` : "";
+
+  return [
+    branchLabel,
+    severityLabel,
+    cluster.title,
+    `${cluster.business_case}${impactSuffix}`,
+    cluster.root_cause || labels.fallbackRootCause,
+    cluster.recommended_action,
+    `${input.baseUrl}/dashboard?gap=${cluster.id}&branch=${cluster.branch_id}`,
+  ].map(sanitizeTemplateParam);
+}
+
 export async function sendWhatsAppAlert(
   toNumber: string,
   cluster: Cluster,
@@ -204,6 +267,22 @@ export async function sendWhatsAppAlert(
   const options = typeof localeOrOptions === "string" ? { locale: localeOrOptions } : localeOrOptions;
   const locale = options.locale ?? "tr";
   await getTranslations({ locale, namespace: "whatsapp" });
+
+  // Proactive sends outside Meta's 24h customer-service window require an
+  // approved template. Use it when configured; otherwise fall back to free
+  // text, which Meta only delivers inside the 24h window.
+  const templateName = process.env.META_WHATSAPP_ALERT_TEMPLATE_NAME?.trim();
+  if (templateName) {
+    const languageCode =
+      process.env.META_WHATSAPP_ALERT_TEMPLATE_LANGUAGE?.trim() || (locale === "tr" ? "tr" : "en_US");
+    const params = buildWhatsAppAlertTemplateParams(cluster, {
+      baseUrl: coreEnv.NEXTAUTH_URL,
+      locale,
+      branchName: options.branchName,
+    });
+    return sendMetaTemplateMessage(toNumber, templateName, languageCode, params);
+  }
+
   const body = buildWhatsAppAlertBody(cluster, {
     baseUrl: coreEnv.NEXTAUTH_URL,
     locale,
@@ -282,6 +361,26 @@ export function parseInboundWhatsApp(payload: MetaWebhookPayload): WhatsAppInbou
   }
 
   return messages;
+}
+
+export type WhatsAppDecisionReply = "details" | "approve" | "dismiss";
+
+/**
+ * Parses the "1 detaylar · 2 hallettim · 3 geç" reply promised in every
+ * alert message. Only unambiguous single tokens are accepted so normal
+ * conversation never triggers a decision.
+ */
+export function parseWhatsAppDecisionReply(content: string): WhatsAppDecisionReply | null {
+  const normalized = content
+    .trim()
+    .toLocaleLowerCase("tr-TR")
+    .replace(/[.!?]+$/g, "")
+    .trim();
+
+  if (["1", "detay", "detaylar", "details"].includes(normalized)) return "details";
+  if (["2", "hallettim", "done"].includes(normalized)) return "approve";
+  if (["3", "geç", "gec", "skip"].includes(normalized)) return "dismiss";
+  return null;
 }
 
 export function isWhatsAppConsentReply(content: string) {
