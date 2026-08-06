@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { checkIpRateLimit, getClientIp } from "@/lib/ip-rate-limit";
+import { resolveBranchLimitForPlan } from "@/lib/polar-plan";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
         slack_monitored_channels: [],
         // Billing
         plan: "trial",
+        branch_limit: resolveBranchLimitForPlan("trial"),
         trial_ends_at: trialEndsAt,
         analysis_count: 0,
         analysis_count_reset_at: resetNext.toISOString(),

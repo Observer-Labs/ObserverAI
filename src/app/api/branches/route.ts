@@ -2,38 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
-import {
-  BranchConflictError,
-  BranchLimitError,
-  BranchValidationError,
-  createBranch,
-  listBranches,
-} from "@/lib/branches";
-
-function branchErrorResponse(error: unknown) {
-  if (error instanceof BranchLimitError) {
-    return NextResponse.json(
-      {
-        error: error.message,
-        code: "branch_limit_reached",
-        branchLimit: error.branchLimit,
-        activeBranchCount: error.activeBranchCount,
-      },
-      { status: error.status },
-    );
-  }
-
-  if (error instanceof BranchValidationError) {
-    return NextResponse.json({ error: error.message }, { status: error.status });
-  }
-
-  if (error instanceof BranchConflictError) {
-    return NextResponse.json({ error: error.message }, { status: error.status });
-  }
-
-  const message = error instanceof Error ? error.message : "Unexpected branch error";
-  return NextResponse.json({ error: message }, { status: 500 });
-}
+import { createBranch, listBranches } from "@/lib/branches";
+import { branchErrorResponse } from "./error-response";
 
 export async function GET() {
   let workspaceId: string;
