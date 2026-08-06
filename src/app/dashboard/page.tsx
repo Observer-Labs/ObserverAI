@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedNumber } from "@/components/motion/animated-number";
@@ -630,7 +630,6 @@ export default function DashboardPage() {
   const [loadingClusters, setLoadingClusters] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [signalCount, setSignalCount] = useState(0);
-  const [authChecked, setAuthChecked] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [upgradeRequired, setUpgradeRequired] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
@@ -689,8 +688,11 @@ export default function DashboardPage() {
 
   // Auth
   useEffect(() => {
+    // Redirect guard runs in parallel with data fetches: the session
+    // roundtrip is a full serverless invocation in production and must not
+    // serialize first paint. Data endpoints 401 -> redirect on their own.
     fetch("/api/auth/session")
-      .then((res) => { if (!res.ok) router.push("/login?redirect=/dashboard"); else setAuthChecked(true); })
+      .then((res) => { if (!res.ok) router.push("/login?redirect=/dashboard"); })
       .catch(() => router.push("/login"));
 
     Promise.allSettled([
@@ -741,21 +743,22 @@ export default function DashboardPage() {
   }, [showingDemo]);
 
   useEffect(() => {
-    if (authChecked) { fetchClusters(); fetchSignalCount(); }
-  }, [authChecked, fetchClusters, fetchSignalCount]);
+    fetchClusters();
+    fetchSignalCount();
+  }, [fetchClusters, fetchSignalCount]);
 
   // Auto-analyze: new signals turn into insights on their own, no manual "Run Analysis".
   // Guard: skip when showingDemo — signalCount arrives before clusters in demo flow and
   // would mistakenly trigger a paid AI analysis pass on pre-computed demo data.
   const autoRanRef = useRef(false);
   useEffect(() => {
-    if (!authChecked || loadingClusters || autoRanRef.current || showingDemo) return;
+    if (loadingClusters || autoRanRef.current || showingDemo) return;
     if (clusters.length === 0 && signalCount > 0 && !analyzing) {
       autoRanRef.current = true;
       runAnalysis();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authChecked, loadingClusters, clusters.length, signalCount, analyzing, showingDemo]);
+  }, [loadingClusters, clusters.length, signalCount, analyzing, showingDemo]);
 
   const runAnalysis = async (includeDemo = showingDemo) => {
     setAnalyzing(true);
@@ -891,15 +894,6 @@ export default function DashboardPage() {
     musteri: branchScopedClusters.filter((c) => clusterCategory(c) === "musteri").length,
     personel: branchScopedClusters.filter((c) => clusterCategory(c) === "personel").length,
   };
-
-  if (!authChecked) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg)]">
-        <Loader2 className="h-[38px] w-[38px] animate-spin text-[#f97316]" />
-        <p className="text-[0.82rem] text-muted-foreground">{t("readingSignals")}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="app-shell">

@@ -2117,7 +2117,7 @@ function ConnectPageContent() {
                 key={s.label}
                 className="flex items-center gap-2.5 rounded-lg border bg-card px-3.5 py-3 opacity-50"
               >
-                <s.icon size={15} strokeWidth={1.8} className="text-muted-foreground" />
+                <s.icon size={18} strokeWidth={1.8} className="text-muted-foreground" />
                 <div>
                   <div className="text-[0.8rem] font-semibold text-foreground">{s.label}</div>
                   <div className="mt-px font-mono text-[0.6rem] text-[var(--muted-dim)]">{s.category}</div>

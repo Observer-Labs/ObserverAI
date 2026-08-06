@@ -49,7 +49,7 @@ export function AnimatedIcon({
   icon: Icon,
   preset = "pop",
   trigger = "self",
-  size = 18,
+  size = 15,
   strokeWidth = 1.8,
   className,
 }: AnimatedIconProps) {

@@ -67,11 +67,13 @@ export default function DeliveryLogPage() {
   useEffect(() => {
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session");
+        // Auth guard and data load in parallel — serializing them costs a
+        // full serverless roundtrip per navigation.
+        const [authRes, dRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/deliveries"),
+        ]);
         if (!authRes.ok) { router.push("/login?redirect=/delivery-log"); return; }
-
-        // Fetch real deliveries
-        const dRes = await fetch("/api/deliveries");
         if (dRes.ok) {
           const { deliveries: dlist } = await dRes.json();
           setDeliveries(dlist ?? []);
