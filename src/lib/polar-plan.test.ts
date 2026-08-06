@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_BRANCH_LIMITS, resolvePlanFromProductId } from "./polar-plan";
+import {
+  PLAN_BRANCH_LIMITS,
+  TRIAL_BRANCH_LIMIT,
+  resolveBranchLimitForPlan,
+  resolvePlanFromProductId,
+} from "./polar-plan";
 
 describe("Polar plan mapping", () => {
   it("resolves plans from monthly and yearly product ids", () => {
@@ -19,6 +24,19 @@ describe("Polar plan mapping", () => {
     expect(resolvePlanFromProductId("prod_scale_m", env)).toBe("scale");
     expect(resolvePlanFromProductId("prod_scale_y", env)).toBe("scale");
     expect(resolvePlanFromProductId("prod_unknown", env)).toBeNull();
+  });
+
+  it("resolves branch limits for every plan string, never unlimited by accident", () => {
+    expect(resolveBranchLimitForPlan("starter")).toBe(1);
+    expect(resolveBranchLimitForPlan("growth")).toBe(5);
+    expect(resolveBranchLimitForPlan("scale")).toBe(20);
+    expect(resolveBranchLimitForPlan("enterprise")).toBeNull();
+    // trial, expired, unknown and missing plans all fall back to the trial limit
+    expect(resolveBranchLimitForPlan("trial")).toBe(TRIAL_BRANCH_LIMIT);
+    expect(resolveBranchLimitForPlan("expired")).toBe(TRIAL_BRANCH_LIMIT);
+    expect(resolveBranchLimitForPlan("nonsense")).toBe(TRIAL_BRANCH_LIMIT);
+    expect(resolveBranchLimitForPlan(null)).toBe(TRIAL_BRANCH_LIMIT);
+    expect(resolveBranchLimitForPlan(undefined)).toBe(TRIAL_BRANCH_LIMIT);
   });
 
   it("keeps branch limits aligned with pricing tiers", () => {

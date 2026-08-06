@@ -2,26 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedWorkspaceId } from "@/lib/auth";
-import {
-  BranchConflictError,
-  BranchNotFoundError,
-  BranchValidationError,
-  pauseBranch,
-  updateBranch,
-} from "@/lib/branches";
-
-function branchErrorResponse(error: unknown) {
-  if (
-    error instanceof BranchConflictError ||
-    error instanceof BranchNotFoundError ||
-    error instanceof BranchValidationError
-  ) {
-    return NextResponse.json({ error: error.message }, { status: error.status });
-  }
-
-  const message = error instanceof Error ? error.message : "Unexpected branch error";
-  return NextResponse.json({ error: message }, { status: 500 });
-}
+import { pauseBranch, updateBranch } from "@/lib/branches";
+import { branchErrorResponse } from "../error-response";
 
 export async function PATCH(
   req: NextRequest,
