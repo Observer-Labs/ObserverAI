@@ -6,6 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedNumber } from "@/components/motion/animated-number";
+import { FadeIn } from "@/components/motion/fade-in";
 import { cn } from "@/lib/utils";
 import { IntentSnapshotModal } from "@/components/IntentSnapshotModal";
 import { severityLabel } from "@/lib/plans";
@@ -972,15 +974,16 @@ export default function DashboardPage() {
               )}
             </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {branches.map((branch) => (
-                <BranchCard
-                  key={branch.id}
-                  branch={branch}
-                  topCluster={branchTopClusters.get(branch.id) ?? null}
-                  issueCount={branchIssueCounts.get(branch.id) ?? 0}
-                  selected={selectedBranchId === branch.id}
-                  onClick={() => setSelectedBranchId((prev) => prev === branch.id ? "all" : branch.id)}
-                />
+              {branches.map((branch, index) => (
+                <FadeIn key={branch.id} index={index}>
+                  <BranchCard
+                    branch={branch}
+                    topCluster={branchTopClusters.get(branch.id) ?? null}
+                    issueCount={branchIssueCounts.get(branch.id) ?? 0}
+                    selected={selectedBranchId === branch.id}
+                    onClick={() => setSelectedBranchId((prev) => prev === branch.id ? "all" : branch.id)}
+                  />
+                </FadeIn>
               ))}
             </div>
           </div>
@@ -1117,7 +1120,7 @@ export default function DashboardPage() {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    {label} · {priorityFilterCounts[value]}
+                    {label} · <AnimatedNumber value={priorityFilterCounts[value]} duration={0.5} startOnView={false} />
                   </button>
                 ))}
               </div>
@@ -1134,7 +1137,7 @@ export default function DashboardPage() {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    {t(categoryI18nKey(value))} · {categoryFilterCounts[value]}
+                    {t(categoryI18nKey(value))} · <AnimatedNumber value={categoryFilterCounts[value]} duration={0.5} startOnView={false} />
                   </button>
                 ))}
               </div>
