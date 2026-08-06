@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabase-client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import GoogleButton from "@/components/auth/GoogleButton";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -140,7 +140,7 @@ export default function SignupPage() {
             {checkEmail ? (
               /* ── Check your email state ── */
               <div className="text-center">
-                <div className="mb-4 text-[2.5rem]">✉️</div>
+                <div className="mb-4 flex justify-center"><Mail size={40} strokeWidth={1.4} className="text-primary" /></div>
                 <h1 className="mb-3 text-xl font-bold">
                   Check your email
                 </h1>

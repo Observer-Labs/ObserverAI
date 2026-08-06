@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,7 +204,7 @@ export default function DistributionSettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[9px] border bg-muted text-base">
-                ⚡
+                <Zap size={16} strokeWidth={1.8} />
               </div>
               <div>
                 <div className="mb-0.5 text-[0.9rem] font-semibold text-foreground">
@@ -227,7 +227,7 @@ export default function DistributionSettingsPage() {
 
           {/* Email */}
           <ChannelCard
-            icon="✉️"
+            icon={<Mail size={18} strokeWidth={1.8} />}
             title="E-posta"
             subtitle="Analiz özetlerini ve raporları e-posta ile gönderin"
             enabled={config.email.enabled}

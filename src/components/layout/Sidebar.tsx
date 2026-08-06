@@ -1,10 +1,17 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
+import { Activity, Bell, History, LogOut, Plug, ShieldCheck } from "lucide-react";
 import { supabaseClient } from "@/lib/supabase-client";
 import { useTranslations } from 'next-intl';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { LogoMark } from "@/components/Logo";
+import { AnimatedIcon, type IconPreset } from "@/components/motion/animated-icon";
+import type { LucideIcon } from "lucide-react";
+
+// Row hover drives the icon animation via variant propagation.
+const MotionLink = motion.create(Link);
 
 interface SidebarProps {
   sourceCount?: number;
@@ -15,65 +22,6 @@ interface SidebarProps {
   runsLeft?: number;
   trialDaysLeft?: number;
   isAdmin?: boolean;
-}
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
-function SignalsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
-      <rect x="0.5" y="4.5" width="2.5" height="8" rx="1.25" fill="currentColor" />
-      <rect x="5" y="2.5" width="2.5" height="10" rx="1.25" fill="currentColor" />
-      <rect x="9.5" y="0.5" width="2.5" height="12" rx="1.25" fill="currentColor" />
-    </svg>
-  );
-}
-function SourcesIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
-      <circle cx="6.5" cy="6.5" r="2" fill="currentColor" />
-      <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1" fill="none" />
-      <line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1" />
-      <path d="M1.5 4.5Q6.5 6 11.5 4.5" stroke="currentColor" strokeWidth="1" fill="none" />
-      <path d="M1.5 8.5Q6.5 7 11.5 8.5" stroke="currentColor" strokeWidth="1" fill="none" />
-    </svg>
-  );
-}
-function AlertsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
-      <circle cx="2.5" cy="6.5" r="1.8" fill="currentColor" />
-      <circle cx="10.5" cy="2.5" r="1.8" fill="currentColor" />
-      <circle cx="10.5" cy="10.5" r="1.8" fill="currentColor" />
-      <line x1="4.2" y1="6.5" x2="8.8" y2="3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-      <line x1="4.2" y1="6.5" x2="8.8" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-    </svg>
-  );
-}
-function HistoryIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
-      <rect x="0.5" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1" fill="none" />
-      <path d="M0.5 5L6.5 8.5L12.5 5" stroke="currentColor" strokeWidth="1" fill="none" />
-    </svg>
-  );
-}
-function AdminIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 13 13" fill="none">
-      <path d="M6.5 1L11 3.5V7C11 9.5 9 11.5 6.5 12C4 11.5 2 9.5 2 7V3.5L6.5 1Z" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinejoin="round" />
-      <path d="M4.5 6.5L6 8L8.5 5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function SignOutIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
-      <path d="M5.5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M9.5 9.5L12 7l-2.5-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="12" y1="7" x2="5.5" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
 }
 
 function planLabel(plan: SidebarProps["plan"]) {
@@ -105,12 +53,12 @@ export default function Sidebar({
     window.location.href = "/";
   };
 
-  const navItems = [
-    { href: "/dashboard", label: t('signals'), icon: <SignalsIcon />, badge: signalCount > 0 ? signalCount : undefined },
-    { href: "/sources", label: t('sources'), icon: <SourcesIcon />, badge: sourceCount > 0 ? sourceCount : undefined },
-    { href: "/alerts", label: t('alerts'), icon: <AlertsIcon />, badge: undefined },
-    { href: "/history", label: t('history'), icon: <HistoryIcon />, badge: undefined },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: <AdminIcon />, badge: undefined }] : []),
+  const navItems: Array<{ href: string; label: string; icon: LucideIcon; preset: IconPreset; badge?: number }> = [
+    { href: "/dashboard", label: t('signals'), icon: Activity, preset: "pulse", badge: signalCount > 0 ? signalCount : undefined },
+    { href: "/sources", label: t('sources'), icon: Plug, preset: "pop", badge: sourceCount > 0 ? sourceCount : undefined },
+    { href: "/alerts", label: t('alerts'), icon: Bell, preset: "swing", badge: undefined },
+    { href: "/history", label: t('history'), icon: History, preset: "spin", badge: undefined },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: ShieldCheck, preset: "pop" as IconPreset, badge: undefined }] : []),
   ];
 
   const isActive = (href: string) => {
@@ -136,13 +84,15 @@ export default function Sidebar({
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
-            <Link key={item.href} href={item.href} className={`sidebar-item ${active ? "active" : ""}`}>
-              <span className="sidebar-item-icon">{item.icon}</span>
+            <MotionLink key={item.href} href={item.href} whileHover="hover" className={`sidebar-item ${active ? "active" : ""}`}>
+              <span className="sidebar-item-icon">
+                <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={15} strokeWidth={1.7} />
+              </span>
               <span className="flex-1">{item.label}</span>
               {item.badge !== undefined && (
                 <span className="sidebar-badge">{item.badge}</span>
               )}
-            </Link>
+            </MotionLink>
           );
         })}
       </nav>
@@ -197,7 +147,7 @@ export default function Sidebar({
             </Link>
           </div>
           <button onClick={handleSignOut} title={t('signOut')} className="sidebar-icon-btn">
-            <SignOutIcon />
+            <AnimatedIcon icon={LogOut} preset="slide" size={15} strokeWidth={1.7} />
           </button>
         </div>
       </div>

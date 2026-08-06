@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, MessageCircle, Send } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -31,10 +32,9 @@ function timeSince(iso: string): string {
   return `${Math.floor(hrs / 24)}g önce`;
 }
 
-function channelIcon(ch: string): string {
-  if (ch === "email") return "✉️";
-  if (ch === "whatsapp") return "💬";
-  return "📬";
+function ChannelIcon({ ch }: { ch: string }) {
+  const Icon: LucideIcon = ch === "email" ? Mail : ch === "whatsapp" ? MessageCircle : Send;
+  return <Icon size={14} strokeWidth={1.8} />;
 }
 
 function channelLabel(ch: string): string {
@@ -230,7 +230,7 @@ export default function DeliveryLogPage() {
                   >
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[0.95rem]">{channelIcon(d.channel)}</span>
+                        <span className="text-muted-foreground"><ChannelIcon ch={d.channel} /></span>
                         <span className="text-[0.875rem] font-medium text-foreground">{channelLabel(d.channel)}</span>
                       </div>
                     </td>
