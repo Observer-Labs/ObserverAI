@@ -47,3 +47,5 @@ LAST_UPDATES.md
 SIGNAL_YOL_HARITASI.md
 STATUS_SUMMARY.md
 *_STATUS*.md
+.claude/operation-manual.md
+scripts/create-team-logins.mjs
