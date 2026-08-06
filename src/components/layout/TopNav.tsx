@@ -1,9 +1,16 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
+import { Activity, History, LogOut, Plug, Send, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { supabaseClient } from "@/lib/supabase-client";
 import { LogoMark } from "@/components/Logo";
+import { AnimatedIcon, type IconPreset } from "@/components/motion/animated-icon";
 import { cn } from "@/lib/utils";
+
+// Tab hover drives the icon animation via variant propagation.
+const MotionLink = motion.create(Link);
 
 interface TopNavProps {
   sourceCount?: number;
@@ -13,71 +20,6 @@ interface TopNavProps {
   plan?: "trial" | "starter" | "growth" | "scale" | "enterprise" | "pro" | "past_due" | "expired" | "no_plan";
   runsLeft?: number;
   trialDaysLeft?: number;
-}
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
-function SignalsIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <rect x="0.5" y="4.5" width="2.5" height="8" rx="1.25" fill="currentColor"/>
-      <rect x="5"   y="2.5" width="2.5" height="10" rx="1.25" fill="currentColor"/>
-      <rect x="9.5" y="0.5" width="2.5" height="12" rx="1.25" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function SourcesIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <circle cx="6.5" cy="6.5" r="2" fill="currentColor"/>
-      <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1" fill="none"/>
-      <line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" strokeWidth="1"/>
-      <path d="M1.5 4.5Q6.5 6 11.5 4.5" stroke="currentColor" strokeWidth="1" fill="none"/>
-      <path d="M1.5 8.5Q6.5 7 11.5 8.5" stroke="currentColor" strokeWidth="1" fill="none"/>
-    </svg>
-  );
-}
-
-function DistributionIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <circle cx="2.5" cy="6.5" r="1.8" fill="currentColor"/>
-      <circle cx="10.5" cy="2.5" r="1.8" fill="currentColor"/>
-      <circle cx="10.5" cy="10.5" r="1.8" fill="currentColor"/>
-      <line x1="4.2" y1="6.5" x2="8.8" y2="3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
-      <line x1="4.2" y1="6.5" x2="8.8" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function DeliveryIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-      <rect x="0.5" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1" fill="none"/>
-      <path d="M0.5 5L6.5 8.5L12.5 5" stroke="currentColor" strokeWidth="1" fill="none"/>
-    </svg>
-  );
-}
-
-function GearIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-      <circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="1.4" fill="none"/>
-      <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.05 3.05l1.06 1.06M10.9 10.9l1.05 1.05M10.9 4.1l1.05-1.05M3.05 11.95l1.06-1.06"
-        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function SignOutIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M5.5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      <path d="M9.5 9.5L12 7l-2.5-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      <line x1="12" y1="7" x2="5.5" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-    </svg>
-  );
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -99,11 +41,11 @@ export default function TopNav({
     window.location.href = "/";
   };
 
-  const navItems = [
-    { href: "/dashboard", label: "Signals",  icon: <SignalsIcon /> },
-    { href: "/sources",   label: "Sources",  icon: <SourcesIcon /> },
-    { href: "/alerts",    label: "Alerts",   icon: <DistributionIcon /> },
-    { href: "/history",   label: "History",  icon: <DeliveryIcon /> },
+  const navItems: Array<{ href: string; label: string; icon: LucideIcon; preset: IconPreset }> = [
+    { href: "/dashboard", label: "Signals",  icon: Activity, preset: "pulse" },
+    { href: "/sources",   label: "Sources",  icon: Plug,     preset: "pop" },
+    { href: "/alerts",    label: "Alerts",   icon: Send,     preset: "slide" },
+    { href: "/history",   label: "History",  icon: History,  preset: "spin" },
   ];
 
   const isActive = (href: string) => {
@@ -135,14 +77,15 @@ export default function TopNav({
 
         {/* ── Nav tabs ── */}
         {navItems.map((item) => (
-          <Link
+          <MotionLink
             key={item.href}
             href={item.href}
+            whileHover="hover"
             className={`nav-tab ${isActive(item.href) ? "active" : ""}`}
           >
-            {item.icon}
+            <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={13} strokeWidth={1.8} />
             {item.label}
-          </Link>
+          </MotionLink>
         ))}
 
         {/* Spacer */}
@@ -222,7 +165,7 @@ export default function TopNav({
             title="Settings"
             className="flex items-center rounded-[7px] p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
-            <GearIcon />
+            <AnimatedIcon icon={Settings} preset="spin" size={15} strokeWidth={1.7} />
           </Link>
 
           {/* Sign out */}
@@ -231,7 +174,7 @@ export default function TopNav({
             title="Sign out"
             className="flex cursor-pointer items-center rounded-[7px] border-none bg-transparent p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
-            <SignOutIcon />
+            <AnimatedIcon icon={LogOut} preset="slide" size={14} strokeWidth={1.7} />
           </button>
 
         </div>

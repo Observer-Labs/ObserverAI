@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,7 +172,7 @@ export default function BillingPage() {
 
         {isPastDue && (
           <div className="mb-7 flex items-center gap-3 rounded-xl border border-[rgba(255,209,102,0.25)] bg-[rgba(255,209,102,0.08)] px-5 py-4">
-            <span className="text-[1.1rem]">⚡</span>
+            <Zap size={17} strokeWidth={1.8} className="text-[#ffd166]" />
             <div className="flex-1">
               <div className="text-[0.9rem] font-semibold text-[#ffd166]">Payment failed</div>
               <div className="text-[0.8rem] text-muted-foreground">Please update your payment method to avoid interruption.</div>

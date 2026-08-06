@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { CircleCheck, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,7 +64,7 @@ function ResetPasswordContent() {
           <CardContent className="p-9">
             {done ? (
               <div className="text-center">
-                <div className="mb-4 text-[2rem]">✅</div>
+                <div className="mb-4 flex justify-center"><CircleCheck size={34} strokeWidth={1.6} className="text-[#22c55e]" /></div>
                 <h1 className="mb-3 text-[1.2rem] font-bold">{t("resetTitle")}</h1>
                 <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
                   {t("resetSuccess")}

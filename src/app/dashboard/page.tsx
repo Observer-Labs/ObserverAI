@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedNumber } from "@/components/motion/animated-number";
@@ -568,7 +568,7 @@ function ExecutionBrief({
         {/* WhatsApp preview, the actual message your team receives */}
         <div className="mb-3 rounded-xl border border-[rgba(37,211,102,0.18)] bg-[#0c1419] p-3">
           <div className="mb-2.5 flex items-center gap-[7px]">
-            <span className="text-[0.85rem]">💬</span>
+            <MessageCircle size={13} strokeWidth={1.9} className="text-[#4ade80]" />
             <span className="font-['JetBrains_Mono',monospace] text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#4ade80]">{t("briefWhatsAppLabel")}</span>
           </div>
           <div className="rounded-[4px_10px_10px_10px] bg-[#1f2c34] px-3 py-2.5">

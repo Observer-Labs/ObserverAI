@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Bell, CreditCard, Loader2, Settings as SettingsIcon, SlidersHorizontal, User, Zap } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,12 +152,12 @@ export default function SettingsPage() {
     );
   }
 
-  const tabs: Array<{ key: Tab; label: string; icon: string }> = [
-    { key: "profile",       label: "Profile",       icon: "👤" },
-    { key: "billing",       label: "Billing",        icon: "💳" },
-    { key: "thresholds",   label: "Thresholds",     icon: "🎛️" },
-    { key: "notifications", label: "Notifications",  icon: "🔔" },
-    { key: "account",       label: "Account",        icon: "⚙️" },
+  const tabs: Array<{ key: Tab; label: string; icon: LucideIcon }> = [
+    { key: "profile",       label: "Profile",       icon: User },
+    { key: "billing",       label: "Billing",        icon: CreditCard },
+    { key: "thresholds",   label: "Thresholds",     icon: SlidersHorizontal },
+    { key: "notifications", label: "Notifications",  icon: Bell },
+    { key: "account",       label: "Account",        icon: SettingsIcon },
   ];
 
   const saveThresholds = async () => {
@@ -269,7 +270,7 @@ export default function SettingsPage() {
                     : "bg-transparent font-normal text-[var(--muted-light)] outline-transparent hover:bg-muted"
                 )}
               >
-                <span className="text-[0.9rem]">{tab.icon}</span>
+                <tab.icon size={14} strokeWidth={1.8} />
                 {tab.label}
               </button>
             ))}
@@ -371,7 +372,7 @@ export default function SettingsPage() {
 
                 {isPastDue && (
                   <div className="flex items-center gap-3 rounded-xl border border-[rgba(255,209,102,0.2)] bg-[rgba(255,209,102,0.08)] px-[18px] py-3.5">
-                    <span>⚡</span>
+                    <Zap size={16} strokeWidth={1.8} className="text-[#ffd166]" />
                     <div className="flex-1">
                       <div className="text-sm font-semibold text-[#ffd166]">Payment failed</div>
                       <div className="text-[0.78rem] text-muted-foreground">Update your payment method to avoid interruption.</div>

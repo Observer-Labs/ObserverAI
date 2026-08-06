@@ -2,7 +2,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { Trash2 } from "lucide-react";
+import {
+  Apple,
+  BadgeCheck,
+  Bike,
+  ChartColumn,
+  Camera,
+  Mail,
+  ReceiptText,
+  ShoppingBag,
+  Star,
+  Store,
+  Trash2,
+  UtensilsCrossed,
+  Zap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { parseCsvHeaders } from "@/lib/csv-ingest";
 import type { IntegrationsConfig } from "@/lib/types";
 import type { CsvColumnMapping } from "@/lib/csv-ingest";
@@ -210,7 +225,7 @@ function compactCsvMapping(mapping: CsvColumnMapping) {
 interface ActiveSource {
   key: ActiveSourceKey;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   color: string;
   description: string;
   category: string;
@@ -220,7 +235,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
   {
     key: "googlereviews",
     label: "Google Reviews",
-    icon: "⭐",
+    icon: Star,
     color: "#4285F4",
     description: "Şubeleriniz hakkında Google'da yazılan yorumlar otomatik olarak çekilir",
     category: "Yorumlar",
@@ -228,7 +243,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
   {
     key: "getir",
     label: "Getir",
-    icon: "🛵",
+    icon: Bike,
     color: "#5d3ebc",
     description: "Getir'deki teslimat derecelendirmeleri ve müşteri yorumları",
     category: "Teslimat",
@@ -239,7 +254,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
   {
     key: "trendyol",
     label: "Trendyol Go",
-    icon: "🛍️",
+    icon: ShoppingBag,
     color: "#f27a1a",
     description: "Trendyol Go'daki teslimat yorumları ve derecelendirmeleri",
     category: "Teslimat",
@@ -247,7 +262,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
   {
     key: "pos",
     label: "POS / Ödeme Sistemi",
-    icon: "🧾",
+    icon: ReceiptText,
     color: "#0f7a4f",
     description: "Şube bazlı günlük satışlar — ay sonu gelmeden düşüşleri erkenden yakalayın",
     category: "Satış",
@@ -255,7 +270,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
   {
     key: "googleanalytics",
     label: "Google Analytics",
-    icon: "📊",
+    icon: ChartColumn,
     color: "#e8710a",
     description: "Web siteniz varsa trafik düşüşlerini ve sepet terk oranını takip edin",
     category: "Web sitesi",
@@ -263,11 +278,11 @@ const ACTIVE_SOURCES: ActiveSource[] = [
 ];
 
 const COMING_SOON = [
-  { label: "Yemeksepeti", icon: "🍽️", category: "Teslimat" },
-  { label: "Instagram",  icon: "📸", category: "Sosyal medya" },
-  { label: "Shopify",    icon: "🛒", category: "E-ticaret" },
-  { label: "App Store",  icon: "📱", category: "Uygulama yorumları" },
-  { label: "Trustpilot", icon: "✅", category: "Yorumlar" },
+  { label: "Yemeksepeti", icon: UtensilsCrossed, category: "Teslimat" },
+  { label: "Instagram",  icon: Camera, category: "Sosyal medya" },
+  { label: "Shopify",    icon: Store, category: "E-ticaret" },
+  { label: "App Store",  icon: Apple, category: "Uygulama yorumları" },
+  { label: "Trustpilot", icon: BadgeCheck, category: "Yorumlar" },
 ];
 
 // ── Default configs ───────────────────────────────────────────────────────────
@@ -1531,7 +1546,7 @@ function ConnectPageContent() {
                     className="flex size-9 shrink-0 items-center justify-center rounded-lg border text-[1.1rem]"
                     style={{ background: `${source.color}18`, borderColor: `${source.color}30` }}
                   >
-                    {source.icon}
+                    <source.icon size={18} strokeWidth={1.8} style={{ color: source.color }} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -1577,7 +1592,7 @@ function ConnectPageContent() {
                 {/* Panel Header */}
                 <div className="flex items-center justify-between border-b px-5 py-4">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[1.2rem]">{src.icon}</span>
+                    <src.icon size={18} strokeWidth={1.8} style={{ color: src.color }} />
                     <div>
                       <div className="text-[0.9rem] font-bold text-foreground">{src.label}</div>
                       <div className="font-mono text-[0.65rem] text-muted-foreground">{src.category}</div>
@@ -1613,7 +1628,7 @@ function ConnectPageContent() {
                     </p>
                     <Button asChild className="h-auto gap-2 rounded-lg bg-[#EA4335] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#EA4335]/90">
                       <a href={`/api/auth/gmail?source_id=${selectedSourceRecord?.id ?? ""}`}>
-                        <span>✉️</span> Gmail&apos;i Bağla
+                        <Mail size={14} strokeWidth={1.9} /> Gmail&apos;i Bağla
                       </a>
                     </Button>
                     <div className="mt-5 rounded-lg border bg-muted px-3.5 py-2.5 text-[0.72rem] leading-[1.55] text-muted-foreground">
@@ -1628,7 +1643,7 @@ function ConnectPageContent() {
                     </p>
                     <Button asChild className="h-auto gap-2 rounded-lg bg-[#4A154B] px-[18px] py-2.5 text-[0.82rem] font-bold text-white hover:bg-[#4A154B]/90">
                       <a href={`/api/auth/slack?state=${workspace?.id ?? ""}`}>
-                        <span>⚡</span> Slack&apos;ı Bağla
+                        <Zap size={14} strokeWidth={1.9} /> Slack&apos;ı Bağla
                       </a>
                     </Button>
                     <p className="mt-4 mb-0 text-[0.72rem] leading-[1.55] text-[var(--muted-dim)]">
@@ -2102,7 +2117,7 @@ function ConnectPageContent() {
                 key={s.label}
                 className="flex items-center gap-2.5 rounded-lg border bg-card px-3.5 py-3 opacity-50"
               >
-                <span className="text-[0.95rem]">{s.icon}</span>
+                <s.icon size={15} strokeWidth={1.8} className="text-muted-foreground" />
                 <div>
                   <div className="text-[0.8rem] font-semibold text-foreground">{s.label}</div>
                   <div className="mt-px font-mono text-[0.6rem] text-[var(--muted-dim)]">{s.category}</div>
