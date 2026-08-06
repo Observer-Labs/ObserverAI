@@ -96,9 +96,11 @@ export default function DistributionSettingsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session");
+        const [authRes, wsRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/workspace"),
+        ]);
         if (!authRes.ok) { router.push(`/login?redirect=${encodeURIComponent(pathname)}`); return; }
-        const wsRes = await fetch("/api/workspace");
         if (!wsRes.ok) { router.push(`/login?redirect=${encodeURIComponent(pathname)}`); return; }
         const wd = await wsRes.json();
         if (wd.workspace?.distribution_config) {

@@ -86,7 +86,7 @@ export default function Sidebar({
           return (
             <MotionLink key={item.href} href={item.href} whileHover="hover" className={`sidebar-item ${active ? "active" : ""}`}>
               <span className="sidebar-item-icon">
-                <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={15} strokeWidth={1.7} />
+                <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={18} strokeWidth={1.7} />
               </span>
               <span className="flex-1">{item.label}</span>
               {item.badge !== undefined && (
@@ -147,7 +147,7 @@ export default function Sidebar({
             </Link>
           </div>
           <button onClick={handleSignOut} title={t('signOut')} className="sidebar-icon-btn">
-            <AnimatedIcon icon={LogOut} preset="slide" size={15} strokeWidth={1.7} />
+            <AnimatedIcon icon={LogOut} preset="slide" size={18} strokeWidth={1.7} />
           </button>
         </div>
       </div>

@@ -83,7 +83,7 @@ export default function TopNav({
             whileHover="hover"
             className={`nav-tab ${isActive(item.href) ? "active" : ""}`}
           >
-            <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={13} strokeWidth={1.8} />
+            <AnimatedIcon icon={item.icon} preset={item.preset} trigger="parent" size={15} strokeWidth={1.8} />
             {item.label}
           </MotionLink>
         ))}
@@ -165,7 +165,7 @@ export default function TopNav({
             title="Settings"
             className="flex items-center rounded-[7px] p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
-            <AnimatedIcon icon={Settings} preset="spin" size={15} strokeWidth={1.7} />
+            <AnimatedIcon icon={Settings} preset="spin" size={18} strokeWidth={1.7} />
           </Link>
 
           {/* Sign out */}
@@ -174,7 +174,7 @@ export default function TopNav({
             title="Sign out"
             className="flex cursor-pointer items-center rounded-[7px] border-none bg-transparent p-[5px] text-muted-foreground transition-colors duration-[120ms] hover:bg-muted hover:text-foreground"
           >
-            <AnimatedIcon icon={LogOut} preset="slide" size={14} strokeWidth={1.7} />
+            <AnimatedIcon icon={LogOut} preset="slide" size={16} strokeWidth={1.7} />
           </button>
 
         </div>

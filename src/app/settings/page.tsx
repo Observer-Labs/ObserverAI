@@ -95,19 +95,20 @@ export default function SettingsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session");
+        const [authRes, wsRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/workspace"),
+        ]);
         if (!authRes.ok) { router.push("/login?redirect=/settings"); return; }
 
         try {
-          const sessionData = await authRes.clone().json().catch(() => null) || await fetch("/api/auth/session").then(r => r.json());
+          const sessionData = await authRes.json().catch(() => null);
           const email: string = sessionData?.user?.email ?? "";
           if (email) {
             setUserEmail(email);
             setUserInitials(email.substring(0, 2).toUpperCase());
           }
         } catch { /* ignore */ }
-
-        const wsRes = await fetch("/api/workspace");
         if (wsRes.ok) {
           const wd = await wsRes.json();
           const ws = wd.workspace ?? null;

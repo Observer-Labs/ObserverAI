@@ -58,9 +58,11 @@ export default function IntegrationsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session");
+        const [authRes, wsRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/workspace"),
+        ]);
         if (!authRes.ok) { router.push("/login?redirect=/settings/integrations"); return; }
-        const wsRes = await fetch("/api/workspace");
         if (!wsRes.ok) { router.push("/login?redirect=/settings/integrations"); return; }
         const wd = await wsRes.json();
         const ws = wd.workspace ?? {};
