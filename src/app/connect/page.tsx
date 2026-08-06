@@ -233,14 +233,9 @@ const ACTIVE_SOURCES: ActiveSource[] = [
     description: "Getir'deki teslimat derecelendirmeleri ve müşteri yorumları",
     category: "Teslimat",
   },
-  {
-    key: "yemeksepeti",
-    label: "Yemeksepeti",
-    icon: "🍽️",
-    color: "#ff0a44",
-    description: "Yemeksepeti'ndeki sipariş derecelendirmeleri ve şikayetler",
-    category: "Teslimat",
-  },
+  // Yemeksepeti: partner API connector'ı henüz yok (ingest "unsupported_provider"
+  // ile atlıyor). Connector yazılana kadar katalogda COMING_SOON'da durur;
+  // tip/config altyapısı korunuyor ki geri açmak tek satır olsun.
   {
     key: "trendyol",
     label: "Trendyol Go",
@@ -268,6 +263,7 @@ const ACTIVE_SOURCES: ActiveSource[] = [
 ];
 
 const COMING_SOON = [
+  { label: "Yemeksepeti", icon: "🍽️", category: "Teslimat" },
   { label: "Instagram",  icon: "📸", category: "Sosyal medya" },
   { label: "Shopify",    icon: "🛒", category: "E-ticaret" },
   { label: "App Store",  icon: "📱", category: "Uygulama yorumları" },
