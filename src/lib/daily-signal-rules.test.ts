@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluateDailySignalCandidates,
+  selectDailyDigestByWorkspace,
   selectDailyDigestCandidates,
   type DailyBaselineMetrics,
   type DailyDeliveryMetrics,
 } from "./daily-signal-rules";
+import { severityLabel } from "./plans";
 
 const baseline: DailyBaselineMetrics = {
   orderCount: 130,
@@ -183,5 +185,56 @@ describe("daily signal rules", () => {
     expect(selected.map((candidate) => candidate.severity)).toEqual(
       [...selected.map((candidate) => candidate.severity)].sort((a, b) => b - a),
     );
+  });
+});
+
+describe("selectDailyDigestByWorkspace", () => {
+  const makeItem = (
+    workspaceId: string,
+    severity: number,
+    shouldNotify = true,
+    evidenceCount = 1,
+  ) => ({
+    candidate: {
+      kind: "delivery_cancel_delay" as const,
+      workspaceId,
+      branchId: `${workspaceId}-branch`,
+      platform: "getir" as const,
+      topic: `topic-${severity}-${evidenceCount}`,
+      severity,
+      severityLabel: severityLabel(severity),
+      evidenceCount,
+      businessImpact: "impact",
+      evidence: [],
+      shouldNotify,
+    },
+  });
+
+  it("caps each workspace at 3 items ordered by severity", () => {
+    const wsA = [72, 90, 45, 60, 81].map((severity) => makeItem("ws-a", severity));
+    const wsB = [50, 55].map((severity) => makeItem("ws-b", severity));
+
+    const digest = selectDailyDigestByWorkspace([...wsA, ...wsB]);
+
+    expect(digest.get("ws-a")?.map((item) => item.candidate.severity)).toEqual([90, 81, 72]);
+    expect(digest.get("ws-b")?.map((item) => item.candidate.severity)).toEqual([55, 50]);
+  });
+
+  it("drops suppressed candidates entirely", () => {
+    const digest = selectDailyDigestByWorkspace([
+      makeItem("ws-a", 88, false),
+      makeItem("ws-a", 40, true),
+    ]);
+
+    expect(digest.get("ws-a")?.map((item) => item.candidate.severity)).toEqual([40]);
+  });
+
+  it("breaks severity ties by evidence count", () => {
+    const digest = selectDailyDigestByWorkspace([
+      makeItem("ws-a", 70, true, 2),
+      makeItem("ws-a", 70, true, 9),
+    ]);
+
+    expect(digest.get("ws-a")?.map((item) => item.candidate.evidenceCount)).toEqual([9, 2]);
   });
 });

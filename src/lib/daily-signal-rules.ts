@@ -228,6 +228,40 @@ export function selectDailyDigestCandidates(candidates: SignalCandidate[], maxIt
     .slice(0, maxItems);
 }
 
+/**
+ * Groups notifiable candidates by workspace and keeps at most maxItems per
+ * workspace per day (roadmap B.5.3: max 3 WhatsApp issues/day). Suppressed
+ * candidates stay on the dashboard but never reach WhatsApp.
+ */
+export function selectDailyDigestByWorkspace<T extends { candidate: SignalCandidate }>(
+  items: T[],
+  maxItems = 3,
+): Map<string, T[]> {
+  const byWorkspace = new Map<string, T[]>();
+
+  for (const item of items) {
+    if (!item.candidate.shouldNotify) continue;
+    const list = byWorkspace.get(item.candidate.workspaceId) ?? [];
+    list.push(item);
+    byWorkspace.set(item.candidate.workspaceId, list);
+  }
+
+  for (const [workspaceId, list] of byWorkspace) {
+    byWorkspace.set(
+      workspaceId,
+      [...list]
+        .sort(
+          (a, b) =>
+            b.candidate.severity - a.candidate.severity ||
+            b.candidate.evidenceCount - a.candidate.evidenceCount,
+        )
+        .slice(0, maxItems),
+    );
+  }
+
+  return byWorkspace;
+}
+
 function applyNotificationPolicy<T extends SignalCandidateDraft>(
   candidate: T,
   previousNotifications: PreviousNotification[],

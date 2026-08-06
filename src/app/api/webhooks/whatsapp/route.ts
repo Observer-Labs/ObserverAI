@@ -1,15 +1,21 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  buildWhatsAppAlertBody,
   extractWhatsAppDeliveryStatuses,
   isWhatsAppConsentReply,
   normalizeWhatsAppNumber,
   parseInboundWhatsApp,
+  parseWhatsAppDecisionReply,
+  sendWhatsAppTextMessage,
   sendWhatsAppWelcomeMessage,
   verifyMetaSignature,
   verifyMetaWebhookToken,
+  type WhatsAppDecisionReply,
+  type WhatsAppInbound,
 } from "@/lib/whatsapp";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import type { Cluster } from "@/lib/types";
 
 type WorkspaceWithWhatsApp = {
   id: string;
@@ -101,6 +107,90 @@ async function markWhatsAppOptIn(workspace: WorkspaceWithWhatsApp, sender: strin
   return { wasAlreadyOptedIn };
 }
 
+type AlertDeliveryRow = {
+  id: string;
+  cluster_id: string;
+  recipient: string;
+  sent_at: string;
+  clusters: Cluster;
+};
+
+/**
+ * The most recent WhatsApp alert sent to this sender in this workspace.
+ * A bare "1/2/3" reply always refers to the latest alert.
+ */
+async function findLatestAlertDeliveryForSender(workspaceId: string, sender: string) {
+  const { data, error } = await getSupabaseAdmin()
+    .from("deliveries")
+    .select("id, cluster_id, recipient, sent_at, clusters!inner(*)")
+    .eq("channel", "whatsapp")
+    .eq("clusters.workspace_id", workspaceId)
+    .order("sent_at", { ascending: false })
+    .limit(25);
+
+  if (error) {
+    console.warn("WhatsApp decision lookup failed", { workspaceId, error: error.message });
+    return null;
+  }
+
+  const normalizedSender = normalizeWhatsAppNumber(sender);
+  return (
+    ((data ?? []) as unknown as AlertDeliveryRow[]).find(
+      (row) => normalizeWhatsAppNumber(row.recipient) === normalizedSender,
+    ) ?? null
+  );
+}
+
+async function handleWhatsAppDecisionReply(
+  workspaceId: string,
+  message: WhatsAppInbound,
+  decision: WhatsAppDecisionReply,
+) {
+  const supabase = getSupabaseAdmin();
+  const delivery = await findLatestAlertDeliveryForSender(workspaceId, message.sender);
+  if (!delivery) return; // no alert to act on; stay silent
+
+  const cluster = delivery.clusters;
+
+  if (decision === "details") {
+    // Replying to an inbound message is always inside Meta's 24h window,
+    // so the full free-text brief is deliverable here.
+    let branchName: string | null = null;
+    if (cluster.branch_id) {
+      const { data: branch } = await supabase
+        .from("branches")
+        .select("name")
+        .eq("id", cluster.branch_id)
+        .single();
+      branchName = (branch as { name?: string } | null)?.name ?? null;
+    }
+    const baseUrl =
+      process.env.NEXTAUTH_URL?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://observerai.app";
+    await sendWhatsAppTextMessage(
+      message.sender,
+      buildWhatsAppAlertBody(cluster, { baseUrl, locale: "tr", branchName }),
+    );
+    return;
+  }
+
+  const newStatus = decision === "approve" ? "approved" : "dismissed";
+  await supabase
+    .from("clusters")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", cluster.id)
+    .eq("workspace_id", workspaceId);
+  await supabase
+    .from("deliveries")
+    .update({ decision: newStatus })
+    .eq("id", delivery.id);
+
+  const ack =
+    decision === "approve"
+      ? `✅ Not aldım — "${cluster.title}" hallettiniz olarak işaretlendi.`
+      : `👍 Anlaşıldı — "${cluster.title}" geçildi. Dashboard'da geçmişte görebilirsiniz.`;
+  await sendWhatsAppTextMessage(message.sender, ack);
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   if (!verifyMetaSignature(rawBody, req.headers.get("x-hub-signature-256"))) {
@@ -143,6 +233,19 @@ export async function POST(req: NextRequest) {
       timestamp: message.timestamp,
       reviewed: false,
     });
+
+    const decisionReply = parseWhatsAppDecisionReply(message.content);
+    if (decisionReply) {
+      try {
+        await handleWhatsAppDecisionReply(workspace.id, message, decisionReply);
+      } catch (error) {
+        console.warn("WhatsApp decision reply handling failed", {
+          workspaceId: workspace.id,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+      continue;
+    }
 
     if (isWhatsAppConsentReply(message.content)) {
       const { wasAlreadyOptedIn } = await markWhatsAppOptIn(workspace, message.sender, message.timestamp);
