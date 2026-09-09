@@ -58,7 +58,7 @@ export default function LandingPage() {
   );
 
   return (
-    <div ref={root} className="min-h-screen bg-[#fbfaf7] text-foreground">
+    <div ref={root} className="min-h-screen overflow-x-clip bg-[#fbfaf7] text-foreground">
 
       {/* ── Nav ── */}
       <SiteHeader />
@@ -66,8 +66,8 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <div className="relative">
         <HeroCanvas className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]" />
-        <div className="relative mx-auto max-w-[1200px] px-5 pb-20 pt-14 sm:px-10 md:pt-20">
-          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
+        <div className="relative mx-auto max-w-[1200px] px-5 pb-16 pt-10 sm:px-10 sm:pt-14 md:pb-20 md:pt-20">
+          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
             <div data-hero>
               {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
               <div className="mb-8 inline-flex flex-wrap items-center gap-2.5 font-mono">

@@ -124,7 +124,7 @@ export default function SignalFeed() {
     <div
       ref={wrap}
       aria-hidden
-      className="relative h-[540px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_14%,black_86%,transparent)] md:h-[600px]"
+      className="relative h-[440px] overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_88%,transparent)] sm:h-[540px] md:h-[600px]"
     >
       <div data-track className="flex flex-col pr-1">
         {[0, 1].map((set) => (
