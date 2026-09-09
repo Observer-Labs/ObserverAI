@@ -22,20 +22,21 @@ export default function SiteHeader() {
   return (
     <nav
       className={cn(
-        "sticky top-0 z-50 flex items-center justify-between px-5 py-4 transition-all duration-300 sm:px-10",
+        "sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-3 transition-all duration-300 sm:px-10 sm:py-4",
         scrolled ? "bg-background/85 backdrop-blur-xl" : "bg-transparent",
       )}
     >
-      <Logo href="/" size={24} textSize="1.05rem" />
-      <div className="flex items-center gap-2">
+      <Logo href="/" size={24} textSize="1.05rem" className="shrink-0" />
+      {/* Mobile: locale + CTA only; sign-in joins at sm, pricing at md. Every item stays nowrap so the bar never overflows the viewport. */}
+      <div className="flex min-w-0 shrink items-center gap-1.5 whitespace-nowrap sm:gap-2">
         <LocaleSwitcher />
-        <Button asChild variant="ghost" className="h-10 rounded-full px-5 text-[0.92rem] text-muted-foreground">
+        <Button asChild variant="ghost" className="hidden h-10 rounded-full px-5 text-[0.92rem] text-muted-foreground md:inline-flex">
           <Link href="/pricing">{tNav("pricing")}</Link>
         </Button>
-        <Button asChild variant="outline" className="h-10 rounded-full px-5 text-[0.92rem] shadow-none">
+        <Button asChild variant="outline" className="hidden h-10 rounded-full px-5 text-[0.92rem] shadow-none sm:inline-flex">
           <Link href="/login">{tNav("signIn")}</Link>
         </Button>
-        <Button asChild className="h-10 rounded-full px-6 text-[0.92rem] shadow-none">
+        <Button asChild className="h-9 rounded-full px-4 text-[0.85rem] shadow-none sm:h-10 sm:px-6 sm:text-[0.92rem]">
           <Link href="/signup">{tNav("startFree")}</Link>
         </Button>
       </div>
