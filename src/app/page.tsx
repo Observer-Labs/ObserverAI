@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const CONTAINER = "mx-auto max-w-[1120px] px-5 sm:px-8";
 const H2 = "font-mk-display text-[clamp(2.1rem,4.6vw,3.4rem)] leading-[1.05] tracking-[-0.01em] text-balance";
 const BTN =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-[0.95rem] font-medium transition-[background-color,transform] duration-200 hover:-translate-y-px";
+  "inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-7 text-[0.95rem] font-medium transition-[background-color,transform] duration-200 hover:-translate-y-px";
 
 export default async function LandingPage() {
   const t = await getTranslations("landing");
@@ -56,7 +56,7 @@ export default async function LandingPage() {
               {t("heroTitleA")} <em className="block">{t("heroTitleB")}</em>
             </h1>
             <p className="mt-6 max-w-[50ch] text-[1.08rem] leading-[1.65] text-mk-soft">{t("heroLead")}</p>
-            <div className="mt-9 flex flex-col gap-3 min-[390px]:flex-row min-[390px]:items-center">
+            <div className="mt-9 flex flex-col gap-3 min-[440px]:flex-row min-[440px]:items-center">
               <Link href="/signup" className={`${BTN} bg-mk-ink text-mk-paper hover:bg-mk-soft`}>
                 {t("ctaPrimary")}
                 <ArrowRight aria-hidden className="size-4" />
