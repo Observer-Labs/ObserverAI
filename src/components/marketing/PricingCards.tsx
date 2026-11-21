@@ -1,9 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { cn } from "@/lib/utils";
 import type { AllPlanPrices } from "@/lib/polar-prices";
 
@@ -27,6 +25,7 @@ type Labels = {
   yearlyOnly: string;
   mostPopular: string;
   perYear: string;
+  custom: string;
 };
 
 function fmt(cents: number): string {
@@ -39,34 +38,28 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
   return (
     <>
       {/* Period toggle */}
-      <div className="mb-10 flex justify-center">
-        <div className="flex items-center gap-0 rounded-full border bg-muted p-[3px]">
-          <button
-            onClick={() => setPeriod("monthly")}
-            className={cn(
-              "cursor-pointer rounded-full border-none px-5 py-[6px] text-[0.82rem] font-medium transition-all",
-              period === "monthly" ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground"
-            )}
-          >
-            {labels.monthly}
-          </button>
-          <button
-            onClick={() => setPeriod("yearly")}
-            className={cn(
-              "flex cursor-pointer items-center gap-1.5 rounded-full border-none px-5 py-[6px] text-[0.82rem] font-medium transition-all",
-              period === "yearly" ? "bg-background text-foreground shadow-sm" : "bg-transparent text-muted-foreground"
-            )}
-          >
-            {labels.yearly}
-            <span className="rounded-full bg-[rgba(70,230,166,0.18)] px-[7px] py-[2px] text-[0.68rem] font-bold text-[#46e6a6]">
-              {labels.save20}
-            </span>
-          </button>
+      <div className="mx-auto mb-9 flex max-w-[1160px] justify-center px-5 sm:px-8">
+        <div role="group" aria-label={`${labels.monthly} / ${labels.yearly}`} className="inline-flex items-center rounded-full border border-mk-line bg-white/[0.03] p-[3px]">
+          {(["monthly", "yearly"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={period === p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                "flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 text-[0.86rem] font-medium transition-colors duration-200",
+                period === p ? "bg-mk-ink text-[#0c0b0a]" : "text-mk-muted mkh:text-mk-ink",
+              )}
+            >
+              {labels[p]}
+              {p === "yearly" && <span className={cn("font-mk-mono text-[0.75rem] font-medium", period === p ? "text-[#96300a]" : "text-mk-accent-ink")}>{labels.save20}</span>}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Plan cards */}
-      <div className="mx-auto grid max-w-[1120px] grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5 px-6 pb-24">
+      <div className="mx-auto grid max-w-[1160px] grid-cols-1 gap-3 px-5 pb-20 sm:grid-cols-2 sm:px-8 md:pb-28 lg:gap-4 xl:grid-cols-4">
         {plans.map((plan) => {
           const planPrices = prices[plan.id as keyof AllPlanPrices];
           const isEnterprise = plan.id === "enterprise";
@@ -88,77 +81,68 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
             }
           }
 
-          const activePrice = isEnterprise ? "Özel" : (displayCents !== null ? fmt(displayCents) : "—");
+          const activePrice = isEnterprise ? labels.custom : (displayCents !== null ? fmt(displayCents) : "—");
           // Badge only when plan has no monthly option and monthly tab is selected
           const showYearlyOnlyBadge = isYearlyOnly && period === "monthly";
           // Annual total subtext shown when billing is annual
           const yearlySubText = annualTotal !== null ? `${fmt(annualTotal)} ${labels.perYear}` : null;
 
+          const sub = plan.featured ? "text-mk-soft" : "text-mk-muted";
+
           return (
-            <Card
+            <div
               key={plan.id}
               className={cn(
-                "relative gap-0 rounded-3xl border-border py-0 shadow-[0_2px_16px_rgba(16,24,40,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(16,24,40,0.10)]",
-                plan.featured && "border-foreground bg-foreground text-background",
+                "mk-surface mk-tile flex flex-col rounded-[22px] p-6",
+                plan.featured && "mk-surface-accent",
               )}
             >
-              <CardContent className="p-7">
+              <div className="flex min-h-6 items-center justify-between gap-2">
+                <h2 lang="en" className={cn("font-mk-mono text-[0.74rem] font-medium uppercase tracking-[0.08em]", plan.featured ? "text-mk-ink" : "text-mk-soft")}>
+                  {plan.name}
+                </h2>
                 {plan.featured && (
-                  <Badge className="absolute right-[18px] top-[18px] rounded-full bg-white/[0.12] px-2.5 py-[3px] text-[0.68rem] font-bold text-background">
-                    {labels.mostPopular}
-                  </Badge>
+                  <span className="rounded-full bg-mk-accent px-2.5 py-0.5 text-[0.68rem] font-semibold text-[#0c0b0a]">{labels.mostPopular}</span>
                 )}
                 {showYearlyOnlyBadge && (
-                  <Badge className="absolute right-[18px] top-[18px] rounded-full border border-[rgba(110,168,255,0.3)] bg-[rgba(110,168,255,0.1)] px-2.5 py-[3px] text-[0.68rem] font-bold text-[#6ea8ff]">
-                    {labels.yearlyOnly}
-                  </Badge>
+                  <span className="rounded-full border border-mk-line px-2.5 py-0.5 text-[0.68rem] font-medium text-mk-soft">{labels.yearlyOnly}</span>
                 )}
+              </div>
 
-                <div className="mb-[22px]">
-                  <div className={cn("mb-2.5 text-[0.78rem] font-bold uppercase tracking-[0.1em]", plan.featured ? "text-background" : "text-muted-foreground")}>
-                    {plan.name}
-                  </div>
-                  <div className={cn("font-extrabold leading-none tracking-[-0.04em]", isEnterprise ? "text-[2rem]" : "text-[2.8rem]")}>
-                    {activePrice}
-                  </div>
-                  {isEnterprise && (
-                    <div className={cn("mt-1.5 text-[0.85rem]", plan.featured ? "text-white/70" : "text-muted-foreground")}>~$500+{labels.perMonth}</div>
-                  )}
-                  {!isEnterprise && displayCents !== null && (
-                    <div className={cn("mt-1 text-[0.85rem]", plan.featured ? "text-white/70" : "text-muted-foreground")}>
-                      {labels.perMonth}
-                      {yearlySubText && (
-                        <span className="ml-2 opacity-60">· {yearlySubText}</span>
-                      )}
-                    </div>
-                  )}
-                  <p className={cn("mt-4 text-[0.86rem] leading-[1.55]", plan.featured ? "text-white/[0.76]" : "text-muted-foreground")}>
-                    {plan.description}
-                  </p>
-                </div>
+              <p className="mt-5 flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[2.5rem] font-semibold leading-none tracking-[-0.04em]">{activePrice}</span>
+                <span className={cn("text-[0.9rem]", sub)}>
+                  {isEnterprise && <>$500+ {labels.perMonth}</>}
+                  {!isEnterprise && displayCents !== null && labels.perMonth}
+                </span>
+              </p>
+              <p className={cn("mt-1.5 min-h-5 text-[0.84rem]", sub)}>{!isEnterprise && yearlySubText}</p>
 
-                <div className={cn("mb-[22px] rounded-[10px] px-3 py-[9px] text-[0.82rem] font-bold", plan.featured ? "bg-white/10" : "bg-muted")}>
-                  {plan.audience}
-                </div>
+              <p className={cn("mt-4 text-[0.92rem] leading-[1.5] xl:min-h-[4.2rem]", sub)}>{plan.description}</p>
 
-                <ul className="mb-7 flex list-none flex-col gap-[11px] p-0">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className={cn("flex items-start gap-2.5 text-[0.86rem] leading-[1.45]", plan.featured ? "text-white/[0.78]" : "text-muted-foreground")}>
-                      <span className={cn("shrink-0 text-[0.9rem]", plan.featured ? "text-background" : "text-foreground")}>✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+              <p className={cn("mt-6 border-t pt-5 text-[0.86rem] font-semibold", plan.featured ? "border-mk-strong" : "border-mk-line")}>{plan.audience}</p>
 
-                <Button
-                  asChild
-                  variant={plan.featured ? "secondary" : "outline"}
-                  className={cn("h-11 w-full rounded-full font-bold", plan.featured && "bg-background text-foreground hover:bg-background/90")}
-                >
-                  <Link href={plan.href}>{plan.cta}</Link>
-                </Button>
-              </CardContent>
-            </Card>
+              <ul className="mb-8 mt-4 flex flex-col gap-2.5">
+                {plan.features.filter((feature) => feature !== plan.audience).map((feature) => (
+                  <li key={feature} className={cn("flex items-start gap-2.5 text-[0.88rem] leading-[1.45]", sub)}>
+                    <span aria-hidden className={cn("mk-ico mk-ico-check", "mt-[3px] size-3.5 shrink-0", "text-mk-accent-ink")} />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href={plan.href}
+                className={cn(
+                  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-full border text-[0.9rem] font-semibold transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.98]",
+                  plan.featured
+                    ? "mk-btn border-mk-ink bg-mk-ink text-[#0c0b0a]"
+                    : "border-mk-strong bg-white/[0.02] text-mk-ink mkh:border-mk-muted mkh:bg-white/[0.06]",
+                )}
+              >
+                {plan.cta}
+              </Link>
+            </div>
           );
         })}
       </div>

@@ -124,6 +124,33 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-display: 'Sora', 'Inter', system-ui, sans-serif;
+
+  /* marketing (landing, pricing) — see the MARKETING block at the end of this file */
+  --color-mk-paper:      var(--mk-paper);
+  --color-mk-raised:     var(--mk-raised);
+  --color-mk-sunken:     var(--mk-sunken);
+  --color-mk-ink:        var(--mk-ink);
+  --color-mk-soft:       var(--mk-soft);
+  --color-mk-muted:      var(--mk-muted);
+  --color-mk-line:       var(--mk-line);
+  --color-mk-accent:     var(--mk-accent);
+  --color-mk-accent-ink: var(--mk-accent-ink);
+  --color-mk-faint:      var(--mk-faint);
+  --color-mk-strong:     var(--mk-line-strong);
+  --font-mk-mono:    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* Marketing hover variants: only where a real pointer can hover, so nothing
+   sticks after a tap on touch screens. Used as `mkh:` / `group-mkh:`. */
+@custom-variant mkh {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { @slot; }
+  }
+}
+@custom-variant group-mkh {
+  @media (hover: hover) and (pointer: fine) {
+    &:is(:where(.group):hover *) { @slot; }
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -660,4 +687,297 @@ html, body {
 
   /* Onboarding quickstart: single col */
   .quickstart-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARKETING (landing, pricing)
+   Everything here is scoped to the `.mk` wrapper; app screens are unaffected.
+   Dark, warm, layered: near-black ground, two raised surfaces, 1px translucent
+   lines, off-white text and brand orange as the single accent and as light.
+───────────────────────────────────────────────────────────────────────────── */
+
+.mk {
+  --mk-paper:       #0c0b0a;
+  --mk-raised:      #141311;
+  --mk-sunken:      #1b1917;
+  --mk-ink:         #f3efe8;
+  --mk-soft:        #c4bdb1;
+  --mk-muted:       #938b7f;
+  --mk-faint:       #5d574f;
+  --mk-line:        rgba(255, 244, 230, 0.08);
+  --mk-line-strong: rgba(255, 244, 230, 0.15);
+  --mk-accent:      var(--brand);
+  --mk-accent-ink:  #ff7a45;
+
+  /* Shared components rendered inside marketing pages (e.g. LocaleSwitcher)
+     read the shadcn tokens; point those at the marketing palette here. */
+  --background:       var(--mk-paper);
+  --foreground:       var(--mk-ink);
+  --muted-surface:    var(--mk-sunken);
+  --muted-foreground: var(--mk-muted);
+  --border:           var(--mk-line-strong);
+
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  color-scheme: dark;
+  font-family: var(--font-mk-sans-face), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mk ::selection { background: color-mix(in srgb, var(--brand) 45%, transparent); color: #fff; }
+
+.mk-eyebrow {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mk-muted);
+}
+
+/* ── Materials ── */
+
+/* Raised surface: faint top-lit gradient, hairline, inner top highlight. */
+.mk-surface {
+  background: linear-gradient(180deg, rgba(255, 244, 230, 0.045), rgba(255, 244, 230, 0.012)) var(--mk-raised);
+  border: 1px solid var(--mk-line);
+  border-top-color: rgba(255, 244, 230, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.07), 0 24px 48px -32px rgba(0, 0, 0, 0.9);
+}
+
+/* The one surface that is lit from inside (featured plan). */
+.mk-surface-accent {
+  background: linear-gradient(180deg, rgba(255, 90, 31, 0.16), rgba(255, 90, 31, 0.02) 58%) var(--mk-raised);
+  border-color: rgba(255, 110, 55, 0.5);
+  border-top-color: rgba(255, 150, 105, 0.75);
+  box-shadow: inset 0 1px 0 rgba(255, 200, 170, 0.2), inset 0 60px 80px -60px rgba(255, 90, 31, 0.35);
+}
+
+/* Fine grid that fades out from the middle. */
+.mk-gridlines {
+  background-image:
+    linear-gradient(rgba(255, 244, 230, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 244, 230, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 50% 45%, #000 20%, transparent 78%);
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 45%, #000 20%, transparent 78%);
+}
+
+/* Orange light. */
+.mk-glow {
+  background: radial-gradient(closest-side, rgba(255, 90, 31, 0.42), rgba(255, 90, 31, 0.12) 45%, transparent 72%);
+}
+
+/* Film grain (inline SVG turbulence; `img-src data:` is allowed by the CSP). */
+.mk-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Star rating as one element: --n filled out of five (keeps the hero's many
+   review cards light in the document). */
+.mk-stars {
+  display: inline-block;
+  width: 58px;
+  height: 10px;
+  background: linear-gradient(90deg, var(--mk-soft) calc(var(--n) * 20%), rgba(255, 244, 230, 0.16) 0);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6l-5.9 3.1 1.2-6.6L2.5 9.5l6.6-.9z'/%3E%3C/svg%3E") left center / 11.6px 10px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6l-5.9 3.1 1.2-6.6L2.5 9.5l6.6-.9z'/%3E%3C/svg%3E") left center / 11.6px 10px repeat-x;
+}
+
+/* ── Interaction ── */
+
+/* Text link with an underline that draws in on hover (pointer devices only). */
+.mk-link {
+  cursor: pointer;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 0.25s ease, color 0.2s ease;
+}
+.mk-link:focus-visible { background-size: 100% 1px; }
+
+/* Primary button: a sheen sweeps across on hover. */
+.mk-btn { position: relative; overflow: hidden; isolation: isolate; }
+.mk-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.75) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Bento tile: a spotlight and an edge glow follow the pointer (--mx/--my are set
+   by components/marketing/Spotlight.tsx). */
+.mk-tile { position: relative; overflow: hidden; isolation: isolate; }
+.mk-tile::before,
+.mk-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.mk-tile::before {
+  z-index: -1;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 110, 55, 0.11), transparent 62%);
+}
+.mk-tile::after {
+  padding: 1px;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 150, 105, 0.85), transparent 65%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mk-link:hover { background-size: 100% 1px; }
+  .mk-btn:hover::after { transform: translateX(120%); }
+  .mk-tile:hover::before, .mk-tile:hover::after { opacity: 1; }
+}
+
+.mk a:focus-visible, .mk button:focus-visible, .mk [role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--mk-ink);
+  outline-offset: 3px;
+}
+/* Light-filled controls (primary buttons) need the ring pushed off their own fill. */
+.mk .mk-btn:focus-visible, .mk button[aria-pressed="true"]:focus-visible { outline-color: var(--mk-accent); }
+
+/* ── Motion (CSS only; base styles are always the finished/static state) ── */
+
+@keyframes mk-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.mk-pop { animation: mk-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* "typing…" bubble: lives for a moment before the message replaces it. */
+@keyframes mk-typing-life {
+  0%   { opacity: 0; transform: translateY(6px); }
+  12%  { opacity: 1; transform: none; }
+  86%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.mk-typing-life { opacity: 0; animation: mk-typing-life 1.25s ease 0.5s both; }
+@keyframes mk-dot { 0%, 60%, 100% { opacity: 0.3; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+.mk-dots > span { animation: mk-dot 1.2s ease-in-out 3; }
+.mk-dots > span:nth-child(2) { animation-delay: 0.15s; }
+.mk-dots > span:nth-child(3) { animation-delay: 0.3s; }
+
+/* Hero stage: noise cards drift from the edges and are absorbed by the phone.
+   A lane is three numbers (set per :nth-child below): --y, its vertical offset at
+   the outer edge; --rest, how far along its path (0 edge, 1 phone) the card sits
+   when nothing moves; --d, its place in the loop. --side is -1 (left) or 1 (right).
+   Cards enter 455px from the centre (inside the page grid), sink 200px from it
+   and keep 30% of --y; they are fully gone before they reach the phone. */
+.mk-lanes { --side: -1; --shift: 0s; }
+.mk-lanes-r { --side: 1; --shift: -3.5s; }
+.mk-lanes > :nth-child(1) { --y: -215px; --rest: 0.12; --d: 0s; }
+.mk-lanes > :nth-child(2) { --y: 0px;    --rest: 0.42; --d: -7s; }
+.mk-lanes > :nth-child(3) { --y: 215px;  --rest: 0.2;  --d: -14s; }
+.mk-lanes > * {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(calc(-50% + var(--side) * (455px - 255px * var(--rest))), calc(-50% + var(--y) * (1 - 0.7 * var(--rest))), 0) scale(calc(1 - var(--rest) * 0.2));
+  opacity: calc(1 - var(--rest) * 0.5);
+  animation: mk-flow 21s linear calc(var(--d) + var(--shift)) infinite;
+  will-change: transform, opacity;
+}
+@keyframes mk-flow {
+  0%   { transform: translate3d(calc(-50% + var(--side) * 455px), calc(-50% + var(--y)), 0) scale(1); opacity: 0; }
+  7%   { opacity: 1; }
+  58%  { opacity: 1; }
+  80%  { opacity: 0; }
+  100% { transform: translate3d(calc(-50% + var(--side) * 200px), calc(-50% + var(--y) * 0.3), 0) scale(0.8); opacity: 0; }
+}
+
+/* A piece of raw customer noise: review, order or till line. */
+.mk-noise {
+  width: 252px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255, 244, 230, 0.045), rgba(255, 244, 230, 0.012)) var(--mk-raised);
+  border: 1px solid var(--mk-line);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.06), 0 18px 40px -18px rgba(0, 0, 0, 0.9);
+}
+.mk-noise > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: 0.72rem ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  color: var(--mk-muted);
+}
+.mk-noise > p { margin-top: 7px; font-size: 0.84rem; line-height: 1.4; color: var(--mk-ink); }
+
+/* Convergence lines, and single particles of light travelling along them. */
+.mk-rails { fill: none; stroke-width: 1.5; }
+.mk-pulses { fill: none; stroke: #ffb38f; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 5px #ff5a1f); }
+.mk-pulses > path { stroke-dasharray: 1 1400; stroke-dashoffset: 1; animation: mk-pulse 6s linear var(--delay, 0s) infinite; }
+.mk-pulses > :nth-child(2) { --delay: -2s; }
+.mk-pulses > :nth-child(3) { --delay: -4s; }
+.mk-pulses > :nth-child(4) { --delay: -1s; }
+.mk-pulses > :nth-child(5) { --delay: -3s; }
+.mk-pulses > :nth-child(6) { --delay: -5s; }
+/* Same idea inside a bento tile (thin line, small dash). */
+.mk-pulse { stroke-dasharray: 1 400; stroke-dashoffset: 1; animation: mk-pulse 4.5s linear var(--delay, 0s) infinite; }
+@keyframes mk-pulse { to { stroke-dashoffset: -900; } }
+
+/* Small repeated bits of the product scenes (in the components layer so
+   utilities on the same element can still adjust them). */
+@layer components {
+  /* The two icons that repeat most (check, double check) as CSS masks: one small
+     element each instead of an inline SVG per use. Size and colour come from utilities. */
+  .mk-ico { display: inline-block; width: 1em; height: 1em; flex-shrink: 0; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+  .mk-ico-check { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
+  .mk-ico-checks { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 7 17l-5-5'/%3E%3Cpath d='m22 10-7.5 7.5L13 16'/%3E%3C/svg%3E"); }
+  .mk-row { display: flex; align-items: center; gap: 12px; border-radius: 10px; border: 1px solid var(--mk-line); background: rgba(0, 0, 0, 0.25); padding: 10px 14px; }
+  .mk-mono { font: 0.72rem ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; color: var(--mk-muted); }
+}
+
+/* Phone-sized marquee of noise cards (mobile hero, sources). */
+.mk-marquee { animation: mk-marquee var(--dur, 46s) linear infinite; }
+@keyframes mk-marquee { to { transform: translate3d(-50%, 0, 0); } }
+
+/* The visitor can pause everything that loops (MotionToggle sets data-paused on the
+   root). One-shot entrances are left alone, so nothing can freeze while invisible. */
+.mk[data-paused] :is(.mk-lanes > *, .mk-pulses > path, .mk-marquee, .mk-loop) { animation-play-state: paused !important; }
+
+/* Bento loops: calm state swaps. */
+@keyframes mk-swap-a { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes mk-swap-b { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
+.mk-swap-a { animation: mk-swap-a 7s ease-in-out infinite; }
+.mk-swap-b { opacity: 0; animation: mk-swap-b 7s ease-in-out infinite; }
+/* Scan bar sweeping over lines being read. */
+@keyframes mk-scan { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(74px); } }
+.mk-scan { animation: mk-scan 3.6s ease-in-out infinite; }
+@keyframes mk-spin { to { transform: rotate(360deg); } }
+.mk-spin { animation: mk-spin 0.9s linear infinite; }
+@keyframes mk-key {
+  0%, 62%, 100% { transform: none; box-shadow: 0 5px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 244, 230, 0.12); }
+  70%, 82% { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 244, 230, 0.12), 0 0 28px rgba(255, 90, 31, 0.55); }
+}
+.mk-key-press { animation: mk-key 4.5s ease-in-out infinite; }
+/* Bento loops only run while their section is on screen (Reveal sets data-inview). */
+.mk-loop { animation-play-state: paused; }
+[data-inview] .mk-loop { animation-play-state: running; }
+
+/* Scroll reveal (components/marketing/Reveal.tsx adds these classes). */
+.mk-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mk-reveal-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mk *, .mk *::before, .mk *::after { animation: none !important; transition: none !important; }
 }
