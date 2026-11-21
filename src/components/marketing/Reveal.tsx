@@ -22,7 +22,13 @@ export default function Reveal({ children, className, delay = 0, stagger }: Reve
   useEffect(() => {
     const el = ref.current;
     if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) return;
+    // `data-inview` lets CSS start section-local animations only once the section is seen.
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) {
+      el.dataset.inview = "true";
+      return () => {
+        delete el.dataset.inview;
+      };
+    }
 
     const targets = stagger ? Array.from(el.querySelectorAll<HTMLElement>(stagger)) : [el];
     targets.forEach((target, i) => {
@@ -34,6 +40,7 @@ export default function Reveal({ children, className, delay = 0, stagger }: Reve
       ([entry]) => {
         if (!entry.isIntersecting) return;
         targets.forEach((target) => target.classList.add("mk-reveal-in"));
+        el.dataset.inview = "true";
         observer.disconnect();
       },
       { rootMargin: "0px 0px -12% 0px" },
@@ -42,6 +49,7 @@ export default function Reveal({ children, className, delay = 0, stagger }: Reve
 
     return () => {
       observer.disconnect();
+      delete el.dataset.inview;
       targets.forEach((target) => {
         target.classList.remove("mk-reveal", "mk-reveal-in");
         target.style.transitionDelay = "";

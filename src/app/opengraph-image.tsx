@@ -4,13 +4,13 @@ export const alt = "Observer AI — Müşteri sinyalleri WhatsApp'ınızda";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const INK = "#17140f";
-const PAPER = "#faf8f4";
-const MUTED = "#6a6459";
-const LINE = "#e6e0d4";
+const INK = "#0f1512";
+const PAPER = "#ffffff";
+const MUTED = "#57625b";
+const LINE = "#dde3dc";
 const BRAND = "#ff5a1f";
 
-/** Social card in the landing's visual language: paper, ink, one orange accent. */
+/** Social card in the landing's visual language: white, green-black ink, the answer in an orange chat bubble. */
 export default function OpenGraphImage() {
   return new ImageResponse(
     (
@@ -45,8 +45,9 @@ export default function OpenGraphImage() {
         <div style={{ display: "flex", fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em" }}>
           Müşteriniz ne istiyor?
         </div>
-        <div style={{ display: "flex", fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em", marginTop: 6 }}>
-          Cevabı WhatsApp&apos;ınızda.
+        <div style={{ display: "flex", alignItems: "center", gap: 22, fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em", marginTop: 10 }}>
+          <div style={{ display: "flex" }}>Cevabı</div>
+          <div style={{ display: "flex", background: BRAND, borderRadius: "34px 34px 34px 8px", padding: "4px 26px 12px" }}>WhatsApp&apos;ınızda.</div>
         </div>
 
         <div style={{ display: "flex", fontSize: 29, color: MUTED, marginTop: 30, lineHeight: 1.4, maxWidth: 940 }}>

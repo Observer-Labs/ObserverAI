@@ -91,7 +91,7 @@ export default async function PricingPage() {
 
       <main className="flex-1">
         <Reveal className="mx-auto max-w-[1120px] px-5 pb-10 pt-12 sm:px-8 sm:pt-16 md:pb-12 md:pt-20">
-          <h1 className="font-mk-display text-[clamp(2.6rem,7vw,4.4rem)] leading-[1.02] tracking-[-0.015em]">
+          <h1 className="font-mk-display text-[clamp(2.5rem,7vw,4.25rem)] font-extrabold leading-[0.98] tracking-[-0.04em]">
             {tPricing("title")}
           </h1>
           <p className="mt-5 max-w-[52ch] text-[1.08rem] leading-[1.65] text-mk-soft">

@@ -48,7 +48,7 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
               onClick={() => setPeriod(p)}
               className={cn(
                 "flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 text-[0.86rem] font-medium transition-colors duration-200",
-                period === p ? "bg-mk-raised text-mk-ink shadow-[0_1px_2px_rgba(23,20,15,0.12)]" : "text-mk-muted hover:text-mk-ink",
+                period === p ? "bg-mk-ink text-mk-paper" : "text-mk-muted mkh:text-mk-ink",
               )}
             >
               {labels[p]}
@@ -93,7 +93,7 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
             <div
               key={plan.id}
               className={cn(
-                "flex flex-col rounded-2xl border p-6",
+                "flex flex-col rounded-[24px] border p-6",
                 plan.featured ? "mk-on-ink border-mk-ink bg-mk-ink text-mk-paper" : "border-mk-line bg-mk-raised",
               )}
             >
@@ -102,14 +102,14 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
                   {plan.name}
                 </h2>
                 {plan.featured && (
-                  <span className="rounded-full bg-mk-accent px-2.5 py-0.5 text-[0.68rem] font-semibold text-[#17140f]">{labels.mostPopular}</span>
+                  <span className="rounded-full bg-mk-paper px-2.5 py-0.5 text-[0.68rem] font-semibold text-mk-ink">{labels.mostPopular}</span>
                 )}
                 {showYearlyOnlyBadge && (
                   <span className="rounded-full border border-mk-line px-2.5 py-0.5 text-[0.68rem] font-medium text-mk-soft">{labels.yearlyOnly}</span>
                 )}
               </div>
 
-              <p className="mt-5 font-mk-display text-[3.1rem] leading-none tracking-[-0.01em]">{activePrice}</p>
+              <p className="mt-5 font-mk-display text-[2.9rem] font-extrabold leading-none tracking-[-0.04em]">{activePrice}</p>
               <p className={cn("mt-2 min-h-5 text-[0.84rem]", sub)}>
                 {isEnterprise && <>~$500+{labels.perMonth}</>}
                 {!isEnterprise && displayCents !== null && (
@@ -136,10 +136,10 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
               <Link
                 href={plan.href}
                 className={cn(
-                  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-full border text-[0.9rem] font-medium transition-colors duration-200",
+                  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-full border text-[0.9rem] font-semibold transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.98]",
                   plan.featured
-                    ? "border-mk-paper bg-mk-paper text-mk-ink hover:bg-mk-sunken"
-                    : "border-mk-line bg-transparent text-mk-ink hover:border-mk-ink",
+                    ? "border-mk-accent bg-mk-accent text-[#0f1512] mkh:border-[#ff7240] mkh:bg-[#ff7240]"
+                    : "border-mk-line bg-transparent text-mk-ink mkh:border-mk-ink mkh:bg-mk-ink mkh:text-mk-paper",
                 )}
               >
                 {plan.cta}

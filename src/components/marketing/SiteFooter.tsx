@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import Logo from "@/components/Logo";
 
-const LINK = "mk-link w-fit py-1 text-[0.9rem] text-mk-soft hover:text-mk-ink";
+const LINK = "mk-link w-fit py-1 text-[0.9rem] text-mk-soft mkh:text-mk-ink";
 
 /** Shared marketing footer (dark band). Used by the landing and pricing pages. */
 export default function SiteFooter() {
@@ -39,7 +39,7 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-[1120px] px-5 sm:px-8">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-t border-mk-line py-12 sm:grid-cols-[1.6fr_1fr_1fr_1fr] sm:py-14">
           <div className="col-span-2 sm:col-span-1">
-            <Logo href="/" size={22} textSize="1rem" color="var(--mk-ink)" />
+            <Logo href="/" size={22} textSize="1rem" color="var(--mk-ink)" className="transition-opacity duration-200 mkh:opacity-75" />
             <p className="mt-3 max-w-[240px] text-[0.9rem] leading-relaxed text-mk-muted">{t("footerTagline")}</p>
           </div>
           {groups.map((g) => (

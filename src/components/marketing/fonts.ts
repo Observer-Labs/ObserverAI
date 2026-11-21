@@ -1,4 +1,4 @@
-import { Instrument_Serif } from "next/font/google";
+import { Bricolage_Grotesque } from "next/font/google";
 
 /**
  * Marketing-only display typeface, self-hosted by next/font (the CSP blocks
@@ -6,13 +6,13 @@ import { Instrument_Serif } from "next/font/google";
  * app screens keep their own type stack.
  *
  * Body copy and the small mono labels deliberately stay on system fonts: the
- * largest text block paints with the first frame, and the page ships one
- * webfont family (about 50 KB) instead of three.
+ * largest text block paints with the first frame, and the page ships a single
+ * webfont family.
  */
-const display = Instrument_Serif({
+const display = Bricolage_Grotesque({
   subsets: ["latin", "latin-ext"],
-  weight: "400",
-  style: ["normal", "italic"],
+  // One static weight: headings are always extrabold, and the file is about half the variable font.
+  weight: "800",
   variable: "--font-mk-display-face",
   display: "swap",
 });

@@ -135,8 +135,21 @@
   --color-mk-line:       var(--mk-line);
   --color-mk-accent:     var(--mk-accent);
   --color-mk-accent-ink: var(--mk-accent-ink);
-  --font-mk-display: var(--font-mk-display-face), 'Iowan Old Style', Georgia, serif;
+  --font-mk-display: var(--font-mk-display-face), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mk-mono:    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* Marketing hover variants: only where a real pointer can hover, so nothing
+   sticks after a tap on touch screens. Used as `mkh:` / `group-mkh:`. */
+@custom-variant mkh {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { @slot; }
+  }
+}
+@custom-variant group-mkh {
+  @media (hover: hover) and (pointer: fine) {
+    &:is(:where(.group):hover *) { @slot; }
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -678,22 +691,24 @@ html, body {
 /* ─────────────────────────────────────────────────────────────────────────────
    MARKETING (landing, pricing)
    Everything here is scoped to the `.mk` wrapper; app screens are unaffected.
-   One paper surface, one ink, one accent (brand orange).
+   Visual idea: the page speaks the way the product does — in chat. White page,
+   green-black ink, a dotted "chat wallpaper" surface, message bubbles as the
+   recurring shape, and brand orange as Observer's voice.
 ───────────────────────────────────────────────────────────────────────────── */
 
 .mk {
-  --mk-paper:      #faf8f4;
+  --mk-paper:      #ffffff;
   --mk-raised:     #ffffff;
-  --mk-sunken:     #f3efe7;
-  --mk-ink:        #17140f;
-  --mk-soft:       #3d382f;
-  --mk-muted:      #6a6459;
-  --mk-line:       #e6e0d4;
+  --mk-sunken:     #eff2ed;
+  --mk-ink:        #0f1512;
+  --mk-soft:       #2c3731;
+  --mk-muted:      #57625b;
+  --mk-line:       #dde3dc;
   --mk-accent:     var(--brand);
-  --mk-accent-ink: #b53a0a;
+  --mk-accent-ink: #b0380a;
 
   /* Shared components rendered inside marketing pages (e.g. LocaleSwitcher)
-     read the shadcn tokens; point those at the paper palette here. */
+     read the shadcn tokens; point those at the marketing palette here. */
   --background:       var(--mk-paper);
   --foreground:       var(--mk-ink);
   --muted-surface:    var(--mk-sunken);
@@ -707,20 +722,39 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-.mk ::selection { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+.mk ::selection { background: color-mix(in srgb, var(--brand) 26%, transparent); }
 
-/* Dark band (closing call to action + footer) flips the same tokens. */
+/* Dark band (footer) flips the same tokens. */
 .mk-dark {
-  --mk-paper:  #17140f;
-  --mk-raised: #211d17;
-  --mk-sunken: #100e0a;
-  --mk-ink:    #faf8f4;
-  --mk-soft:   #d9d3c7;
-  --mk-muted:  #a39c8f;
-  --mk-line:   #353027;
+  --mk-paper:  #0f1512;
+  --mk-raised: #19211c;
+  --mk-sunken: #0a0f0c;
+  --mk-ink:    #f4f6f2;
+  --mk-soft:   #cfd6cf;
+  --mk-muted:  #9aa59d;
+  --mk-line:   #2a342e;
   --mk-accent-ink: #ff8a5c;
   background: var(--mk-paper);
   color: var(--mk-ink);
+}
+
+/* Orange band (closing call to action): ink on brand orange. */
+.mk-orange {
+  --mk-paper:  var(--brand);
+  --mk-raised: #ffffff;
+  --mk-ink:    #0f1512;
+  --mk-soft:   #24120a;
+  --mk-muted:  #3d1c0b;
+  --mk-line:   rgba(15, 21, 18, 0.22);
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+}
+
+/* Chat wallpaper: the surface every conversation sits on. */
+.mk-wall {
+  background-color: var(--mk-sunken);
+  background-image: radial-gradient(color-mix(in srgb, var(--mk-ink) 9%, transparent) 1px, transparent 1.2px);
+  background-size: 18px 18px;
 }
 
 .mk-eyebrow {
@@ -732,41 +766,55 @@ html, body {
   color: var(--mk-accent-ink);
 }
 
-/* Text link with an underline that draws in on hover. */
+/* Text link with an underline that draws in on hover (pointer devices only). */
 .mk-link {
   cursor: pointer;
   background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
   transition: background-size 0.25s ease, color 0.2s ease;
 }
-.mk-link:hover, .mk-link:focus-visible { background-size: 100% 1px; }
+.mk-link:focus-visible { background-size: 100% 1px; }
+@media (hover: hover) and (pointer: fine) {
+  .mk-link:hover { background-size: 100% 1px; }
+}
 
-.mk a:focus-visible, .mk button:focus-visible {
+.mk a:focus-visible, .mk button:focus-visible, .mk [role="tabpanel"]:focus-visible {
   outline: 2px solid var(--mk-ink);
   outline-offset: 3px;
 }
 /* Ink-filled surfaces that are not a full `.mk-dark` band (featured price card). */
-.mk .mk-on-ink a:focus-visible, .mk .mk-on-ink button:focus-visible { outline-color: var(--mk-paper); }
+.mk .mk-on-ink a:focus-visible, .mk .mk-on-ink button:focus-visible { outline-color: #ffffff; }
 
-/* Hero demo: parts that GSAP reveals start hidden only when motion is allowed, so
-   there is no flash of the finished state before hydration. Reduced-motion (and,
-   through a <noscript> override, no-JS) renders show the finished state as is. */
-.mk-pre-inv { opacity: 0; }
-@media (prefers-reduced-motion: no-preference) {
-  .mk-pre { opacity: 0; }
-  .mk-pre-inv { opacity: 1; }
+/* ── Chat motion (CSS only; base styles are always the finished state) ── */
+@keyframes mk-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
 }
-[data-static] .mk-pre { opacity: 1; }
-[data-static] .mk-pre-inv { opacity: 0; }
+/* Bubbles pop in; stagger with an inline animation-delay. */
+.mk-pop { animation: mk-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* Failsafe: if the animation script never arrives (blocked or very slow network),
-   fade the finished state in on its own. The timeline sets [data-playing] when it
-   takes over, which switches this off. */
-@keyframes mk-pre-show { to { opacity: 1; } }
-@keyframes mk-pre-hide { to { opacity: 0; } }
-@media (prefers-reduced-motion: no-preference) {
-  figure:not([data-playing]) .mk-pre { animation: mk-pre-show 0.5s ease 4s forwards; }
-  figure:not([data-playing]) .mk-pre-inv { animation: mk-pre-hide 0.3s ease 4s forwards; }
+/* "typing…" bubble: lives for a moment before the message replaces it. */
+@keyframes mk-typing-life {
+  0%   { opacity: 0; transform: translateY(6px); }
+  12%  { opacity: 1; transform: none; }
+  86%  { opacity: 1; }
+  100% { opacity: 0; }
 }
+.mk-typing-life { opacity: 0; animation: mk-typing-life 1.25s ease 0.25s both; }
+
+@keyframes mk-dot { 0%, 60%, 100% { opacity: 0.3; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
+/* Finite on purpose: nothing on the page keeps moving for more than a few seconds. */
+.mk-dots > span { animation: mk-dot 1.2s ease-in-out 5; }
+/* Dots that wait until their section is on screen (Reveal sets data-inview). */
+.mk-dots-wait > span { animation: none; }
+[data-inview] .mk-dots-wait > span { animation: mk-dot 1.2s ease-in-out 5; }
+.mk-dots > span:nth-child(2) { animation-delay: 0.15s; }
+.mk-dots > span:nth-child(3) { animation-delay: 0.3s; }
+
+/* Quick-reply key that gets "pressed" during the hero story: the animation holds
+   the unpressed look while it runs and has no fill, so when it ends the key
+   falls back to its real (pressed) style. */
+@keyframes mk-unpressed { from, to { background-color: var(--mk-raised); color: var(--mk-soft); border-color: var(--mk-line); } }
+.mk-key-late { animation: mk-unpressed 2.75s linear; }
 
 /* Scroll reveal (components/marketing/Reveal.tsx adds these classes). */
 .mk-reveal {
