@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronLeft, Mic, Paperclip, Phone, Smile, Video } from "lucide-react";
+import { Camera, ChevronLeft, CircleCheck, Mic, Paperclip, Phone, Smile, Video, Wifi } from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import Bubble, { TypingDots } from "@/components/marketing/Bubble";
 import MotionToggle from "@/components/marketing/MotionToggle";
@@ -20,6 +20,19 @@ function NoiseCard({ n }: { n: Noise }) {
       </div>
       <p>{n.text}</p>
     </div>
+  );
+}
+
+// Inside the phone the type is the platform's own, as WhatsApp renders it.
+const PHONE_FONT = "[font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Segoe_UI',Roboto,'Helvetica_Neue',sans-serif]";
+
+/** Message time, tucked into the bubble's bottom-right corner the way WhatsApp sets it. */
+function WaTime({ children, read }: { children: string; read?: boolean }) {
+  return (
+    <span className={`float-right -mb-[3px] ml-3 mt-[6px] flex items-center gap-[3px] text-[0.69rem] leading-[15px] ${read ? "text-[#a5c9c0]" : "text-[#8696a0]"}`}>
+      {children}
+      {read && <span aria-hidden className="mk-ico mk-ico-checks size-[15px] text-[#53bdeb]" />}
+    </span>
   );
 }
 
@@ -47,6 +60,7 @@ export default function HeroStage() {
     { source: "Trendyol", text: t("noise6"), stars: 2 },
   ];
   const mobile = [left[0], right[0], left[1], right[1]];
+  const replies = [t("replyDetails"), t("replyDone"), t("replySkip")];
 
   return (
     <figure data-stage aria-label={t("demoLabel")} className="relative mx-auto mt-10 w-full max-w-[1160px] lg:mt-9">
@@ -107,97 +121,113 @@ export default function HeroStage() {
           </div>
         </div>
 
-        {/* The phone: a WhatsApp conversation in WhatsApp's own colours */}
-        <div className="relative z-10 mx-auto w-full max-w-[372px] lg:absolute lg:left-1/2 lg:top-1/2 lg:w-[372px] lg:-translate-x-1/2 lg:-translate-y-1/2">
-          <div className="rounded-[58px] border border-white/20 bg-[linear-gradient(150deg,#55504a,#1d1b18_30%,#0a0908_62%,#3a3632)] p-[10px] shadow-[0_80px_140px_-50px_#000,0_0_110px_-10px_rgba(255,90,31,0.32),inset_0_1.5px_1px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.12)]">
-            <div className="relative flex min-h-[690px] flex-col overflow-hidden rounded-[48px] lg:h-[690px] bg-[#0b141a] text-[#e9edef] ring-1 ring-black">
-              {/* Status bar */}
-              <div className="relative flex h-12 shrink-0 items-center justify-between bg-[#1f2c34] px-8 pt-2 text-[0.8rem] font-semibold">
-                <span>09:26</span>
-                <span aria-hidden className="absolute left-1/2 top-3 h-[28px] w-[104px] -translate-x-1/2 rounded-full bg-black" />
-                <span aria-hidden className="flex items-center gap-1.5">
-                  <span className="flex items-end gap-[2px]">
-                    {[4, 6, 8, 10].map((h) => (
-                      <span key={h} style={{ height: h }} className="w-[3px] rounded-[1px] bg-[#e9edef]" />
-                    ))}
+        {/* The phone: a WhatsApp conversation in WhatsApp's own colours and type */}
+        <div className="relative z-10 mx-auto w-full max-w-[376px] lg:absolute lg:left-1/2 lg:top-1/2 lg:w-[376px] lg:-translate-x-1/2 lg:-translate-y-1/2">
+          {/* Side buttons */}
+          <span aria-hidden className="absolute -left-[2px] top-[118px] h-7 w-[3px] rounded-l-[2px] bg-[#4a453f]" />
+          <span aria-hidden className="absolute -left-[2px] top-[172px] h-[52px] w-[3px] rounded-l-[2px] bg-[#4a453f]" />
+          <span aria-hidden className="absolute -left-[2px] top-[236px] h-[52px] w-[3px] rounded-l-[2px] bg-[#4a453f]" />
+          <span aria-hidden className="absolute -right-[2px] top-[196px] h-[84px] w-[3px] rounded-r-[2px] bg-[#4a453f]" />
+
+          {/* Titanium band, then the black bezel, then the screen */}
+          <div className="relative rounded-[60px] bg-[linear-gradient(145deg,#9a9187,#3a3632_18%,#151412_46%,#2b2825_72%,#8a8279)] p-[3px] shadow-[0_80px_140px_-50px_#000,0_0_110px_-10px_rgba(255,90,31,0.32)]">
+            <div className="rounded-[57px] bg-black p-[9px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+              <div className={`relative flex min-h-[640px] flex-col overflow-hidden rounded-[48px] bg-[#0b141a] text-[#e9edef] lg:h-[664px] ${PHONE_FONT}`}>
+                {/* Status bar */}
+                <div className="relative flex h-[50px] shrink-0 items-center justify-between bg-[#1f2c34] pl-9 pr-8 pt-2.5 text-[0.94rem] font-semibold tracking-[-0.01em]">
+                  <span>09:26</span>
+                  <span aria-hidden className="absolute left-1/2 top-[11px] h-[30px] w-[102px] -translate-x-1/2 rounded-full bg-black" />
+                  <span aria-hidden className="flex items-center gap-[5px]">
+                    <span className="flex items-end gap-[2px]">
+                      {[4, 6, 8, 10].map((h) => (
+                        <span key={h} style={{ height: h }} className="w-[3px] rounded-[1px] bg-[#e9edef]" />
+                      ))}
+                    </span>
+                    <Wifi className="size-[15px]" strokeWidth={2.6} />
+                    <span className="relative h-[12px] w-[24px] rounded-[4px] border border-[#e9edef]/45 p-px">
+                      <span className="block h-full w-[78%] rounded-[2.5px] bg-[#e9edef]" />
+                    </span>
                   </span>
-                  <span className="relative h-[11px] w-[22px] rounded-[3.5px] border border-[#e9edef]/50 p-px">
-                    <span className="block h-full w-[78%] rounded-[2px] bg-[#e9edef]" />
+                </div>
+
+                {/* Chat header */}
+                <div className="flex shrink-0 items-center gap-2 bg-[#1f2c34] px-2.5 pb-2.5 pt-1.5 shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+                  <ChevronLeft aria-hidden className="size-[26px] text-[#e9edef]" strokeWidth={1.8} />
+                  <span aria-hidden className="flex size-[38px] items-center justify-center rounded-full bg-[#0b141a] ring-1 ring-white/10">
+                    <LogoMark size={22} />
                   </span>
-                </span>
-              </div>
+                  <span className="ml-0.5 min-w-0 leading-tight">
+                    <span className="block text-[1rem] font-semibold tracking-[-0.01em]">Observer</span>
+                    <span className="block text-[0.75rem] text-[#8696a0]">{t("waBusinessLabel")}</span>
+                  </span>
+                  <span aria-hidden className="ml-auto flex items-center gap-5 pr-2 text-[#e9edef]">
+                    <Video className="hidden size-[22px] min-[360px]:block" strokeWidth={1.6} />
+                    <Phone className="size-[19px]" strokeWidth={1.6} />
+                  </span>
+                </div>
 
-              {/* Chat header */}
-              <div className="flex shrink-0 items-center gap-2.5 bg-[#1f2c34] px-3 pb-2.5 pt-1.5">
-                <ChevronLeft aria-hidden className="size-6 text-[#e9edef]" strokeWidth={1.8} />
-                <span aria-hidden className="flex size-9 items-center justify-center rounded-full bg-[#0b141a]">
-                  <LogoMark size={21} />
-                </span>
-                <span className="min-w-0 leading-tight">
-                  <span className="block text-[0.96rem] font-semibold">Observer</span>
-                  <span className="block text-[0.72rem] text-[#9aa8b1]">{t("waBusinessLabel")}</span>
-                </span>
-                <span aria-hidden className="ml-auto flex items-center gap-5 pr-1.5 text-[#e9edef]">
-                  <Video className="hidden size-5 min-[360px]:block" strokeWidth={1.7} />
-                  <Phone className="size-[18px]" strokeWidth={1.7} />
-                </span>
-              </div>
+                {/* Thread: anchored to the bottom, like a real conversation */}
+                <div className="relative flex flex-1 flex-col overflow-hidden bg-[radial-gradient(rgba(233,237,239,0.04)_1px,transparent_1.2px)] px-[14px] pb-2 pt-2.5 [background-size:17px_17px]">
+                  <p className="mx-auto mb-auto rounded-[8px] bg-[#182229] px-3 py-[5px] text-[0.75rem] text-[#8696a0] shadow-[0_1px_0.5px_rgba(0,0,0,0.4)]">{t("chatToday")}</p>
 
-              {/* Thread */}
-              <div className="relative flex flex-1 flex-col gap-1.5 overflow-hidden px-2.5 pb-3 pt-2.5">
-                <p className="mx-auto rounded-lg bg-[#182229] px-2.5 py-1 text-[0.7rem] text-[#9aa8b1]">{t("chatToday")}</p>
+                  <div className="relative mt-3">
+                    <Bubble wa className="mk-typing-life absolute left-0 top-0 px-4 py-3.5 text-[#8696a0]">
+                      <TypingDots />
+                    </Bubble>
+                    <Bubble wa className="mk-pop max-w-[88%] origin-top-left" style={{ animationDelay: "1.7s" }}>
+                      <p className="font-semibold">{t("feedCard1Title")}</p>
+                      <p className="text-[#d1d7db]">{t("feedCard1Body")}</p>
+                      <div className="mt-2 rounded-[6px] border-l-[3px] border-[#ff7a45] bg-black/25 px-2.5 py-1.5">
+                        <p className="text-[0.78rem] font-semibold text-[#ff9466]">{t("feedCard3Title")}</p>
+                        <p>{t("feedCard3Body")}</p>
+                      </div>
+                      <ul className="mt-2 flex flex-wrap gap-1.5">
+                        {replies.map((label, i) => (
+                          <li key={label} className="flex items-center gap-1.5 rounded-[6px] bg-white/[0.07] py-[3px] pl-[3px] pr-2 text-[0.8rem] text-[#d1d7db]">
+                            <span className="flex size-[18px] items-center justify-center rounded-[4px] bg-white/[0.14] text-[0.72rem] font-semibold text-[#e9edef]">{i + 1}</span>
+                            {label}
+                          </li>
+                        ))}
+                      </ul>
+                      <WaTime>09:24</WaTime>
+                    </Bubble>
+                  </div>
 
-                <div className="relative">
-                  <Bubble wa className="mk-typing-life absolute left-0 top-0 px-4 py-3.5 text-[#9aa8b1]">
-                    <TypingDots />
+                  <Bubble wa tone="owner" className="mk-pop ml-auto mt-2 min-w-[78px] origin-top-right" style={{ animationDelay: "3.3s" }}>
+                    <span className="font-medium">1</span>
+                    <WaTime read>09:25</WaTime>
                   </Bubble>
-                  <Bubble wa className="mk-pop max-w-[90%] origin-top-left" style={{ animationDelay: "1.7s" }}>
-                    <p className="font-semibold">{t("feedCard1Title")}</p>
-                    <p className="mt-1">{t("feedCard1Body")}</p>
-                    <p className="mt-2">
-                      <span className="font-semibold">{t("feedCard3Title")}:</span> {t("feedCard3Body")}
-                    </p>
-                    <p className="mt-2 text-[0.8rem] text-[#9aa8b1]">{t("demoReplyHint")}</p>
-                    <p className="-mb-0.5 text-right text-[0.66rem] text-[#9aa8b1]">09:24</p>
+
+                  <Bubble wa className="mk-pop mt-2 max-w-[88%] origin-top-left" style={{ animationDelay: "4.2s" }}>
+                    {t("demoDetails")}
+                    <WaTime>09:25</WaTime>
+                  </Bubble>
+
+                  <Bubble wa tone="owner" className="mk-pop ml-auto mt-2 min-w-[78px] origin-top-right" style={{ animationDelay: "5.8s" }}>
+                    <span className="font-medium">2</span>
+                    <WaTime read>09:26</WaTime>
+                  </Bubble>
+
+                  <Bubble wa className="mk-pop mt-2 w-fit max-w-[88%] origin-top-left" style={{ animationDelay: "6.6s" }}>
+                    <CircleCheck aria-hidden className="-mt-0.5 mr-1.5 inline size-[15px] text-[#ff9466]" strokeWidth={2.2} />
+                    {t("demoAck")}
+                    <WaTime>09:26</WaTime>
                   </Bubble>
                 </div>
 
-                <Bubble wa tone="owner" className="mk-pop ml-auto flex origin-top-right items-end gap-3 py-1.5" style={{ animationDelay: "3.3s" }}>
-                  1
-                  <span className="flex items-center gap-1 text-[0.66rem] text-[#b6d5cd]">
-                    09:25 <span aria-hidden className="size-4 text-[#53bdeb] mk-ico mk-ico-checks" />
+                {/* Composer */}
+                <div aria-hidden className="flex shrink-0 items-center gap-1.5 px-2 pb-[26px] pt-1.5">
+                  <span className="flex h-[42px] flex-1 items-center gap-2.5 rounded-full bg-[#1f2c34] pl-3 pr-3.5 text-[0.98rem] text-[#8696a0]">
+                    <Smile className="size-[22px]" strokeWidth={1.6} />
+                    {t("phoneInput")}
+                    <Paperclip className="ml-auto size-[19px]" strokeWidth={1.6} />
+                    <Camera className="size-[20px]" strokeWidth={1.6} />
                   </span>
-                </Bubble>
-
-                <Bubble wa className="mk-pop max-w-[90%] origin-top-left" style={{ animationDelay: "4.2s" }}>
-                  {t("demoDetails")}
-                  <span className="-mb-0.5 block text-right text-[0.66rem] text-[#9aa8b1]">09:25</span>
-                </Bubble>
-
-                <Bubble wa tone="owner" className="mk-pop ml-auto flex origin-top-right items-end gap-3 py-1.5" style={{ animationDelay: "5.8s" }}>
-                  2
-                  <span className="flex items-center gap-1 text-[0.66rem] text-[#b6d5cd]">
-                    09:26 <span aria-hidden className="size-4 text-[#53bdeb] mk-ico mk-ico-checks" />
+                  <span className="flex size-[42px] items-center justify-center rounded-full bg-[#00a884] text-[#0b141a]">
+                    <Mic className="size-[20px]" strokeWidth={2} />
                   </span>
-                </Bubble>
-
-                <Bubble wa className="mk-pop w-fit max-w-[90%] origin-top-left" style={{ animationDelay: "6.6s" }}>
-                  {t("demoAck")}
-                  <span className="ml-2.5 text-[0.66rem] text-[#9aa8b1]">09:26</span>
-                </Bubble>
-              </div>
-
-              {/* Composer */}
-              <div aria-hidden className="flex shrink-0 items-center gap-2 px-2 pb-7 pt-1.5">
-                <span className="flex h-10 flex-1 items-center gap-2.5 rounded-full bg-[#1f2c34] px-3 text-[0.9rem] text-[#9aa8b1]">
-                  <Smile className="size-5" strokeWidth={1.7} />
-                  {t("phoneInput")}
-                  <Paperclip className="ml-auto size-[18px]" strokeWidth={1.7} />
-                </span>
-                <span className="flex size-10 items-center justify-center rounded-full bg-[#00a884] text-[#0b141a]">
-                  <Mic className="size-[18px]" strokeWidth={2} />
-                </span>
-                <span className="absolute bottom-2 left-1/2 h-1 w-32 -translate-x-1/2 rounded-full bg-[#e9edef]/45" />
+                  <span className="absolute bottom-2 left-1/2 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-[#e9edef]/50" />
+                </div>
               </div>
             </div>
           </div>

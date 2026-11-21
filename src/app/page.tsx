@@ -26,11 +26,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const CONTAINER = "mx-auto max-w-[1160px] px-5 sm:px-8";
-const H2 = "text-[clamp(1.8rem,4vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.035em] text-balance";
+const H2 = "text-[clamp(1.8rem,4vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-balance";
 const SECTION = `${CONTAINER} pb-24 md:pb-32`;
 const BTN =
-  "group inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-[0.96rem] font-semibold transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.97]";
-const BTN_PRIMARY = `${BTN} mk-btn bg-mk-ink text-[#0c0b0a] shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-12px_rgba(255,90,31,0.55)]`;
+  "group inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[0.94rem] font-medium tracking-[-0.01em] transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.97]";
+const BTN_PRIMARY = `${BTN} mk-btn mk-btn-light text-[#0c0b0a]`;
 const ARROW = "size-4 transition-transform duration-200 group-mkh:translate-x-1";
 
 export default async function LandingPage() {
@@ -56,7 +56,7 @@ export default async function LandingPage() {
               <span aria-hidden className="size-1.5 rounded-full bg-mk-accent shadow-[0_0_10px_2px_rgba(255,90,31,0.7)]" />
               {t("heroEyebrow")}
             </p>
-            <h1 className="mt-6 text-[clamp(1.85rem,7.6vw,4rem)] font-semibold leading-[1.04] tracking-[-0.045em]">
+            <h1 className="mt-6 text-[clamp(1.85rem,7.6vw,4rem)] font-semibold leading-[1.05] tracking-[-0.035em]">
               <span className="block text-balance text-mk-muted">{t("heroTitleA")}</span>
               <span className="block text-balance">
                 {t("heroTitleB1")} {t("heroTitleB2")}
@@ -68,7 +68,7 @@ export default async function LandingPage() {
                 {t("ctaPrimary")}
                 <ArrowRight aria-hidden className={ARROW} />
               </Link>
-              <a href="#nasil-calisir" className={`${BTN} text-mk-soft mkh:text-mk-ink min-[440px]:border min-[440px]:border-mk-strong min-[440px]:text-mk-ink min-[440px]:mkh:border-mk-muted min-[440px]:mkh:bg-white/[0.04]`}>
+              <a href="#nasil-calisir" className={`${BTN} mk-btn-ghost w-full text-mk-ink min-[440px]:w-auto`}>
                 {t("ctaSecondary")}
               </a>
             </div>
@@ -160,7 +160,7 @@ export default async function LandingPage() {
             <div className="mk-grain absolute inset-0" />
           </div>
           <Reveal className={`${CONTAINER} relative py-24 text-center md:py-32`}>
-            <h2 className="mx-auto max-w-[14em] text-[clamp(2rem,6vw,4rem)] font-semibold leading-[1.04] tracking-[-0.045em] text-balance">{t("closeTitle")}</h2>
+            <h2 className="mx-auto max-w-[14em] text-[clamp(2rem,6vw,4rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-balance">{t("closeTitle")}</h2>
             <p className="mx-auto mt-6 max-w-[40ch] text-[1.1rem] leading-[1.55] text-mk-soft">{t("closeLead")}</p>
             <div className="mt-9 flex justify-center">
               <Link href="/signup" className={BTN_PRIMARY}>

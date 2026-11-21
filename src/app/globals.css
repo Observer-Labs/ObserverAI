@@ -811,6 +811,27 @@ html, body {
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Button materials. Light: a warm off-white key with a lit top edge. Ghost: a
+   quiet glass key that brightens on hover. */
+.mk-btn-light {
+  background: linear-gradient(180deg, #fffaf2 0%, #ebe3d6 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(12, 11, 10, 0.12),
+    0 0 0 1px rgba(255, 244, 230, 0.18),
+    0 10px 30px -12px rgba(255, 90, 31, 0.5);
+}
+.mk-btn-ghost {
+  background: rgba(255, 244, 230, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.13), inset 0 1px 0 rgba(255, 244, 230, 0.06);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mk-btn-ghost:hover {
+    background: rgba(255, 244, 230, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.24), inset 0 1px 0 rgba(255, 244, 230, 0.08);
+  }
+}
+
 /* Bento tile: a spotlight and an edge glow follow the pointer (--mx/--my are set
    by components/marketing/Spotlight.tsx). */
 .mk-tile { position: relative; overflow: hidden; isolation: isolate; }

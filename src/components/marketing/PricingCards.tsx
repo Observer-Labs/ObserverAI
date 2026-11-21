@@ -134,10 +134,8 @@ export default function PricingCards({ plans, labels, prices }: { plans: Pricing
               <Link
                 href={plan.href}
                 className={cn(
-                  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-full border text-[0.9rem] font-semibold transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.98]",
-                  plan.featured
-                    ? "mk-btn border-mk-ink bg-mk-ink text-[#0c0b0a]"
-                    : "border-mk-strong bg-white/[0.02] text-mk-ink mkh:border-mk-muted mkh:bg-white/[0.06]",
+                  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-full text-[0.92rem] font-medium tracking-[-0.01em] transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.98]",
+                  plan.featured ? "mk-btn mk-btn-light text-[#0c0b0a]" : "mk-btn-ghost text-mk-ink",
                 )}
               >
                 {plan.cta}

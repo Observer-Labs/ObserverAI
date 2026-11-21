@@ -52,7 +52,7 @@ export default function SiteHeader() {
           <Link href="/login" className={cn(NAV_LINK, "hidden sm:inline-flex")}>{tNav("signIn")}</Link>
           <Link
             href="/signup"
-            className="mk-btn inline-flex h-9 items-center rounded-full bg-mk-ink px-2.5 text-[0.78rem] font-semibold text-[#0c0b0a] transition-transform duration-200 active:scale-[0.97] min-[360px]:px-4 min-[360px]:text-[0.84rem] sm:px-4"
+            className="mk-btn mk-btn-light inline-flex h-9 items-center rounded-full px-2.5 text-[0.78rem] font-medium tracking-[-0.01em] text-[#0c0b0a] transition-transform duration-200 active:scale-[0.97] min-[360px]:px-4 min-[360px]:text-[0.84rem] sm:px-4"
           >
             {tNav("startFree")}
           </Link>
