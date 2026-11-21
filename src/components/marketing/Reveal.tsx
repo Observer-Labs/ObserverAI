@@ -11,10 +11,12 @@ interface RevealProps {
 }
 
 /**
- * Fades content up the first time it scrolls into view (IntersectionObserver +
- * the `.mk-reveal` CSS transition, no animation library). Content that is
- * already on screen at mount, reduced-motion users and no-JS renders are left
- * untouched, so nothing is ever hidden without a way to come back.
+ * Two small jobs, both with IntersectionObserver and no animation library:
+ * 1. Fade content up the first time it is about to scroll into view (`.mk-reveal`).
+ *    Content already on screen at mount, reduced-motion visitors and no-JS renders
+ *    are left untouched, so nothing is ever hidden without a way to come back.
+ * 2. Keep `data-inview` in step with visibility, so looping scenes inside
+ *    (`.mk-loop`) only run while their section is actually on screen.
  */
 export default function Reveal({ children, className, delay = 0, stagger }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -22,33 +24,36 @@ export default function Reveal({ children, className, delay = 0, stagger }: Reve
   useEffect(() => {
     const el = ref.current;
     if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // `data-inview` lets CSS start section-local animations only once the section is seen.
-    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) {
-      el.dataset.inview = "true";
-      return () => {
-        delete el.dataset.inview;
-      };
+
+    const presence = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) el.dataset.inview = "true";
+      else delete el.dataset.inview;
+    });
+    presence.observe(el);
+
+    let targets: HTMLElement[] = [];
+    let entrance: IntersectionObserver | undefined;
+    if (el.getBoundingClientRect().top >= window.innerHeight * 1.05) {
+      targets = stagger ? Array.from(el.querySelectorAll<HTMLElement>(stagger)) : [el];
+      targets.forEach((target, i) => {
+        target.classList.add("mk-reveal");
+        target.style.transitionDelay = `${delay + i * 0.06}s`;
+      });
+      entrance = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) return;
+          targets.forEach((target) => target.classList.add("mk-reveal-in"));
+          entrance?.disconnect();
+        },
+        // start just before the block enters, so fast scrolling never meets an empty screen
+        { rootMargin: "0px 0px 12% 0px" },
+      );
+      entrance.observe(el);
     }
 
-    const targets = stagger ? Array.from(el.querySelectorAll<HTMLElement>(stagger)) : [el];
-    targets.forEach((target, i) => {
-      target.classList.add("mk-reveal");
-      target.style.transitionDelay = `${delay + i * 0.09}s`;
-    });
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        targets.forEach((target) => target.classList.add("mk-reveal-in"));
-        el.dataset.inview = "true";
-        observer.disconnect();
-      },
-      { rootMargin: "0px 0px -12% 0px" },
-    );
-    observer.observe(el);
-
     return () => {
-      observer.disconnect();
+      presence.disconnect();
+      entrance?.disconnect();
       delete el.dataset.inview;
       targets.forEach((target) => {
         target.classList.remove("mk-reveal", "mk-reveal-in");

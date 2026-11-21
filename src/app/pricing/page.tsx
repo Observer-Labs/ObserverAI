@@ -4,6 +4,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Reveal from "@/components/marketing/Reveal";
 import PricingCards from "@/components/marketing/PricingCards";
 import SiteFooter from "@/components/marketing/SiteFooter";
+import Spotlight from "@/components/marketing/Spotlight";
 import { marketingFonts } from "@/components/marketing/fonts";
 import type { PricingPlanData } from "@/components/marketing/PricingCards";
 import { fetchPolarPrices } from "@/lib/polar-prices";
@@ -89,18 +90,21 @@ export default async function PricingPage() {
     <div className={`mk flex min-h-screen flex-col overflow-x-clip ${marketingFonts}`}>
       <SiteHeader />
 
-      <main className="flex-1">
-        <Reveal className="mx-auto max-w-[1120px] px-5 pb-10 pt-12 sm:px-8 sm:pt-16 md:pb-12 md:pt-20">
-          <h1 className="font-mk-display text-[clamp(2.5rem,7vw,4.25rem)] font-extrabold leading-[0.98] tracking-[-0.04em]">
-            {tPricing("title")}
-          </h1>
-          <p className="mt-5 max-w-[52ch] text-[1.08rem] leading-[1.65] text-mk-soft">
-            {tPricing("subtitle")}
-          </p>
+      <main className="relative flex-1">
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden [mask-image:linear-gradient(#000_45%,transparent)]">
+          <div className="mk-gridlines absolute inset-0" />
+          <div className="mk-grain absolute inset-0" />
+        </div>
+
+        <Reveal className="relative mx-auto max-w-[1160px] px-5 pb-10 pt-14 text-center sm:px-8 sm:pt-20 md:pb-12 md:pt-24">
+          <h1 className="text-[clamp(2.2rem,6.4vw,4rem)] font-semibold leading-[1.04] tracking-[-0.045em]">{tPricing("title")}</h1>
+          <p className="mx-auto mt-5 max-w-[52ch] text-[1.08rem] leading-[1.6] text-mk-soft">{tPricing("subtitle")}</p>
         </Reveal>
 
-        <Reveal delay={0.1}>
-          <PricingCards plans={plans} labels={labels} prices={polarPrices} />
+        <Reveal delay={0.08} className="relative">
+          <Spotlight>
+            <PricingCards plans={plans} labels={labels} prices={polarPrices} />
+          </Spotlight>
         </Reveal>
       </main>
 

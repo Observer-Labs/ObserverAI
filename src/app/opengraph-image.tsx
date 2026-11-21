@@ -4,13 +4,13 @@ export const alt = "Observer AI — Müşteri sinyalleri WhatsApp'ınızda";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const INK = "#0f1512";
-const PAPER = "#ffffff";
-const MUTED = "#57625b";
-const LINE = "#dde3dc";
+const INK = "#f3efe8";
+const PAPER = "#0c0b0a";
+const MUTED = "#938b7f";
+const LINE = "rgba(255,244,230,0.14)";
 const BRAND = "#ff5a1f";
 
-/** Social card in the landing's visual language: white, green-black ink, the answer in an orange chat bubble. */
+/** Social card in the landing's visual language: warm near-black, off-white type, orange as light. */
 export default function OpenGraphImage() {
   return new ImageResponse(
     (
@@ -19,6 +19,7 @@ export default function OpenGraphImage() {
           width: "100%",
           height: "100%",
           background: PAPER,
+          backgroundImage: "radial-gradient(ellipse 70% 80% at 85% 110%, rgba(255,90,31,0.5), rgba(255,90,31,0) 70%)",
           color: INK,
           display: "flex",
           flexDirection: "column",
@@ -42,12 +43,11 @@ export default function OpenGraphImage() {
 
         <div style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em" }}>
+        <div style={{ display: "flex", fontSize: 84, fontWeight: 600, lineHeight: 1.04, letterSpacing: "-0.045em", color: MUTED }}>
           Müşteriniz ne istiyor?
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 22, fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em", marginTop: 10 }}>
-          <div style={{ display: "flex" }}>Cevabı</div>
-          <div style={{ display: "flex", background: BRAND, borderRadius: "34px 34px 34px 8px", padding: "4px 26px 12px" }}>WhatsApp&apos;ınızda.</div>
+        <div style={{ display: "flex", fontSize: 84, fontWeight: 600, lineHeight: 1.04, letterSpacing: "-0.045em", marginTop: 6 }}>
+          Cevabı WhatsApp&apos;ınızda.
         </div>
 
         <div style={{ display: "flex", fontSize: 29, color: MUTED, marginTop: 30, lineHeight: 1.4, maxWidth: 940 }}>
@@ -58,7 +58,7 @@ export default function OpenGraphImage() {
           style={{
             marginTop: 44,
             paddingTop: 26,
-            borderTop: `2px solid ${LINE}`,
+            borderTop: `1px solid ${LINE}`,
             display: "flex",
             alignItems: "center",
             gap: 14,

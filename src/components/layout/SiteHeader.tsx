@@ -7,9 +7,9 @@ import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 const NAV_LINK =
-  "rounded-full px-3.5 py-2 text-[0.9rem] text-mk-soft transition-colors duration-200 mkh:bg-mk-sunken mkh:text-mk-ink";
+  "rounded-full px-3.5 py-2 text-[0.88rem] text-mk-soft transition-colors duration-200 mkh:bg-white/[0.06] mkh:text-mk-ink";
 
-/** Shared marketing header (lives inside a `.mk` wrapper). Flat at the top; a hairline and paper surface appear on scroll. */
+/** Shared marketing header (lives inside a `.mk` wrapper): sticky frosted glass; the hairline appears on scroll. */
 export default function SiteHeader() {
   const tNav = useTranslations("nav");
   const t = useTranslations("landing");
@@ -25,11 +25,11 @@ export default function SiteHeader() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b transition-[background-color,border-color] duration-300",
-        scrolled ? "border-mk-line bg-mk-paper/92 backdrop-blur-md" : "border-transparent bg-transparent",
+        "sticky top-0 z-50 border-b bg-[rgba(12,11,10,0.62)] backdrop-blur-xl backdrop-saturate-150 transition-[border-color] duration-300",
+        scrolled ? "border-mk-line" : "border-transparent",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-2 px-2.5 min-[360px]:gap-3 min-[360px]:px-4 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-[1160px] items-center gap-2 px-2.5 min-[360px]:gap-3 min-[360px]:px-4 sm:px-8">
         <Logo href="/" size={24} textSize="1.05rem" gap={6} color="var(--mk-ink)" className="shrink-0 transition-opacity duration-200 mkh:opacity-75" />
 
         <nav aria-label={t("navMain")} className="ml-6 hidden items-center md:flex">
@@ -52,7 +52,7 @@ export default function SiteHeader() {
           <Link href="/login" className={cn(NAV_LINK, "hidden sm:inline-flex")}>{tNav("signIn")}</Link>
           <Link
             href="/signup"
-            className="inline-flex h-9 items-center rounded-full bg-mk-ink px-2.5 text-[0.78rem] min-[360px]:px-4 min-[360px]:text-[0.86rem] font-semibold text-mk-paper transition-[background-color,transform] duration-200 active:scale-[0.97] mkh:bg-mk-soft sm:h-10 sm:px-5 sm:text-[0.9rem]"
+            className="mk-btn inline-flex h-9 items-center rounded-full bg-mk-ink px-2.5 text-[0.78rem] font-semibold text-[#0c0b0a] transition-transform duration-200 active:scale-[0.97] min-[360px]:px-4 min-[360px]:text-[0.84rem] sm:px-4"
           >
             {tNav("startFree")}
           </Link>
