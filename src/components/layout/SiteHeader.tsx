@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 import Logo from "@/components/Logo";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Shared marketing header. Transparent at top; surface appears on scroll. */
+const NAV_LINK =
+  "rounded-full px-3.5 py-2 text-[0.9rem] text-mk-soft transition-colors duration-200 hover:bg-mk-sunken hover:text-mk-ink";
+
+/** Shared marketing header (lives inside a `.mk` wrapper). Flat at the top; a hairline and paper surface appear on scroll. */
 export default function SiteHeader() {
   const tNav = useTranslations("nav");
+  const t = useTranslations("landing");
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -20,26 +23,41 @@ export default function SiteHeader() {
   }, []);
 
   return (
-    <nav
+    <header
       className={cn(
-        "sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-3 transition-all duration-300 sm:px-10 sm:py-4",
-        scrolled ? "bg-background/85 backdrop-blur-xl" : "bg-transparent",
+        "sticky top-0 z-50 border-b transition-[background-color,border-color] duration-300",
+        scrolled ? "border-mk-line bg-mk-paper/90 backdrop-blur-md" : "border-transparent bg-transparent",
       )}
     >
-      <Logo href="/" size={24} textSize="1.05rem" className="shrink-0" />
-      {/* Mobile: locale + CTA only; sign-in joins at sm, pricing at md. Every item stays nowrap so the bar never overflows the viewport. */}
-      <div className="flex min-w-0 shrink items-center gap-1.5 whitespace-nowrap sm:gap-2">
-        <LocaleSwitcher />
-        <Button asChild variant="ghost" className="hidden h-10 rounded-full px-5 text-[0.92rem] text-muted-foreground md:inline-flex">
-          <Link href="/pricing">{tNav("pricing")}</Link>
-        </Button>
-        <Button asChild variant="outline" className="hidden h-10 rounded-full px-5 text-[0.92rem] shadow-none sm:inline-flex">
-          <Link href="/login">{tNav("signIn")}</Link>
-        </Button>
-        <Button asChild className="h-9 rounded-full px-4 text-[0.85rem] shadow-none sm:h-10 sm:px-6 sm:text-[0.92rem]">
-          <Link href="/signup">{tNav("startFree")}</Link>
-        </Button>
+      <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-2 px-2.5 min-[360px]:gap-3 min-[360px]:px-4 sm:px-8">
+        <Logo href="/" size={24} textSize="1.05rem" gap={6} color="var(--mk-ink)" className="shrink-0" />
+
+        <nav aria-label={t("navMain")} className="ml-6 hidden items-center md:flex">
+          <Link
+            href="/#nasil-calisir"
+            className={NAV_LINK}
+            // A client-side Link ignores a repeated click on the hash already in the URL; scroll by hand on the landing.
+            onClick={() => {
+              if (window.location.pathname === "/") document.getElementById("nasil-calisir")?.scrollIntoView();
+            }}
+          >
+            {t("howItWorksLabel")}
+          </Link>
+          <Link href="/pricing" className={NAV_LINK}>{tNav("pricing")}</Link>
+        </nav>
+
+        {/* Mobile: locale + CTA only; sign-in joins at sm. Everything stays nowrap so the bar never overflows. */}
+        <div className="ml-auto flex min-w-0 items-center gap-1 whitespace-nowrap sm:gap-2">
+          <LocaleSwitcher />
+          <Link href="/login" className={cn(NAV_LINK, "hidden sm:inline-flex")}>{tNav("signIn")}</Link>
+          <Link
+            href="/signup"
+            className="inline-flex h-9 items-center rounded-full bg-mk-ink px-2.5 text-[0.78rem] min-[360px]:px-4 min-[360px]:text-[0.86rem] font-medium text-mk-paper transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-mk-soft sm:h-10 sm:px-5 sm:text-[0.9rem]"
+          >
+            {tNav("startFree")}
+          </Link>
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }

@@ -124,6 +124,19 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --font-display: 'Sora', 'Inter', system-ui, sans-serif;
+
+  /* marketing (landing, pricing) — see the MARKETING block at the end of this file */
+  --color-mk-paper:      var(--mk-paper);
+  --color-mk-raised:     var(--mk-raised);
+  --color-mk-sunken:     var(--mk-sunken);
+  --color-mk-ink:        var(--mk-ink);
+  --color-mk-soft:       var(--mk-soft);
+  --color-mk-muted:      var(--mk-muted);
+  --color-mk-line:       var(--mk-line);
+  --color-mk-accent:     var(--mk-accent);
+  --color-mk-accent-ink: var(--mk-accent-ink);
+  --font-mk-display: var(--font-mk-display-face), 'Iowan Old Style', Georgia, serif;
+  --font-mk-mono:    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -660,4 +673,109 @@ html, body {
 
   /* Onboarding quickstart: single col */
   .quickstart-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARKETING (landing, pricing)
+   Everything here is scoped to the `.mk` wrapper; app screens are unaffected.
+   One paper surface, one ink, one accent (brand orange).
+───────────────────────────────────────────────────────────────────────────── */
+
+.mk {
+  --mk-paper:      #faf8f4;
+  --mk-raised:     #ffffff;
+  --mk-sunken:     #f3efe7;
+  --mk-ink:        #17140f;
+  --mk-soft:       #3d382f;
+  --mk-muted:      #6a6459;
+  --mk-line:       #e6e0d4;
+  --mk-accent:     var(--brand);
+  --mk-accent-ink: #b53a0a;
+
+  /* Shared components rendered inside marketing pages (e.g. LocaleSwitcher)
+     read the shadcn tokens; point those at the paper palette here. */
+  --background:       var(--mk-paper);
+  --foreground:       var(--mk-ink);
+  --muted-surface:    var(--mk-sunken);
+  --muted-foreground: var(--mk-muted);
+  --border:           var(--mk-line);
+
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mk ::selection { background: color-mix(in srgb, var(--brand) 22%, transparent); }
+
+/* Dark band (closing call to action + footer) flips the same tokens. */
+.mk-dark {
+  --mk-paper:  #17140f;
+  --mk-raised: #211d17;
+  --mk-sunken: #100e0a;
+  --mk-ink:    #faf8f4;
+  --mk-soft:   #d9d3c7;
+  --mk-muted:  #a39c8f;
+  --mk-line:   #353027;
+  --mk-accent-ink: #ff8a5c;
+  background: var(--mk-paper);
+  color: var(--mk-ink);
+}
+
+.mk-eyebrow {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mk-accent-ink);
+}
+
+/* Text link with an underline that draws in on hover. */
+.mk-link {
+  cursor: pointer;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 0.25s ease, color 0.2s ease;
+}
+.mk-link:hover, .mk-link:focus-visible { background-size: 100% 1px; }
+
+.mk a:focus-visible, .mk button:focus-visible {
+  outline: 2px solid var(--mk-ink);
+  outline-offset: 3px;
+}
+/* Ink-filled surfaces that are not a full `.mk-dark` band (featured price card). */
+.mk .mk-on-ink a:focus-visible, .mk .mk-on-ink button:focus-visible { outline-color: var(--mk-paper); }
+
+/* Hero demo: parts that GSAP reveals start hidden only when motion is allowed, so
+   there is no flash of the finished state before hydration. Reduced-motion (and,
+   through a <noscript> override, no-JS) renders show the finished state as is. */
+.mk-pre-inv { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .mk-pre { opacity: 0; }
+  .mk-pre-inv { opacity: 1; }
+}
+[data-static] .mk-pre { opacity: 1; }
+[data-static] .mk-pre-inv { opacity: 0; }
+
+/* Failsafe: if the animation script never arrives (blocked or very slow network),
+   fade the finished state in on its own. The timeline sets [data-playing] when it
+   takes over, which switches this off. */
+@keyframes mk-pre-show { to { opacity: 1; } }
+@keyframes mk-pre-hide { to { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  figure:not([data-playing]) .mk-pre { animation: mk-pre-show 0.5s ease 4s forwards; }
+  figure:not([data-playing]) .mk-pre-inv { animation: mk-pre-hide 0.3s ease 4s forwards; }
+}
+
+/* Scroll reveal (components/marketing/Reveal.tsx adds these classes). */
+.mk-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mk-reveal-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mk *, .mk *::before, .mk *::after { animation: none !important; transition: none !important; }
 }

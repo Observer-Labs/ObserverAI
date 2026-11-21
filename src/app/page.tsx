@@ -1,239 +1,170 @@
-"use client";
+import type { Metadata } from "next";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { useRef } from "react";
-import { useTranslations } from "next-intl";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { getLocale, getTranslations } from "next-intl/server";
+import { ArrowRight } from "lucide-react";
 import SiteHeader from "@/components/layout/SiteHeader";
-import Logo from "@/components/Logo";
-import SignalFeed from "@/components/marketing/SignalFeed";
-import PipelineSection from "@/components/marketing/PipelineSection";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import HeroDemo from "@/components/marketing/HeroDemo";
+import HowItWorks from "@/components/marketing/HowItWorks";
+import Reveal from "@/components/marketing/Reveal";
+import SiteFooter from "@/components/marketing/SiteFooter";
+import { marketingFonts } from "@/components/marketing/fonts";
 
-const HeroCanvas = dynamic(() => import("@/components/marketing/HeroCanvas"), { ssr: false });
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, locale] = await Promise.all([getTranslations("landing"), getLocale()]);
+  const title = t("metaTitle");
+  const description = t("metaDescription");
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: "/" },
+    openGraph: { type: "website", siteName: "Observer AI", url: "/", title, description, locale: locale === "en" ? "en_US" : "tr_TR" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+const CONTAINER = "mx-auto max-w-[1120px] px-5 sm:px-8";
+const H2 = "font-mk-display text-[clamp(2.1rem,4.6vw,3.4rem)] leading-[1.05] tracking-[-0.01em] text-balance";
+const BTN =
+  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-[0.95rem] font-medium transition-[background-color,transform] duration-200 hover:-translate-y-px";
 
-// ── Data ────────────────────────────────────────────────────────────────────
+export default async function LandingPage() {
+  const t = await getTranslations("landing");
 
-const sources = [
-  "Google Reviews", "Getir", "Yemeksepeti", "Trendyol", "POS / Payments", "Google Analytics",
-];
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-export default function LandingPage() {
-  const t = useTranslations("landing");
-  const tNav = useTranslations("nav");
-  const root = useRef<HTMLDivElement>(null);
+  const sources = ["Google Reviews", "Getir", "Yemeksepeti", "Trendyol", t("sourcePos"), "Google Analytics"];
 
   const personas = [
-    { icon: "☕", type: t("persona1Type"), sources: ["Google Reviews", "Getir", "POS"], gap: "Bu hafta 12 kişi Kadıköy şubenizde sabah kuyruğunun çok yavaş olduğunu söyledi. 8-10 arası vardiyaya bir barista ekleyin." },
-    { icon: "🍽️", type: t("persona2Type"), sources: ["Yemeksepeti", "Trendyol", "Google"], gap: "Yemeksepeti'ndeki soğuk yemek şikayetleri bu hafta sonu üçe katlandı, hepsi gece 9'dan sonraki geç teslimatlardan. Kurye teslimat sürecini kontrol edin." },
-    { icon: "🏪", type: t("persona3Type"), sources: ["Google Reviews", "POS", "Analytics"], gap: "Cumartesi müşteri trafiği artıyor ama satışlar sabit. Müşteriler uzun ödeme kuyruklarından bahsediyor. Hafta sonları ikinci kasayı açın." },
+    { type: t("persona1Type"), sources: ["Google Reviews", "Getir", "POS"], alert: t("persona1Alert") },
+    { type: t("persona2Type"), sources: ["Yemeksepeti", "Trendyol", "Google Reviews"], alert: t("persona2Alert") },
+    { type: t("persona3Type"), sources: ["Google Reviews", "POS", "Google Analytics"], alert: t("persona3Alert") },
   ];
-
-  const proof = [
-    { n: "5dk", label: t("proof1Label") },
-    { n: "0", label: t("proof2Label") },
-    { n: "1", label: t("proof3Label") },
-    { n: "7/24", label: t("proof4Label") },
-  ];
-
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      gsap.from("[data-hero] > *", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
-      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
-        gsap.from(el, {
-          y: 28, opacity: 0, duration: 0.7, ease: "power2.out",
-          scrollTrigger: { trigger: el, start: "top 85%" },
-        });
-      });
-    },
-    { scope: root },
-  );
 
   return (
-    <div ref={root} className="min-h-screen overflow-x-clip bg-[#fbfaf7] text-foreground">
+    <div className={`mk min-h-screen overflow-x-clip ${marketingFonts}`}>
+      {/* Without JavaScript nothing reveals the hero demo parts, so show them outright. */}
+      <noscript>
+        <style>{".mk-pre{opacity:1!important}.mk-pre-inv{display:none!important}"}</style>
+      </noscript>
 
-      {/* ── Nav ── */}
       <SiteHeader />
 
-      {/* ── Hero ── */}
-      <div className="relative">
-        <HeroCanvas className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]" />
-        <div className="relative mx-auto max-w-[1200px] px-5 pb-16 pt-10 sm:px-10 sm:pt-14 md:pb-20 md:pt-20">
-          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
-            <div data-hero>
-              {/* Value-prop flow: customer signals -> Observer -> WhatsApp */}
-              <div className="mb-8 inline-flex flex-wrap items-center gap-2.5 font-mono">
-                <span className="text-[0.72rem] text-muted-foreground">{t("heroFlow")}</span>
-                <span className="text-muted-foreground/45">→</span>
-                <span className="text-[0.72rem] font-bold">Observer</span>
-                <span className="text-muted-foreground/45">→</span>
-                <span className="inline-flex items-center gap-[5px] text-[0.72rem] font-bold text-[#00a884]">
-                  <span className="size-1.5 animate-pulse rounded-full bg-[#00a884]" />
-                  WhatsApp
-                </span>
-              </div>
-
-              <h1 className="mb-6 max-w-[560px] text-balance font-display text-[clamp(2.7rem,5.2vw,4.2rem)] font-bold leading-[1.06] tracking-[-0.03em]">
-                {t("heroTitle")}{" "}
-                <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("heroTitleAccent")}</span>
-              </h1>
-
-              <p className="mb-10 max-w-[470px] text-[1.1rem] leading-[1.7] text-muted-foreground">
-                {t("heroSubtitle")}
-              </p>
-
-              <div className="mb-[18px] flex flex-wrap items-center gap-3">
-                <Button asChild size="lg" className="h-12 rounded-full bg-foreground px-8 text-[0.975rem] text-background shadow-none transition-all hover:-translate-y-0.5 hover:bg-foreground/90">
-                  <Link href="/signup">{t("tryFree")}</Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary" className="h-12 rounded-full bg-[#efebe1] px-6 text-[0.95rem] text-foreground shadow-none hover:bg-[#e7e2d4]">
-                  <Link href="/showcase">{t("seeExample")} →</Link>
-                </Button>
-              </div>
-              <p className="text-[0.78rem] text-muted-foreground">
-                {t("noCard")}
-              </p>
+      <main>
+        {/* ── Hero ── */}
+        <section className={`${CONTAINER} grid grid-cols-1 items-center gap-x-14 gap-y-12 pb-16 pt-10 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:pb-24 lg:pt-20`}>
+          <div>
+            <p className="mk-eyebrow">{t("heroEyebrow")}</p>
+            <h1 className="mt-5 font-mk-display text-[clamp(2.5rem,10.5vw,4.6rem)] leading-[1.02] tracking-[-0.015em] lg:text-[clamp(3.2rem,5.1vw,4.4rem)]">
+              {t("heroTitleA")} <em className="block">{t("heroTitleB")}</em>
+            </h1>
+            <p className="mt-6 max-w-[50ch] text-[1.08rem] leading-[1.65] text-mk-soft">{t("heroLead")}</p>
+            <div className="mt-9 flex flex-col gap-3 min-[390px]:flex-row min-[390px]:items-center">
+              <Link href="/signup" className={`${BTN} bg-mk-ink text-mk-paper hover:bg-mk-soft`}>
+                {t("ctaPrimary")}
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+              <a href="#nasil-calisir" className={`${BTN} px-5 text-mk-ink hover:bg-mk-sunken`}>
+                {t("ctaSecondary")}
+              </a>
             </div>
-
-            <SignalFeed />
+            <p className="mt-5 text-[0.84rem] text-mk-muted">{t("heroNote")}</p>
           </div>
-        </div>
-      </div>
 
-      {/* ── Sources ── */}
-      <div data-reveal className="mx-auto max-w-[1000px] px-5 py-12 sm:px-10">
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {sources.map((src) => (
-            <div
-              key={src}
-              className="rounded-2xl border border-[#ece8df] bg-white px-6 py-3.5 font-display text-[0.95rem] font-semibold text-foreground/45 transition-colors duration-300 hover:text-foreground/80"
-            >
-              {src}
+          <HeroDemo />
+        </section>
+
+        {/* ── Sources ── */}
+        <section aria-label={t("sourcesLabel")} className={CONTAINER}>
+          <div className="flex flex-col gap-x-10 gap-y-4 border-y border-mk-line py-6 md:flex-row md:items-center">
+            <p className="shrink-0 font-mk-mono text-[0.7rem] uppercase tracking-[0.08em] text-mk-muted">{t("sourcesLabel")}</p>
+            <ul className="flex flex-wrap items-center gap-x-8 gap-y-2 md:ml-auto">
+              {sources.map((src) => (
+                <li key={src} className="text-[0.95rem] font-medium text-mk-soft">
+                  {src}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── Problem ── */}
+        <section className={`${CONTAINER} py-20 md:py-28`}>
+          <Reveal className="grid grid-cols-1 gap-x-16 gap-y-8 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <p className="mk-eyebrow">{t("problemLabel")}</p>
+              <h2 className={`${H2} mt-4`}>
+                {t("problemTitleA")} <em className="text-mk-muted">{t("problemTitleB")}</em>
+              </h2>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="flex flex-col gap-5 text-[1.05rem] leading-[1.7] text-mk-soft md:pt-9">
+              <p>{t("problemBody1")}</p>
+              <p>{t("problemBody2")}</p>
+            </div>
+          </Reveal>
+        </section>
 
-      {/* ── Problem ── */}
-      <div data-reveal className="mx-auto max-w-[860px] px-5 py-28 text-center sm:px-10 md:py-36">
-        <p className="mb-7 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("problemLabel")}</p>
-        <h2 className="mb-8 font-display text-[clamp(2.2rem,4.4vw,3.6rem)] font-bold leading-[1.08] tracking-[-0.025em]">
-          {t("problemTitle")}<br />
-          <span className="bg-[linear-gradient(transparent_62%,color-mix(in_srgb,var(--brand)_28%,transparent)_62%)] pr-1">{t("problemTitleAccent")}</span>
-        </h2>
-        <p className="mx-auto mb-4 max-w-[620px] text-[1.05rem] leading-[1.75] text-muted-foreground">
-          {t("problemBody1")}
-        </p>
-        <p className="mx-auto max-w-[620px] text-[1.05rem] leading-[1.75] text-muted-foreground">
-          {t("problemBody2")}
-        </p>
-      </div>
+        {/* ── How it works ── */}
+        <section id="nasil-calisir" className={`${CONTAINER} scroll-mt-20 pb-20 md:pb-28`}>
+          <Reveal className="mb-10 grid grid-cols-1 items-end gap-x-16 gap-y-4 md:mb-12 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <p className="mk-eyebrow">{t("howItWorksLabel")}</p>
+              <h2 className={`${H2} mt-4`}>{t("howTitle")}</h2>
+            </div>
+            <p className="text-[1.05rem] leading-[1.7] text-mk-soft">{t("howLead")}</p>
+          </Reveal>
+          <Reveal stagger="[data-step]">
+            <HowItWorks />
+          </Reveal>
+        </section>
 
-      {/* ── How it works: signal pipeline ── */}
-      <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10 md:py-32">
-        <div className="mb-16 text-center">
-          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("howItWorksLabel")}</p>
-          <h2 className="mb-5 font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
-            {t("howItWorksTitle")}
-          </h2>
-          <p className="mx-auto max-w-[560px] text-balance text-[1.02rem] leading-[1.7] text-muted-foreground">
-            {t("howItWorksSubtitle")}
-          </p>
-        </div>
-        <PipelineSection />
-      </div>
-
-      {/* ── Personas ── */}
-      <div data-reveal className="mx-auto max-w-[1160px] px-5 py-24 sm:px-10 md:py-32">
-        <div className="mb-14 text-center">
-          <p className="mb-3.5 text-[0.64rem] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">{t("builtForLabel")}</p>
-          <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.7rem)] font-bold tracking-[-0.025em]">
-            {t("builtForTitle")}
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {personas.map((p, i) => {
-            const tints = ["bg-[#fff3e8]", "bg-[#eef6ee]", "bg-[#eef3fb]"];
-            const rotations = ["md:-rotate-1", "md:translate-y-3", "md:rotate-1"];
-            return (
-              <div key={p.type} className={`rounded-[28px] p-8 transition-all duration-300 hover:-translate-y-2 hover:rotate-0 hover:shadow-[0_20px_48px_rgba(60,50,30,0.12)] ${tints[i]} ${rotations[i]}`}>
-                <div className="mb-4 text-[2.4rem]">{p.icon}</div>
-                <div className="mb-4 font-display text-[1.15rem] font-bold tracking-[-0.01em]">{p.type}</div>
-                <div className="mb-5 flex flex-wrap gap-[5px]">
-                  {p.sources.map((s) => (
-                    <Badge key={s} variant="outline" className="rounded-full border-black/[0.06] bg-white/70 px-[10px] py-[3px] font-mono text-[0.66rem] font-semibold text-foreground/60">
-                      {s}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="rounded-2xl bg-white px-5 py-4 shadow-[0_2px_12px_rgba(60,50,30,0.06)]">
-                  <div className="mb-2 flex items-center gap-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--brand)]">
-                    <span className="size-1.5 animate-pulse rounded-full bg-[var(--brand)]" />
-                    {t("exampleAlertLabel")}
+        {/* ── Who it is for ── */}
+        <section className={`${CONTAINER} pb-20 md:pb-28`}>
+          <Reveal className="mb-10 md:mb-12">
+            <p className="mk-eyebrow">{t("builtForLabel")}</p>
+            <h2 className={`${H2} mt-4 max-w-[20ch]`}>{t("whoTitle")}</h2>
+          </Reveal>
+          <Reveal stagger="[data-persona]">
+            <ul className="border-b border-mk-line">
+              {personas.map((p) => (
+                <li
+                  key={p.type}
+                  data-persona
+                  className="grid grid-cols-1 gap-x-10 gap-y-3 border-t border-mk-line py-7 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.7fr)_minmax(0,1.5fr)] md:py-9"
+                >
+                  <h3 className="font-mk-display text-[1.75rem] leading-[1.1]">{p.type}</h3>
+                  <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mk-mono text-[0.74rem] text-mk-muted md:flex-col md:pt-2">
+                    {p.sources.map((s) => (
+                      <li key={s} className="whitespace-nowrap">{s}</li>
+                    ))}
+                  </ul>
+                  <div>
+                    <p className="font-mk-mono text-[0.68rem] uppercase tracking-[0.08em] text-mk-muted md:pt-2">{t("exampleAlertLabel")}</p>
+                    <p className="mt-2 text-[1.02rem] leading-[1.6] text-mk-ink">{p.alert}</p>
                   </div>
-                  <div className="text-[0.84rem] leading-relaxed text-foreground/85">{p.gap}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <p
-          className="mt-10 text-center text-[0.8rem] text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: t.raw("comingSoon") }}
-        />
-      </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-[0.9rem] text-mk-muted">{t("whoSoon")}</p>
+          </Reveal>
+        </section>
 
-      {/* ── Proof ── */}
-      <div className="px-3 sm:px-5">
-        <div data-reveal className="mx-auto max-w-[1320px] rounded-[40px] bg-[#101728] px-5 py-16 sm:px-10 md:py-20">
-          <div className="mx-auto grid max-w-[1100px] grid-cols-1 gap-10 text-center sm:grid-cols-2 md:grid-cols-4">
-            {proof.map((p) => (
-              <div key={p.label}>
-                <div className="mb-3 font-display text-[3.4rem] font-bold leading-none tracking-[-0.03em] text-white">
-                  {p.n}
-                </div>
-                <div className="mx-auto max-w-[200px] text-[0.86rem] leading-normal text-white/55">{p.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        {/* ── Closing call to action ── */}
+        <section className="mk-dark">
+          <Reveal className={`${CONTAINER} py-20 md:py-28`}>
+            <h2 className="max-w-[18ch] font-mk-display text-[clamp(2.4rem,6vw,4.4rem)] leading-[1.03] tracking-[-0.015em] text-balance">
+              {t("closeTitle")}
+            </h2>
+            <p className="mt-5 max-w-[44ch] text-[1.08rem] leading-[1.65] text-mk-soft">{t("closeLead")}</p>
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Link href="/signup" className={`${BTN} bg-mk-accent text-[#17140f] hover:bg-[#ff7240]`}>
+                {t("ctaPrimary")}
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+              <span className="text-[0.84rem] text-mk-muted">{t("heroNote")}</span>
+            </div>
+          </Reveal>
+        </section>
+      </main>
 
-      {/* ── Final CTA ── */}
-      <div className="px-3 py-16 sm:px-5 md:py-20">
-        <div data-reveal className="relative mx-auto max-w-[1320px] overflow-hidden rounded-[40px] bg-[linear-gradient(135deg,var(--brand)_0%,#ff7a47_55%,#ff9e73_100%)] px-5 py-20 text-center sm:px-10 md:py-28">
-          <div className="pointer-events-none absolute -right-20 -top-24 size-[340px] rounded-full bg-white/10 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-32 -left-16 size-[300px] rounded-full bg-white/10 blur-2xl" />
-          <h2 className="relative mx-auto mb-10 max-w-[720px] font-display text-[clamp(2.4rem,4.6vw,3.8rem)] font-bold leading-[1.06] tracking-[-0.03em] text-white">
-            {t("ctaTitle")}
-          </h2>
-          <Button asChild size="lg" className="relative h-[52px] rounded-full bg-white px-10 text-base font-bold text-foreground shadow-none transition-all hover:-translate-y-0.5 hover:bg-white/95">
-            <Link href="/signup">{t("tryFree")}</Link>
-          </Button>
-          <p className="relative mt-[18px] text-[0.78rem] text-white/75">{t("noCard")}</p>
-        </div>
-      </div>
-
-      {/* ── Footer ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ece8df] px-5 py-6 sm:px-10">
-        <Logo size={18} textSize="0.82rem" color="var(--muted-foreground)" gap={7} />
-        <div className="flex gap-5">
-          <Link href="/pricing" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("pricing")}</Link>
-          <Link href="/login" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("signIn")}</Link>
-          <Link href="/signup" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{tNav("signUp")}</Link>
-          <Link href="/terms" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{t("footerTerms")}</Link>
-          <Link href="/privacy" className="text-[0.78rem] text-muted-foreground hover:text-foreground">{t("footerPrivacy")}</Link>
-        </div>
-        <span className="text-[0.72rem] text-muted-foreground">{t("footerTagline")}</span>
-      </div>
+      <SiteFooter />
     </div>
   );
 }

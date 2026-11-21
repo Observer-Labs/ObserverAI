@@ -1,17 +1,32 @@
-import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import SiteHeader from "@/components/layout/SiteHeader";
-import Logo from "@/components/Logo";
 import Reveal from "@/components/marketing/Reveal";
 import PricingCards from "@/components/marketing/PricingCards";
-import Link from "next/link";
+import SiteFooter from "@/components/marketing/SiteFooter";
+import { marketingFonts } from "@/components/marketing/fonts";
 import type { PricingPlanData } from "@/components/marketing/PricingCards";
 import { fetchPolarPrices } from "@/lib/polar-prices";
 
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, locale] = await Promise.all([getTranslations("pricing"), getLocale()]);
+  const title = `${t("title")} · Observer AI`;
+  const description = t("subtitle");
+  const image = { url: "/opengraph-image", width: 1200, height: 630, type: "image/png", alt: title };
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: "/pricing" },
+    // A page-level openGraph replaces the inherited one, including the root social image; name it again.
+    openGraph: { type: "website", siteName: "Observer AI", url: "/pricing", title, description, locale: locale === "en" ? "en_US" : "tr_TR", images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [{ ...image, url: "/twitter-image" }] },
+  };
+}
+
 export default async function PricingPage() {
-  const [t, tPricing, tNav, polarPrices] = await Promise.all([
+  const [t, tPricing, polarPrices] = await Promise.all([
     getTranslations("billing"),
     getTranslations("pricing"),
-    getTranslations("nav"),
     fetchPolarPrices(),
   ]);
 
@@ -67,18 +82,19 @@ export default async function PricingPage() {
     yearlyOnly: t("yearlyOnly"),
     mostPopular: t("mostPopular"),
     perYear: t("perYear"),
+    custom: tPricing("custom"),
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="relative z-[1]">
-        <SiteHeader />
+    <div className={`mk flex min-h-screen flex-col overflow-x-clip ${marketingFonts}`}>
+      <SiteHeader />
 
-        <Reveal className="px-6 pb-14 pt-20 text-center">
-          <h1 className="mb-5 font-display text-[clamp(2.5rem,5vw,3.9rem)] font-bold leading-[1.06] tracking-[-0.03em] text-foreground">
+      <main className="flex-1">
+        <Reveal className="mx-auto max-w-[1120px] px-5 pb-10 pt-12 sm:px-8 sm:pt-16 md:pb-12 md:pt-20">
+          <h1 className="font-mk-display text-[clamp(2.6rem,7vw,4.4rem)] leading-[1.02] tracking-[-0.015em]">
             {tPricing("title")}
           </h1>
-          <p className="mx-auto max-w-[560px] text-[1.1rem] leading-[1.7] text-muted-foreground">
+          <p className="mt-5 max-w-[52ch] text-[1.08rem] leading-[1.65] text-mk-soft">
             {tPricing("subtitle")}
           </p>
         </Reveal>
@@ -86,16 +102,9 @@ export default async function PricingPage() {
         <Reveal delay={0.1}>
           <PricingCards plans={plans} labels={labels} prices={polarPrices} />
         </Reveal>
+      </main>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-6 sm:px-12">
-          <Logo size={18} textSize="0.85rem" color="var(--muted-foreground)" gap={8} />
-          <div className="flex gap-6">
-            <Link href="/" className="text-[0.8rem] text-muted-foreground hover:text-foreground">Ana Sayfa</Link>
-            <Link href="/login" className="text-[0.8rem] text-muted-foreground hover:text-foreground">{tNav("signIn")}</Link>
-            <Link href="/signup" className="text-[0.8rem] text-muted-foreground hover:text-foreground">{tNav("signUp")}</Link>
-          </div>
-        </div>
-      </div>
+      <SiteFooter />
     </div>
   );
 }

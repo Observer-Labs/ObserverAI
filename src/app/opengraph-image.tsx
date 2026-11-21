@@ -1,9 +1,16 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Observer AI, From customer noise to shipped decisions";
+export const alt = "Observer AI — Müşteri sinyalleri WhatsApp'ınızda";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const INK = "#17140f";
+const PAPER = "#faf8f4";
+const MUTED = "#6a6459";
+const LINE = "#e6e0d4";
+const BRAND = "#ff5a1f";
+
+/** Social card in the landing's visual language: paper, ink, one orange accent. */
 export default function OpenGraphImage() {
   return new ImageResponse(
     (
@@ -11,111 +18,55 @@ export default function OpenGraphImage() {
         style={{
           width: "100%",
           height: "100%",
-          background: "#0b0c10",
-          backgroundImage:
-            "radial-gradient(ellipse at top left, rgba(249,115,22,0.18) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(249,115,22,0.10) 0%, transparent 55%)",
+          background: PAPER,
+          color: INK,
           display: "flex",
           flexDirection: "column",
-          padding: "72px 80px",
+          padding: "68px 80px",
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        {/* Logo lockup */}
+        {/* Logo lockup (same mark as components/Logo.tsx) */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 14,
-              background: "rgba(249,115,22,0.12)",
-              border: "2px solid rgba(249,115,22,0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 36,
-              fontWeight: 900,
-              color: "#f97316",
-              letterSpacing: "-0.04em",
-            }}
-          >
-            S
-          </div>
-          <div
-            style={{
-              fontSize: 36,
-              fontWeight: 800,
-              color: "#ffffff",
-              letterSpacing: "-0.02em",
-              fontStyle: "italic",
-            }}
-          >
-            Observer
-          </div>
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10.5" stroke={BRAND} strokeWidth="1.2" opacity="0.5" />
+            <path
+              d="M3.5 12C5.5 7.5 8.5 5.5 12 5.5C15.5 5.5 18.5 7.5 20.5 12C18.5 16.5 15.5 18.5 12 18.5C8.5 18.5 5.5 16.5 3.5 12Z"
+              stroke={BRAND}
+              strokeWidth="1.3"
+            />
+            <circle cx="12" cy="12" r="3" fill={BRAND} />
+          </svg>
+          <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.02em", fontStyle: "italic" }}>Observer</div>
         </div>
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Headline */}
-        <div
-          style={{
-            fontSize: 76,
-            fontWeight: 800,
-            color: "#ffffff",
-            lineHeight: 1.05,
-            letterSpacing: "-0.04em",
-            maxWidth: 980,
-            display: "flex",
-          }}
-        >
-          From customer noise to
+        <div style={{ display: "flex", fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em" }}>
+          Müşteriniz ne istiyor?
         </div>
-        <div
-          style={{
-            fontSize: 76,
-            fontWeight: 800,
-            color: "#f97316",
-            lineHeight: 1.05,
-            letterSpacing: "-0.04em",
-            marginTop: 4,
-            display: "flex",
-          }}
-        >
-          shipped decisions.
+        <div style={{ display: "flex", fontSize: 82, fontWeight: 700, lineHeight: 1.04, letterSpacing: "-0.035em", marginTop: 6 }}>
+          Cevabı WhatsApp&apos;ınızda.
         </div>
 
-        {/* Subhead */}
-        <div
-          style={{
-            fontSize: 28,
-            color: "#9aa3b2",
-            marginTop: 28,
-            lineHeight: 1.4,
-            maxWidth: 880,
-            display: "flex",
-          }}
-        >
-          AI clusters every customer signal into ranked intent gaps. Approve in Slack or email, your stakeholders never log in.
+        <div style={{ display: "flex", fontSize: 29, color: MUTED, marginTop: 30, lineHeight: 1.4, maxWidth: 940 }}>
+          Observer yorumlarınızı, şikayetlerinizi ve POS raporlarınızı her gün okur; düzeltmeye değer tek şeyi size yazar.
         </div>
 
-        {/* Footer row */}
         <div
           style={{
-            marginTop: 48,
+            marginTop: 44,
+            paddingTop: 26,
+            borderTop: `2px solid ${LINE}`,
             display: "flex",
             alignItems: "center",
-            gap: 24,
-            fontSize: 18,
-            color: "#6b7280",
-            fontFamily: "monospace",
-            letterSpacing: "0.05em",
+            gap: 14,
+            fontSize: 22,
+            color: MUTED,
           }}
         >
-          <div style={{ display: "flex" }}>SIGNAL-AI.CO</div>
-          <div style={{ width: 4, height: 4, borderRadius: 2, background: "#374151" }} />
-          <div style={{ display: "flex" }}>8 SOURCES</div>
-          <div style={{ width: 4, height: 4, borderRadius: 2, background: "#374151" }} />
-          <div style={{ display: "flex" }}>CLAUDE-POWERED</div>
+          <div style={{ width: 12, height: 12, borderRadius: 6, background: BRAND }} />
+          <div style={{ display: "flex" }}>Kafe, restoran ve dükkanlar için</div>
         </div>
       </div>
     ),
